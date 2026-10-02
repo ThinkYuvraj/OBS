@@ -1,0 +1,6 @@
+{
+  "name": "LiveStream ScoreBug - Broadcast Sports Overlay",
+  "description": "Professional real-time broadcast score overlays for OBS, vMix, and live streaming with ball-by-ball scoring, multi-sport engine, and graphics customization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
