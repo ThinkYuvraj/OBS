@@ -8,10 +8,8 @@ import {
   OverlayTokenRecord,
 } from '../types/sports';
 import {
-  calculateCRR,
   calculateRRR,
   processBallEvent,
-  rebuildCricketState,
 } from '../engine/cricketEngine';
 
 class StorageManager {
@@ -26,10 +24,8 @@ class StorageManager {
 
   private seedInitialData() {
     const indAusToken = 'overlay_live_cricket_t20_final';
-    const plDerbyToken = 'overlay_live_football_derby';
-    const tennisToken = 'overlay_live_tennis_semi';
 
-    // India vs Australia World Cup Final
+    // 1. Cricket: India vs Australia World Cup Final
     const indTeam = {
       id: 'team_ind',
       name: 'India',
@@ -84,7 +80,7 @@ class StorageManager {
       showRRR: true,
       showSponsor: true,
       showTicker: true,
-      tickerText: 'ICC MEN\'S T20 WORLD CUP FINAL • MELBOURNE CRICKET GROUND • LIVE ON STREAM',
+      tickerText: "ICC MEN'S T20 WORLD CUP FINAL • MELBOURNE CRICKET GROUND • LIVE ON STREAM",
       sponsorName: 'APEX BROADCAST',
       sponsorTagline: 'Next-Gen Ultra Stream Graphics',
       position: 'bottom',
@@ -101,7 +97,7 @@ class StorageManager {
       bowlingTeamId: 'team_aus',
       runs: 156,
       wickets: 4,
-      legalBalls: 105, // 17.3 overs = 17 * 6 + 3 = 105 balls
+      legalBalls: 105,
       oversFormatted: '17.3',
       currentRunRate: 8.91,
       requiredRunRate: 8.8,
@@ -287,7 +283,7 @@ class StorageManager {
       overlayTokens: [indAusToken],
       overlayConfig: defaultOverlayConfig,
       eventsCount: 105,
-      lastUpdated: Date.now(),
+      lastUpdated: Date.now() + 800,
     };
 
     this.matches.set(cricketMatch.id, cricketMatch);
@@ -299,7 +295,7 @@ class StorageManager {
       isActive: true,
     });
 
-    // Seed Football Match (Real Madrid vs Stuttgart UEFA Champions League from user reference)
+    // 2. Football: Real Madrid vs VfB Stuttgart (UEFA Champions League)
     const rmaStuttgartToken = 'overlay_live_ucl_rma_stu';
     const footballMatch: Match = {
       id: 'match_ucl_rma_stu',
@@ -328,11 +324,11 @@ class StorageManager {
       },
       footballState: {
         half: '2nd',
-        minute: 90,
+        minute: 78,
         extraTime: 4,
         isTimerRunning: true,
-        homeScore: 0,
-        awayScore: 0,
+        homeScore: 2,
+        awayScore: 1,
         homeFouls: 8,
         awayFouls: 12,
         homeYellowCards: 1,
@@ -343,7 +339,15 @@ class StorageManager {
         awayShots: 9,
         homeCorners: 7,
         awayCorners: 3,
-        events: [],
+        events: [
+          {
+            id: 'fev_1',
+            minute: 76,
+            type: 'goal',
+            teamId: 'home',
+            player: 'K. Mbappé',
+          },
+        ],
       },
       activeOverlayToken: rmaStuttgartToken,
       overlayTokens: [rmaStuttgartToken],
@@ -354,8 +358,8 @@ class StorageManager {
         position: 'top-left',
         tickerText: 'UEFA CHAMPIONS LEAGUE • SANTIAGO BERNABÉU • LIVE BROADCAST',
       },
-      eventsCount: 0,
-      lastUpdated: Date.now(),
+      eventsCount: 14,
+      lastUpdated: Date.now() + 700,
     };
 
     this.matches.set(footballMatch.id, footballMatch);
@@ -367,7 +371,75 @@ class StorageManager {
       isActive: true,
     });
 
-    // Seed Badminton Match
+    // 3. Basketball: LA Lakers vs Golden State Warriors (NBA Western Finals)
+    const nbaToken = 'overlay_live_nba_lal_gsw';
+    const basketballMatch: Match = {
+      id: 'match_nba_lal_gsw',
+      name: 'LA Lakers vs Golden State Warriors',
+      sport: 'basketball',
+      tournament: 'NBA Western Conference Finals',
+      venue: 'Crypto.com Arena, Los Angeles',
+      date: '2026-10-02',
+      startTime: '20:30',
+      status: 'live',
+      teamA: {
+        id: 'team_lal',
+        name: 'Los Angeles Lakers',
+        shortName: 'LAL',
+        color: '#EAB308',
+        secondaryColor: '#581C87',
+        squad: [],
+      },
+      teamB: {
+        id: 'team_gsw',
+        name: 'Golden State Warriors',
+        shortName: 'GSW',
+        color: '#2563EB',
+        secondaryColor: '#FACC15',
+        squad: [],
+      },
+      basketballState: {
+        quarter: 4,
+        clock: '02:14',
+        shotClock: 18,
+        isTimerRunning: true,
+        homeScore: 108,
+        awayScore: 105,
+        quarterScores: [
+          { home: 28, away: 26 },
+          { home: 25, away: 31 },
+          { home: 30, away: 24 },
+          { home: 25, away: 24 },
+        ],
+        homeFouls: 4,
+        awayFouls: 5,
+        homeTimeouts: 2,
+        awayTimeouts: 2,
+        possession: 'home',
+        lastPlay: 'LeBron James +3 (3PT FG)',
+      },
+      activeOverlayToken: nbaToken,
+      overlayTokens: [nbaToken],
+      overlayConfig: {
+        ...defaultOverlayConfig,
+        template: 'compact_bug',
+        theme: 'dark_neon',
+        position: 'bottom',
+        tickerText: 'NBA WESTERN CONFERENCE FINALS • GAME 6 • LIVE ON BROADCAST',
+      },
+      eventsCount: 92,
+      lastUpdated: Date.now() + 600,
+    };
+    this.matches.set(basketballMatch.id, basketballMatch);
+    this.overlayTokens.set(nbaToken, {
+      token: nbaToken,
+      matchId: basketballMatch.id,
+      createdAt: Date.now(),
+      lastAccessedAt: Date.now(),
+      isActive: true,
+    });
+
+    // 4. Badminton: Viktor Axelsen vs Lakshya Sen (BWF Super 1000)
     const badmintonToken = 'overlay_live_badminton_semis';
     const badmintonMatch: Match = {
       id: 'match_badminton_bwf',
@@ -398,7 +470,7 @@ class StorageManager {
         homePoints: 18,
         awayPoints: 19,
         server: 'away',
-        isGamePoint: true,
+        isGamePoint: false,
         isMatchPoint: false,
       },
       activeOverlayToken: badmintonToken,
@@ -409,7 +481,7 @@ class StorageManager {
         position: 'top-left',
       },
       eventsCount: 75,
-      lastUpdated: Date.now(),
+      lastUpdated: Date.now() + 500,
     };
     this.matches.set(badmintonMatch.id, badmintonMatch);
     this.overlayTokens.set(badmintonToken, {
@@ -420,7 +492,7 @@ class StorageManager {
       isActive: true,
     });
 
-    // Seed Table Tennis Match
+    // 5. Table Tennis: Fan Zhendong vs Ma Long (WTT Grand Smash Final)
     const ttToken = 'overlay_live_table_tennis_final';
     const tableTennisMatch: Match = {
       id: 'match_tt_wtt_final',
@@ -463,7 +535,7 @@ class StorageManager {
         position: 'top-left',
       },
       eventsCount: 65,
-      lastUpdated: Date.now(),
+      lastUpdated: Date.now() + 400,
     };
     this.matches.set(tableTennisMatch.id, tableTennisMatch);
     this.overlayTokens.set(ttToken, {
@@ -474,7 +546,7 @@ class StorageManager {
       isActive: true,
     });
 
-    // Seed Volleyball Match
+    // 6. Volleyball: Poland vs Italy (FIVB Volleyball Nations League Final)
     const vbToken = 'overlay_live_volleyball_nations';
     const volleyballMatch: Match = {
       id: 'match_vb_vnl_final',
@@ -518,12 +590,128 @@ class StorageManager {
         position: 'top-left',
       },
       eventsCount: 110,
-      lastUpdated: Date.now(),
+      lastUpdated: Date.now() + 300,
     };
     this.matches.set(volleyballMatch.id, volleyballMatch);
     this.overlayTokens.set(vbToken, {
       token: vbToken,
       matchId: volleyballMatch.id,
+      createdAt: Date.now(),
+      lastAccessedAt: Date.now(),
+      isActive: true,
+    });
+
+    // 7. Lawn Tennis (Outdoor): Carlos Alcaraz vs Jannik Sinner (Wimbledon Final)
+    const tennisToken = 'overlay_live_tennis_wimbledon';
+    const tennisMatch: Match = {
+      id: 'match_tennis_wimbledon',
+      name: 'Carlos Alcaraz vs Jannik Sinner',
+      sport: 'tennis',
+      tournament: 'Wimbledon Championships Final',
+      venue: 'Centre Court, All England Club',
+      date: '2026-10-02',
+      startTime: '14:00',
+      status: 'live',
+      teamA: {
+        id: 'p_alcaraz',
+        name: 'C. Alcaraz (ESP)',
+        shortName: 'ALC',
+        color: '#10B981',
+        squad: [],
+      },
+      teamB: {
+        id: 'p_sinner',
+        name: 'J. Sinner (ITA)',
+        shortName: 'SIN',
+        color: '#3B82F6',
+        squad: [],
+      },
+      tennisState: {
+        sets: [
+          { home: 6, away: 4 },
+          { home: 5, away: 7 },
+          { home: 4, away: 3 },
+        ],
+        currentSet: 2,
+        currentGame: {
+          homePoints: '40',
+          awayPoints: '30',
+          server: 'home',
+          isTieBreak: false,
+        },
+        homeAces: 11,
+        awayAces: 9,
+      },
+      activeOverlayToken: tennisToken,
+      overlayTokens: [tennisToken],
+      overlayConfig: {
+        ...defaultOverlayConfig,
+        template: 'compact_bug',
+        position: 'top-left',
+      },
+      eventsCount: 142,
+      lastUpdated: Date.now() + 200,
+    };
+    this.matches.set(tennisMatch.id, tennisMatch);
+    this.overlayTokens.set(tennisToken, {
+      token: tennisToken,
+      matchId: tennisMatch.id,
+      createdAt: Date.now(),
+      lastAccessedAt: Date.now(),
+      isActive: true,
+    });
+
+    // 8. Outdoor Field Hockey: India vs Netherlands (FIH Pro League)
+    const hockeyToken = 'overlay_live_field_hockey_fih';
+    const hockeyMatch: Match = {
+      id: 'match_hockey_ind_ned',
+      name: 'India vs Netherlands',
+      sport: 'field_hockey',
+      tournament: 'FIH Hockey Pro League',
+      venue: 'Birsa Munda Hockey Stadium, Rourkela',
+      date: '2026-10-02',
+      startTime: '19:30',
+      status: 'live',
+      teamA: {
+        id: 'team_ind_hk',
+        name: 'India',
+        shortName: 'IND',
+        color: '#2563EB',
+        squad: [],
+      },
+      teamB: {
+        id: 'team_ned_hk',
+        name: 'Netherlands',
+        shortName: 'NED',
+        color: '#F97316',
+        squad: [],
+      },
+      fieldHockeyState: {
+        quarter: 3,
+        minute: 42,
+        isTimerRunning: true,
+        homeScore: 3,
+        awayScore: 2,
+        homePenaltyCorners: 5,
+        awayPenaltyCorners: 4,
+        homeCards: { green: 1, yellow: 0, red: 0 },
+        awayCards: { green: 2, yellow: 1, red: 0 },
+        lastPlay: 'GOAL! Harmanpreet Singh (PC)',
+      },
+      activeOverlayToken: hockeyToken,
+      overlayTokens: [hockeyToken],
+      overlayConfig: {
+        ...defaultOverlayConfig,
+        template: 'compact_bug',
+        position: 'top-left',
+      },
+      eventsCount: 38,
+      lastUpdated: Date.now() + 100,
+    };
+    this.matches.set(hockeyMatch.id, hockeyMatch);
+    this.overlayTokens.set(hockeyToken, {
+      token: hockeyToken,
+      matchId: hockeyMatch.id,
       createdAt: Date.now(),
       lastAccessedAt: Date.now(),
       isActive: true,
@@ -544,11 +732,12 @@ class StorageManager {
   createMatch(matchData: Partial<Match>): Match {
     const id = matchData.id || `match_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const token = `token_${id}_${Math.random().toString(36).substring(2, 9)}`;
+    const sport = matchData.sport || 'cricket';
 
     const newMatch: Match = {
       id,
       name: matchData.name || 'Live Match',
-      sport: matchData.sport || 'cricket',
+      sport,
       tournament: matchData.tournament || 'Live Tournament',
       venue: matchData.venue || 'Stadium Arena',
       date: matchData.date || new Date().toISOString().split('T')[0],
@@ -570,12 +759,168 @@ class StorageManager {
       },
       toss: matchData.toss,
       cricketState: matchData.cricketState,
-      footballState: matchData.footballState,
-      tennisState: matchData.tennisState,
+      footballState:
+        matchData.footballState ||
+        (sport === 'football'
+          ? {
+              half: '1st',
+              minute: 1,
+              extraTime: 0,
+              isTimerRunning: true,
+              homeScore: 0,
+              awayScore: 0,
+              homeFouls: 0,
+              awayFouls: 0,
+              homeYellowCards: 0,
+              awayYellowCards: 0,
+              homeRedCards: 0,
+              awayRedCards: 0,
+              homeShots: 0,
+              awayShots: 0,
+              homeCorners: 0,
+              awayCorners: 0,
+              events: [],
+            }
+          : undefined),
+      basketballState:
+        matchData.basketballState ||
+        (sport === 'basketball'
+          ? {
+              quarter: 1,
+              clock: '12:00',
+              shotClock: 24,
+              isTimerRunning: true,
+              homeScore: 0,
+              awayScore: 0,
+              quarterScores: [
+                { home: 0, away: 0 },
+                { home: 0, away: 0 },
+                { home: 0, away: 0 },
+                { home: 0, away: 0 },
+              ],
+              homeFouls: 0,
+              awayFouls: 0,
+              homeTimeouts: 7,
+              awayTimeouts: 7,
+              possession: 'home',
+              lastPlay: 'Tip-off ready',
+            }
+          : undefined),
+      tennisState:
+        matchData.tennisState ||
+        (sport === 'tennis'
+          ? {
+              sets: [{ home: 0, away: 0 }],
+              currentSet: 0,
+              currentGame: {
+                homePoints: '0',
+                awayPoints: '0',
+                server: 'home',
+                isTieBreak: false,
+              },
+              homeAces: 0,
+              awayAces: 0,
+            }
+          : undefined),
+      badmintonState:
+        matchData.badmintonState ||
+        (sport === 'badminton'
+          ? {
+              sets: [{ home: 0, away: 0 }],
+              currentSet: 0,
+              homePoints: 0,
+              awayPoints: 0,
+              server: 'home',
+              isGamePoint: false,
+              isMatchPoint: false,
+            }
+          : undefined),
+      tableTennisState:
+        matchData.tableTennisState ||
+        (sport === 'table_tennis'
+          ? {
+              sets: [{ home: 0, away: 0 }],
+              currentSet: 0,
+              homePoints: 0,
+              awayPoints: 0,
+              server: 'home',
+              servesInTurn: 0,
+              isGamePoint: false,
+              isMatchPoint: false,
+            }
+          : undefined),
+      volleyballState:
+        matchData.volleyballState ||
+        (sport === 'volleyball'
+          ? {
+              sets: [{ home: 0, away: 0 }],
+              currentSet: 0,
+              homeScore: 0,
+              awayScore: 0,
+              server: 'home',
+              homeTimeouts: 0,
+              awayTimeouts: 0,
+              isSetPoint: false,
+              isMatchPoint: false,
+            }
+          : undefined),
+      fieldHockeyState:
+        matchData.fieldHockeyState ||
+        (sport === 'field_hockey'
+          ? {
+              quarter: 1,
+              minute: 1,
+              isTimerRunning: true,
+              homeScore: 0,
+              awayScore: 0,
+              homePenaltyCorners: 0,
+              awayPenaltyCorners: 0,
+              homeCards: { green: 0, yellow: 0, red: 0 },
+              awayCards: { green: 0, yellow: 0, red: 0 },
+              lastPlay: 'Match started',
+            }
+          : undefined),
+      baseballState:
+        matchData.baseballState ||
+        (sport === 'baseball'
+          ? {
+              inning: 1,
+              half: 'top',
+              balls: 0,
+              strikes: 0,
+              outs: 0,
+              bases: { first: false, second: false, third: false },
+              homeScore: 0,
+              awayScore: 0,
+              homeHits: 0,
+              awayHits: 0,
+              homeErrors: 0,
+              awayErrors: 0,
+              lastPlay: 'Play Ball',
+            }
+          : undefined),
+      rugbyState:
+        matchData.rugbyState ||
+        (sport === 'rugby'
+          ? {
+              half: '1st',
+              minute: 1,
+              isTimerRunning: true,
+              homeScore: 0,
+              awayScore: 0,
+              homeTries: 0,
+              awayTries: 0,
+              homePenalties: 0,
+              awayPenalties: 0,
+              homeSinBin: 0,
+              awaySinBin: 0,
+              lastPlay: 'Kick-off',
+            }
+          : undefined),
       activeOverlayToken: token,
       overlayTokens: [token],
       overlayConfig: matchData.overlayConfig || {
-        template: 'bottom_bar',
+        template: sport === 'cricket' ? 'bottom_bar' : 'compact_bug',
         theme: 'sky_broadcast',
         primaryColor: '#0F172A',
         secondaryColor: '#2563EB',
@@ -589,7 +934,7 @@ class StorageManager {
         tickerText: `${matchData.name || 'Live Sports'} • Live Broadcast Overlay`,
         sponsorName: 'APEX BROADCAST',
         sponsorTagline: 'Professional Stream Graphics',
-        position: 'bottom',
+        position: sport === 'cricket' ? 'bottom' : 'top-left',
         scale: 1,
         opacity: 0.98,
         animationsEnabled: true,
@@ -630,7 +975,6 @@ class StorageManager {
     const match = this.matches.get(id);
     if (!match) return false;
 
-    // Clean up tokens
     for (const t of match.overlayTokens) {
       this.overlayTokens.delete(t);
     }
@@ -670,7 +1014,7 @@ class StorageManager {
       isBye: Boolean(eventInput.isBye),
       isLegBye: Boolean(eventInput.isLegBye),
       penaltyRuns: eventInput.penaltyRuns || 0,
-      totalRuns: 0, // calculated in engine
+      totalRuns: 0,
       isLegalBall: !eventInput.isWide && !eventInput.isNoBall,
       isWicket: Boolean(eventInput.isWicket),
       wicketType: eventInput.wicketType,
@@ -683,15 +1027,12 @@ class StorageManager {
       timestamp: Date.now(),
     };
 
-    // Process event into cricket state
     const nextState = processBallEvent(match.cricketState, event);
 
     existingEvents.push(event);
     this.events.set(matchId, existingEvents);
-    // Clear redo history on new event
     this.undoneEvents.delete(matchId);
 
-    // Auto-trigger alerts on boundaries/wickets
     let activeAlert: OverlayAlert | null = null;
     if (event.isWicket) {
       activeAlert = {
@@ -750,13 +1091,10 @@ class StorageManager {
     const popped = existingEvents.pop()!;
     this.events.set(matchId, existingEvents);
 
-    // Push to undone stack
     const undone = this.undoneEvents.get(matchId) || [];
     undone.push(popped);
     this.undoneEvents.set(matchId, undone);
 
-    // Reconstruct state from base state + remaining events
-    // For safety, recalculate current innings from scratch
     const currentInnings = match.cricketState.innings[match.cricketState.currentInningsIndex];
     const baseInnings: CricketInnings = {
       ...currentInnings,
@@ -880,7 +1218,6 @@ class StorageManager {
   updateOverlayConfig(tokenOrMatchId: string, newConfig: Partial<OverlayConfig>): Match | null {
     let match: Match | null = null;
 
-    // Check if it's token
     const record = this.overlayTokens.get(tokenOrMatchId);
     if (record) {
       match = this.matches.get(record.matchId) || null;

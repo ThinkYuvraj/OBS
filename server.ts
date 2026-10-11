@@ -6,7 +6,15 @@ import dotenv from 'dotenv';
 import { storage } from './src/server/storage';
 import { realtimeHub } from './src/server/websocket';
 import { LiveFeedSimulator, ManualScoringProvider } from './src/engine/sportsDataProvider';
-import { FootballEngine, TennisEngine } from './src/engine/sportsEngine';
+import {
+  BaseballEngine,
+  BasketballEngine,
+  FieldHockeyEngine,
+  FootballEngine,
+  RugbyEngine,
+  TennisEngine,
+} from './src/engine/sportsEngine';
+import { OverlayAlert } from './src/types/sports';
 
 dotenv.config();
 
@@ -21,7 +29,11 @@ app.use(express.json());
 const simulator = new LiveFeedSimulator();
 const scoringProvider = new ManualScoringProvider((id) => storage.getMatch(id));
 const footballEngine = new FootballEngine();
+const basketballEngine = new BasketballEngine();
 const tennisEngine = new TennisEngine();
+const baseballEngine = new BaseballEngine();
+const rugbyEngine = new RugbyEngine();
+const fieldHockeyEngine = new FieldHockeyEngine();
 
 // --- REST APIs ---
 
@@ -120,7 +132,9 @@ app.post('/api/matches/:id/redo', (req: Request, res: Response) => {
   res.json(result);
 });
 
-// 3. Football & Tennis Events
+// 3. Multi-Sport Events APIs (Football, Basketball, Tennis, Badminton, Table Tennis, Volleyball, Field Hockey, Baseball, Rugby)
+
+// Football
 app.post('/api/matches/:id/football/event', (req: Request, res: Response) => {
   const match = storage.getMatch(req.params.id);
   if (!match || match.sport !== 'football' || !match.footballState) {
@@ -129,7 +143,11 @@ app.post('/api/matches/:id/football/event', (req: Request, res: Response) => {
 
   const nextState = footballEngine.processEvent(match.footballState, {
     id: `fev_${Date.now()}`,
-    minute: req.body.minute || match.footballState.minute,
+    minute: req.body.minute ?? match.footballState.minute,
+    clock: req.body.clock,
+    extraTime: req.body.extraTime,
+    half: req.body.half,
+    isTimerRunning: req.body.isTimerRunning,
     type: req.body.type,
     teamId: req.body.teamId,
     player: req.body.player || 'Player',
@@ -143,8 +161,10 @@ app.post('/api/matches/:id/football/event', (req: Request, res: Response) => {
       id: `alert_goal_${Date.now()}`,
       type: 'goal',
       title: 'GOAL!',
-      subtitle: `${req.body.player || 'Goal'} scores for ${req.body.teamId === 'home' ? match.teamA.name : match.teamB.name}!`,
-      player: req.body.player,
+      subtitle: `${req.body.player || 'Goal'} scores for ${
+        req.body.teamId === 'home' ? match.teamA.name : match.teamB.name
+      }!`,
+      player: req.body.player || (req.body.teamId === 'home' ? match.teamA.name : match.teamB.name),
       timestamp: Date.now(),
       durationMs: 5000,
     };
@@ -152,6 +172,7 @@ app.post('/api/matches/:id/football/event', (req: Request, res: Response) => {
 
   const updated = storage.updateMatch(match.id, {
     footballState: nextState,
+    eventsCount: match.eventsCount + 1,
     overlayConfig: { ...match.overlayConfig, activeAlert },
   });
 
@@ -162,6 +183,52 @@ app.post('/api/matches/:id/football/event', (req: Request, res: Response) => {
   res.json({ match: updated });
 });
 
+// Basketball
+app.post('/api/matches/:id/basketball/event', (req: Request, res: Response) => {
+  const match = storage.getMatch(req.params.id);
+  if (!match || match.sport !== 'basketball' || !match.basketballState) {
+    return res.status(400).json({ error: 'Invalid basketball match' });
+  }
+
+  const nextState = basketballEngine.processEvent(match.basketballState, {
+    id: `bb_${Date.now()}`,
+    type: req.body.type || 'score',
+    teamId: req.body.teamId,
+    points: req.body.points,
+    player: req.body.player,
+    quarter: req.body.quarter,
+    clock: req.body.clock,
+    shotClock: req.body.shotClock,
+    isTimerRunning: req.body.isTimerRunning,
+  });
+
+  let activeAlert = match.overlayConfig.activeAlert;
+  if (req.body.type === 'score' && req.body.points === 3) {
+    const teamName = req.body.teamId === 'home' ? match.teamA.name : match.teamB.name;
+    activeAlert = {
+      id: `alert_3pt_${Date.now()}`,
+      type: 'three_pointer',
+      title: 'THREE POINTER!',
+      subtitle: `Downtown splash for ${teamName}!`,
+      player: req.body.player || teamName,
+      timestamp: Date.now(),
+      durationMs: 4000,
+    };
+  }
+
+  const updated = storage.updateMatch(match.id, {
+    basketballState: nextState,
+    eventsCount: match.eventsCount + 1,
+    overlayConfig: { ...match.overlayConfig, activeAlert },
+  });
+
+  if (updated) {
+    realtimeHub.broadcastMatchUpdate(updated.id, updated);
+  }
+  res.json({ match: updated });
+});
+
+// Tennis
 app.post('/api/matches/:id/tennis/point', (req: Request, res: Response) => {
   const match = storage.getMatch(req.params.id);
   if (!match || match.sport !== 'tennis' || !match.tennisState) {
@@ -171,22 +238,42 @@ app.post('/api/matches/:id/tennis/point', (req: Request, res: Response) => {
   const nextState = tennisEngine.processEvent(match.tennisState, {
     id: `ten_${Date.now()}`,
     winner: req.body.winner || 'home',
+    isAce: Boolean(req.body.isAce),
   });
 
-  const updated = storage.updateMatch(match.id, { tennisState: nextState });
+  let activeAlert = match.overlayConfig.activeAlert;
+  if (req.body.isAce) {
+    const playerName = req.body.winner === 'home' ? match.teamA.name : match.teamB.name;
+    activeAlert = {
+      id: `alert_ace_${Date.now()}`,
+      type: 'ace',
+      title: 'SERVICE ACE!',
+      subtitle: `Unreturnable serve down the T!`,
+      player: playerName,
+      timestamp: Date.now(),
+      durationMs: 3500,
+    };
+  }
+
+  const updated = storage.updateMatch(match.id, {
+    tennisState: nextState,
+    eventsCount: match.eventsCount + 1,
+    overlayConfig: { ...match.overlayConfig, activeAlert },
+  });
   if (updated) {
     realtimeHub.broadcastMatchUpdate(updated.id, updated);
   }
   res.json({ match: updated });
 });
 
+// Badminton
 app.post('/api/matches/:id/badminton/point', (req: Request, res: Response) => {
   const match = storage.getMatch(req.params.id);
   if (!match || match.sport !== 'badminton' || !match.badmintonState) {
     return res.status(400).json({ error: 'Invalid badminton match' });
   }
 
-  const bs = { ...match.badmintonState };
+  const bs = JSON.parse(JSON.stringify(match.badmintonState));
   const winner = req.body.winner || 'home';
   if (winner === 'home') {
     bs.homePoints += 1;
@@ -196,23 +283,48 @@ app.post('/api/matches/:id/badminton/point', (req: Request, res: Response) => {
     bs.server = 'away';
   }
 
-  // Check game point (at least 20 and lead by 2, or up to 30 cap)
-  bs.isGamePoint = (bs.homePoints >= 20 || bs.awayPoints >= 20) && Math.abs(bs.homePoints - bs.awayPoints) >= 1;
+  if (bs.sets[bs.currentSet]) {
+    bs.sets[bs.currentSet].home = bs.homePoints;
+    bs.sets[bs.currentSet].away = bs.awayPoints;
+  }
 
-  const updated = storage.updateMatch(match.id, { badmintonState: bs });
+  // Check set completion (21 points win by 2, or 30 cap)
+  if (
+    ((bs.homePoints >= 21 || bs.awayPoints >= 21) &&
+      Math.abs(bs.homePoints - bs.awayPoints) >= 2) ||
+    bs.homePoints === 30 ||
+    bs.awayPoints === 30
+  ) {
+    if (bs.currentSet < 2) {
+      bs.sets.push({ home: 0, away: 0 });
+      bs.currentSet += 1;
+      bs.homePoints = 0;
+      bs.awayPoints = 0;
+    }
+  }
+
+  bs.isGamePoint =
+    (bs.homePoints >= 20 || bs.awayPoints >= 20) &&
+    Math.abs(bs.homePoints - bs.awayPoints) >= 1;
+
+  const updated = storage.updateMatch(match.id, {
+    badmintonState: bs,
+    eventsCount: match.eventsCount + 1,
+  });
   if (updated) {
     realtimeHub.broadcastMatchUpdate(updated.id, updated);
   }
   res.json({ match: updated });
 });
 
+// Table Tennis
 app.post('/api/matches/:id/table-tennis/point', (req: Request, res: Response) => {
   const match = storage.getMatch(req.params.id);
   if (!match || match.sport !== 'table_tennis' || !match.tableTennisState) {
     return res.status(400).json({ error: 'Invalid table tennis match' });
   }
 
-  const tts = { ...match.tableTennisState };
+  const tts = JSON.parse(JSON.stringify(match.tableTennisState));
   const winner = req.body.winner || 'home';
   if (winner === 'home') {
     tts.homePoints += 1;
@@ -220,7 +332,12 @@ app.post('/api/matches/:id/table-tennis/point', (req: Request, res: Response) =>
     tts.awayPoints += 1;
   }
 
-  // Swap server every 2 points, or every point if deuce (>= 10-10)
+  if (!tts.sets[tts.currentSet]) {
+    tts.sets[tts.currentSet] = { home: 0, away: 0 };
+  }
+  tts.sets[tts.currentSet].home = tts.homePoints;
+  tts.sets[tts.currentSet].away = tts.awayPoints;
+
   const totalPoints = tts.homePoints + tts.awayPoints;
   if (tts.homePoints >= 10 && tts.awayPoints >= 10) {
     tts.server = tts.server === 'home' ? 'away' : 'home';
@@ -228,35 +345,197 @@ app.post('/api/matches/:id/table-tennis/point', (req: Request, res: Response) =>
     tts.server = tts.server === 'home' ? 'away' : 'home';
   }
 
-  tts.isGamePoint = (tts.homePoints >= 10 || tts.awayPoints >= 10) && Math.abs(tts.homePoints - tts.awayPoints) >= 1;
+  if (
+    (tts.homePoints >= 11 || tts.awayPoints >= 11) &&
+    Math.abs(tts.homePoints - tts.awayPoints) >= 2
+  ) {
+    tts.sets.push({ home: 0, away: 0 });
+    tts.currentSet += 1;
+    tts.homePoints = 0;
+    tts.awayPoints = 0;
+  }
 
-  const updated = storage.updateMatch(match.id, { tableTennisState: tts });
+  tts.isGamePoint =
+    (tts.homePoints >= 10 || tts.awayPoints >= 10) &&
+    Math.abs(tts.homePoints - tts.awayPoints) >= 1;
+
+  const updated = storage.updateMatch(match.id, {
+    tableTennisState: tts,
+    eventsCount: match.eventsCount + 1,
+  });
   if (updated) {
     realtimeHub.broadcastMatchUpdate(updated.id, updated);
   }
   res.json({ match: updated });
 });
 
+// Volleyball
 app.post('/api/matches/:id/volleyball/point', (req: Request, res: Response) => {
   const match = storage.getMatch(req.params.id);
   if (!match || match.sport !== 'volleyball' || !match.volleyballState) {
     return res.status(400).json({ error: 'Invalid volleyball match' });
   }
 
-  const vs = { ...match.volleyballState };
-  const winner = req.body.winner || 'home';
-  if (winner === 'home') {
-    vs.homeScore += 1;
-    vs.server = 'home';
+  const vs = JSON.parse(JSON.stringify(match.volleyballState));
+  if (req.body.type === 'timeout') {
+    if (req.body.teamId === 'home') vs.homeTimeouts = Math.min(2, vs.homeTimeouts + 1);
+    else vs.awayTimeouts = Math.min(2, vs.awayTimeouts + 1);
   } else {
-    vs.awayScore += 1;
-    vs.server = 'away';
+    const winner = req.body.winner || 'home';
+    if (winner === 'home') {
+      vs.homeScore += 1;
+      vs.server = 'home';
+    } else {
+      vs.awayScore += 1;
+      vs.server = 'away';
+    }
   }
 
-  const pointCap = vs.currentSet === 4 ? 15 : 25;
-  vs.isSetPoint = (vs.homeScore >= pointCap - 1 || vs.awayScore >= pointCap - 1) && Math.abs(vs.homeScore - vs.awayScore) >= 1;
+  if (!vs.sets[vs.currentSet]) {
+    vs.sets[vs.currentSet] = { home: 0, away: 0 };
+  }
+  vs.sets[vs.currentSet].home = vs.homeScore;
+  vs.sets[vs.currentSet].away = vs.awayScore;
 
-  const updated = storage.updateMatch(match.id, { volleyballState: vs });
+  const pointCap = vs.currentSet === 4 ? 15 : 25;
+  if (
+    (vs.homeScore >= pointCap || vs.awayScore >= pointCap) &&
+    Math.abs(vs.homeScore - vs.awayScore) >= 2
+  ) {
+    if (vs.currentSet < 4) {
+      vs.sets.push({ home: 0, away: 0 });
+      vs.currentSet += 1;
+      vs.homeScore = 0;
+      vs.awayScore = 0;
+    }
+  }
+
+  vs.isSetPoint =
+    (vs.homeScore >= pointCap - 1 || vs.awayScore >= pointCap - 1) &&
+    Math.abs(vs.homeScore - vs.awayScore) >= 1;
+
+  const updated = storage.updateMatch(match.id, {
+    volleyballState: vs,
+    eventsCount: match.eventsCount + 1,
+  });
+  if (updated) {
+    realtimeHub.broadcastMatchUpdate(updated.id, updated);
+  }
+  res.json({ match: updated });
+});
+
+// Field Hockey
+app.post('/api/matches/:id/field-hockey/event', (req: Request, res: Response) => {
+  const match = storage.getMatch(req.params.id);
+  if (!match || match.sport !== 'field_hockey' || !match.fieldHockeyState) {
+    return res.status(400).json({ error: 'Invalid field hockey match' });
+  }
+
+  const nextState = fieldHockeyEngine.processEvent(match.fieldHockeyState, {
+    type: req.body.type || 'goal',
+    teamId: req.body.teamId || 'home',
+    player: req.body.player,
+    quarter: req.body.quarter,
+    minute: req.body.minute,
+  });
+
+  let activeAlert: OverlayAlert | null | undefined = match.overlayConfig.activeAlert;
+  if (req.body.type === 'goal') {
+    const teamName = req.body.teamId === 'home' ? match.teamA.name : match.teamB.name;
+    activeAlert = {
+      id: `alert_hk_${Date.now()}`,
+      type: 'goal',
+      title: 'GOAL!',
+      subtitle: `Field Hockey Strike for ${teamName}!`,
+      player: req.body.player || teamName,
+      timestamp: Date.now(),
+      durationMs: 4500,
+    };
+  }
+
+  const updated = storage.updateMatch(match.id, {
+    fieldHockeyState: nextState,
+    eventsCount: match.eventsCount + 1,
+    overlayConfig: { ...match.overlayConfig, activeAlert },
+  });
+  if (updated) {
+    realtimeHub.broadcastMatchUpdate(updated.id, updated);
+  }
+  res.json({ match: updated });
+});
+
+// Baseball
+app.post('/api/matches/:id/baseball/event', (req: Request, res: Response) => {
+  const match = storage.getMatch(req.params.id);
+  if (!match || match.sport !== 'baseball' || !match.baseballState) {
+    return res.status(400).json({ error: 'Invalid baseball match' });
+  }
+
+  const nextState = baseballEngine.processEvent(match.baseballState, {
+    type: req.body.type,
+    teamId: req.body.teamId,
+    base: req.body.base,
+    player: req.body.player,
+  });
+
+  let activeAlert = match.overlayConfig.activeAlert;
+  if (req.body.type === 'home_run') {
+    activeAlert = {
+      id: `alert_hr_${Date.now()}`,
+      type: 'home_run',
+      title: 'HOME RUN!',
+      subtitle: 'Deep into the bleachers! Outta here!',
+      player: req.body.player || 'Slugger',
+      timestamp: Date.now(),
+      durationMs: 4500,
+    };
+  }
+
+  const updated = storage.updateMatch(match.id, {
+    baseballState: nextState,
+    eventsCount: match.eventsCount + 1,
+    overlayConfig: { ...match.overlayConfig, activeAlert },
+  });
+  if (updated) {
+    realtimeHub.broadcastMatchUpdate(updated.id, updated);
+  }
+  res.json({ match: updated });
+});
+
+// Rugby
+app.post('/api/matches/:id/rugby/event', (req: Request, res: Response) => {
+  const match = storage.getMatch(req.params.id);
+  if (!match || match.sport !== 'rugby' || !match.rugbyState) {
+    return res.status(400).json({ error: 'Invalid rugby match' });
+  }
+
+  const nextState = rugbyEngine.processEvent(match.rugbyState, {
+    type: req.body.type,
+    teamId: req.body.teamId || 'home',
+    player: req.body.player,
+    minute: req.body.minute,
+    half: req.body.half,
+  });
+
+  let activeAlert = match.overlayConfig.activeAlert;
+  if (req.body.type === 'try') {
+    const teamName = req.body.teamId === 'home' ? match.teamA.name : match.teamB.name;
+    activeAlert = {
+      id: `alert_try_${Date.now()}`,
+      type: 'try',
+      title: 'TRY! +5 PTS',
+      subtitle: `Grounded over the line for ${teamName}!`,
+      player: req.body.player || teamName,
+      timestamp: Date.now(),
+      durationMs: 4500,
+    };
+  }
+
+  const updated = storage.updateMatch(match.id, {
+    rugbyState: nextState,
+    eventsCount: match.eventsCount + 1,
+    overlayConfig: { ...match.overlayConfig, activeAlert },
+  });
   if (updated) {
     realtimeHub.broadcastMatchUpdate(updated.id, updated);
   }

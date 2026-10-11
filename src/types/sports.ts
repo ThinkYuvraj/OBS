@@ -1,8 +1,84 @@
-export type SportType = 'cricket' | 'football' | 'tennis' | 'badminton' | 'table_tennis' | 'volleyball';
+export type SportType =
+  | 'cricket'
+  | 'football'
+  | 'basketball'
+  | 'tennis'
+  | 'baseball'
+  | 'rugby'
+  | 'field_hockey'
+  | 'volleyball'
+  | 'badminton'
+  | 'table_tennis';
 
 export type MatchStatus = 'upcoming' | 'live' | 'break' | 'completed' | 'abandoned';
 
 export type CricketFormat = 'T20' | 'ODI' | 'TEST' | 'CUSTOM';
+
+export interface BasketballMatchState {
+  quarter: 1 | 2 | 3 | 4 | 'OT';
+  clock: string; // e.g. "08:42"
+  shotClock: number; // e.g. 24
+  isTimerRunning: boolean;
+  homeScore: number;
+  awayScore: number;
+  quarterScores: { home: number; away: number }[];
+  homeFouls: number;
+  awayFouls: number;
+  homeTimeouts: number;
+  awayTimeouts: number;
+  possession: 'home' | 'away';
+  lastPlay?: string;
+}
+
+export interface BaseballMatchState {
+  inning: number;
+  half: 'top' | 'bottom';
+  balls: number; // 0-3
+  strikes: number; // 0-2
+  outs: number; // 0-2
+  bases: {
+    first: boolean;
+    second: boolean;
+    third: boolean;
+  };
+  homeScore: number;
+  awayScore: number;
+  homeHits: number;
+  awayHits: number;
+  homeErrors: number;
+  awayErrors: number;
+  pitcher?: string;
+  batter?: string;
+  lastPlay?: string;
+}
+
+export interface RugbyMatchState {
+  half: '1st' | '2nd' | 'full_time';
+  minute: number;
+  isTimerRunning: boolean;
+  homeScore: number;
+  awayScore: number;
+  homeTries: number;
+  awayTries: number;
+  homePenalties: number;
+  awayPenalties: number;
+  homeSinBin: number;
+  awaySinBin: number;
+  lastPlay?: string;
+}
+
+export interface FieldHockeyMatchState {
+  quarter: 1 | 2 | 3 | 4 | 'SO';
+  minute: number;
+  isTimerRunning: boolean;
+  homeScore: number;
+  awayScore: number;
+  homePenaltyCorners: number;
+  awayPenaltyCorners: number;
+  homeCards: { green: number; yellow: number; red: number };
+  awayCards: { green: number; yellow: number; red: number };
+  lastPlay?: string;
+}
 
 export interface BadmintonMatchState {
   sets: { home: number; away: number }[];
@@ -181,6 +257,7 @@ export interface CricketMatchState {
 export interface FootballMatchState {
   half: '1st' | '2nd' | 'extra_1' | 'extra_2' | 'penalties' | 'full_time';
   minute: number;
+  clock?: string; // e.g. "78:24"
   extraTime: number;
   isTimerRunning: boolean;
   homeScore: number;
@@ -215,6 +292,8 @@ export interface TennisMatchState {
     isTieBreak: boolean;
     tieBreakPoints?: { home: number; away: number };
   };
+  homeAces?: number;
+  awayAces?: number;
 }
 
 export type OverlayTemplate = 'bottom_bar' | 'compact_bug' | 'full_panel' | 'ticker';
@@ -228,7 +307,18 @@ export type OverlayTheme =
 
 export interface OverlayAlert {
   id: string;
-  type: 'wicket' | 'four' | 'six' | 'fifty' | 'century' | 'goal' | 'custom';
+  type:
+    | 'wicket'
+    | 'four'
+    | 'six'
+    | 'fifty'
+    | 'century'
+    | 'goal'
+    | 'three_pointer'
+    | 'home_run'
+    | 'try'
+    | 'ace'
+    | 'custom';
   title: string;
   subtitle: string;
   player?: string;
@@ -276,10 +366,14 @@ export interface Match {
   };
   cricketState?: CricketMatchState;
   footballState?: FootballMatchState;
+  basketballState?: BasketballMatchState;
   tennisState?: TennisMatchState;
+  baseballState?: BaseballMatchState;
+  rugbyState?: RugbyMatchState;
+  fieldHockeyState?: FieldHockeyMatchState;
+  volleyballState?: VolleyballMatchState;
   badmintonState?: BadmintonMatchState;
   tableTennisState?: TableTennisMatchState;
-  volleyballState?: VolleyballMatchState;
   activeOverlayToken: string;
   overlayTokens: string[];
   overlayConfig: OverlayConfig;

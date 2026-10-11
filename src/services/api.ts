@@ -1,4 +1,4 @@
-import { BallEvent, Match, OverlayConfig, SportType } from '../types/sports';
+import { BallEvent, Match, OverlayConfig } from '../types/sports';
 
 const API_BASE = '/api';
 
@@ -155,7 +155,17 @@ export async function revokeOverlayToken(token: string): Promise<boolean> {
 
 export async function postFootballEvent(
   matchId: string,
-  eventData: { type: string; minute: number; teamId: string; player: string; detail?: string }
+  eventData: {
+    type: string;
+    minute?: number;
+    clock?: string;
+    extraTime?: number;
+    half?: string;
+    isTimerRunning?: boolean;
+    teamId: string;
+    player?: string;
+    detail?: string;
+  }
 ): Promise<Match> {
   const res = await fetch(`${API_BASE}/matches/${matchId}/football/event`, {
     method: 'POST',
@@ -163,6 +173,88 @@ export async function postFootballEvent(
     body: JSON.stringify(eventData),
   });
   if (!res.ok) throw new Error('Failed to record football event');
+  const data = await res.json();
+  return data.match;
+}
+
+export async function postBasketballEvent(
+  matchId: string,
+  eventData: {
+    type: string;
+    teamId?: 'home' | 'away';
+    points?: number;
+    player?: string;
+    quarter?: 1 | 2 | 3 | 4 | 'OT';
+    clock?: string;
+    shotClock?: number;
+    isTimerRunning?: boolean;
+  }
+): Promise<Match> {
+  const res = await fetch(`${API_BASE}/matches/${matchId}/basketball/event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eventData),
+  });
+  if (!res.ok) throw new Error('Failed to record basketball event');
+  const data = await res.json();
+  return data.match;
+}
+
+export async function postFieldHockeyEvent(
+  matchId: string,
+  eventData: {
+    type: string;
+    teamId: 'home' | 'away';
+    player?: string;
+    quarter?: 1 | 2 | 3 | 4 | 'SO';
+    minute?: number;
+  }
+): Promise<Match> {
+  const res = await fetch(`${API_BASE}/matches/${matchId}/field-hockey/event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eventData),
+  });
+  if (!res.ok) throw new Error('Failed to record field hockey event');
+  const data = await res.json();
+  return data.match;
+}
+
+export async function postBaseballEvent(
+  matchId: string,
+  eventData: {
+    type: string;
+    teamId?: 'home' | 'away';
+    base?: 'first' | 'second' | 'third';
+    player?: string;
+  }
+): Promise<Match> {
+  const res = await fetch(`${API_BASE}/matches/${matchId}/baseball/event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eventData),
+  });
+  if (!res.ok) throw new Error('Failed to record baseball event');
+  const data = await res.json();
+  return data.match;
+}
+
+export async function postRugbyEvent(
+  matchId: string,
+  eventData: {
+    type: string;
+    teamId: 'home' | 'away';
+    player?: string;
+    minute?: number;
+    half?: string;
+  }
+): Promise<Match> {
+  const res = await fetch(`${API_BASE}/matches/${matchId}/rugby/event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eventData),
+  });
+  if (!res.ok) throw new Error('Failed to record rugby event');
   const data = await res.json();
   return data.match;
 }

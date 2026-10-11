@@ -1,12 +1,116 @@
 import React, { useState } from 'react';
 import { CricketFormat, Match, SportType } from '../types/sports';
 import { createMatch } from '../services/api';
-import { ArrowLeft, Check, Trophy, Calendar, MapPin, Users, Shield } from 'lucide-react';
+import { ArrowLeft, Check, Trophy, Users, Shield } from 'lucide-react';
 
 interface CreateMatchProps {
-  onMatchCreated: (matchId: string) => void;
+  onMatchCreated: (matchId: string, sport: SportType) => void;
   onCancel: () => void;
 }
+
+const SPORT_PRESETS: Record<
+  string,
+  {
+    tournament: string;
+    matchName: string;
+    venue: string;
+    teamAName: string;
+    teamAShort: string;
+    teamAColor: string;
+    teamBName: string;
+    teamBShort: string;
+    teamBColor: string;
+  }
+> = {
+  cricket: {
+    tournament: "ICC Men's T20 World Cup 2026",
+    matchName: 'India vs Australia - Final',
+    venue: 'Melbourne Cricket Ground, Australia',
+    teamAName: 'India',
+    teamAShort: 'IND',
+    teamAColor: '#1E40AF',
+    teamBName: 'Australia',
+    teamBShort: 'AUS',
+    teamBColor: '#EAB308',
+  },
+  football: {
+    tournament: 'UEFA Champions League',
+    matchName: 'Real Madrid vs Manchester City',
+    venue: 'Santiago Bernabéu, Madrid',
+    teamAName: 'Real Madrid',
+    teamAShort: 'RMA',
+    teamAColor: '#FFFFFF',
+    teamBName: 'Manchester City',
+    teamBShort: 'MCI',
+    teamBColor: '#38BDF8',
+  },
+  basketball: {
+    tournament: 'NBA Western Conference Finals',
+    matchName: 'Los Angeles Lakers vs Golden State Warriors',
+    venue: 'Crypto.com Arena, Los Angeles',
+    teamAName: 'Los Angeles Lakers',
+    teamAShort: 'LAL',
+    teamAColor: '#EAB308',
+    teamBName: 'Golden State Warriors',
+    teamBShort: 'GSW',
+    teamBColor: '#2563EB',
+  },
+  badminton: {
+    tournament: 'BWF World Tour Super 1000',
+    matchName: 'Viktor Axelsen vs Lakshya Sen',
+    venue: 'Istora Senayan, Jakarta',
+    teamAName: 'V. Axelsen (DEN)',
+    teamAShort: 'AXE',
+    teamAColor: '#DC2626',
+    teamBName: 'L. Sen (IND)',
+    teamBShort: 'SEN',
+    teamBColor: '#2563EB',
+  },
+  table_tennis: {
+    tournament: 'WTT Grand Smash Final',
+    matchName: 'Fan Zhendong vs Ma Long',
+    venue: 'Singapore Sports Hub',
+    teamAName: 'Fan Zhendong',
+    teamAShort: 'FAN',
+    teamAColor: '#DC2626',
+    teamBName: 'Ma Long',
+    teamBShort: 'MA',
+    teamBColor: '#EAB308',
+  },
+  volleyball: {
+    tournament: 'FIVB Volleyball Nations League',
+    matchName: 'Poland vs Italy',
+    venue: 'Ergo Arena, Gdansk',
+    teamAName: 'Poland',
+    teamAShort: 'POL',
+    teamAColor: '#DC2626',
+    teamBName: 'Italy',
+    teamBShort: 'ITA',
+    teamBColor: '#2563EB',
+  },
+  tennis: {
+    tournament: 'Wimbledon Championships Final',
+    matchName: 'Carlos Alcaraz vs Jannik Sinner',
+    venue: 'Centre Court, All England Club',
+    teamAName: 'C. Alcaraz (ESP)',
+    teamAShort: 'ALC',
+    teamAColor: '#10B981',
+    teamBName: 'J. Sinner (ITA)',
+    teamBShort: 'SIN',
+    teamBColor: '#3B82F6',
+  },
+  field_hockey: {
+    tournament: 'FIH Hockey Pro League',
+    matchName: 'India vs Netherlands',
+    venue: 'Birsa Munda Hockey Stadium, Rourkela',
+    teamAName: 'India',
+    teamAShort: 'IND',
+    teamAColor: '#2563EB',
+    teamBName: 'Netherlands',
+    teamBShort: 'NED',
+    teamBColor: '#F97316',
+  },
+};
 
 export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCancel }) => {
   const [sport, setSport] = useState<SportType>('cricket');
@@ -36,10 +140,28 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
   );
 
   const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSportChange = (newSport: SportType) => {
+    setSport(newSport);
+    const preset = SPORT_PRESETS[newSport];
+    if (preset) {
+      setTournament(preset.tournament);
+      setMatchName(preset.matchName);
+      setVenue(preset.venue);
+      setTeamAName(preset.teamAName);
+      setTeamAShort(preset.teamAShort);
+      setTeamAColor(preset.teamAColor);
+      setTeamBName(preset.teamBName);
+      setTeamBShort(preset.teamBShort);
+      setTeamBColor(preset.teamBColor);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setErrorMsg(null);
 
     try {
       const maxOvers =
@@ -51,7 +173,6 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
           ? 90
           : Number(customOvers) || 20;
 
-      // Parse squad players
       const squadA = teamABatters
         .split(',')
         .map((s) => s.trim())
@@ -70,7 +191,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
         .map((name, i) => ({
           id: `p_b_${i + 1}`,
           name,
-          role: ('bowler' as const),
+          role: 'bowler' as const,
           number: i + 1,
         }));
 
@@ -100,72 +221,75 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
           color: teamBColor,
           squad: squadB,
         },
-        cricketState: {
-          format: cricketFormat,
-          maxOvers,
-          currentInningsIndex: 0,
-          innings: [
-            {
-              inningsNumber: 1,
-              battingTeamId: `team_${Date.now()}_a`,
-              bowlingTeamId: `team_${Date.now()}_b`,
-              runs: 0,
-              wickets: 0,
-              legalBalls: 0,
-              oversFormatted: '0.0',
-              currentRunRate: 0,
-              extras: { wides: 0, noBalls: 0, byes: 0, legByes: 0, penalty: 0, total: 0 },
-              batters: [
-                {
-                  playerId: striker.id,
-                  name: striker.name,
-                  runs: 0,
-                  balls: 0,
-                  fours: 0,
-                  sixes: 0,
-                  strikeRate: 0,
-                  isOut: false,
-                },
-                {
-                  playerId: nonStriker.id,
-                  name: nonStriker.name,
-                  runs: 0,
-                  balls: 0,
-                  fours: 0,
-                  sixes: 0,
-                  strikeRate: 0,
-                  isOut: false,
-                },
-              ],
-              bowlers: [
-                {
-                  playerId: firstBowler.id,
-                  name: firstBowler.name,
-                  overs: '0.0',
-                  legalBalls: 0,
-                  maidens: 0,
-                  runsConceded: 0,
-                  wickets: 0,
-                  economy: 0,
-                },
-              ],
-              currentStrikerId: striker.id,
-              currentNonStrikerId: nonStriker.id,
-              currentBowlerId: firstBowler.id,
-              currentPartnership: { runs: 0, balls: 0 },
-              fallOfWickets: [],
-              oversHistory: [],
-              isCompleted: false,
-            },
-          ],
-        },
+        cricketState:
+          sport === 'cricket'
+            ? {
+                format: cricketFormat,
+                maxOvers,
+                currentInningsIndex: 0,
+                innings: [
+                  {
+                    inningsNumber: 1,
+                    battingTeamId: `team_${Date.now()}_a`,
+                    bowlingTeamId: `team_${Date.now()}_b`,
+                    runs: 0,
+                    wickets: 0,
+                    legalBalls: 0,
+                    oversFormatted: '0.0',
+                    currentRunRate: 0,
+                    extras: { wides: 0, noBalls: 0, byes: 0, legByes: 0, penalty: 0, total: 0 },
+                    batters: [
+                      {
+                        playerId: striker.id,
+                        name: striker.name,
+                        runs: 0,
+                        balls: 0,
+                        fours: 0,
+                        sixes: 0,
+                        strikeRate: 0,
+                        isOut: false,
+                      },
+                      {
+                        playerId: nonStriker.id,
+                        name: nonStriker.name,
+                        runs: 0,
+                        balls: 0,
+                        fours: 0,
+                        sixes: 0,
+                        strikeRate: 0,
+                        isOut: false,
+                      },
+                    ],
+                    bowlers: [
+                      {
+                        playerId: firstBowler.id,
+                        name: firstBowler.name,
+                        overs: '0.0',
+                        legalBalls: 0,
+                        maidens: 0,
+                        runsConceded: 0,
+                        wickets: 0,
+                        economy: 0,
+                      },
+                    ],
+                    currentStrikerId: striker.id,
+                    currentNonStrikerId: nonStriker.id,
+                    currentBowlerId: firstBowler.id,
+                    currentPartnership: { runs: 0, balls: 0 },
+                    fallOfWickets: [],
+                    oversHistory: [],
+                    isCompleted: false,
+                  },
+                ],
+              }
+            : undefined,
       };
 
       const created = await createMatch(initialMatch);
-      onMatchCreated(created.id);
+      onMatchCreated(created.id, created.sport);
     } catch (err) {
       console.error(err);
-      alert('Failed to create match');
+      setErrorMsg('Failed to initialize match. Please check your inputs and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -185,38 +309,53 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-white">Create New Match</h1>
             <p className="text-sm text-slate-400 mt-0.5">
-              Configure teams, tournament details, and match format for live scoring.
+              Configure teams, tournament details, and broadcast graphics for any of the 8 main sports.
             </p>
           </div>
         </div>
+
+        {errorMsg && (
+          <div className="mb-6 p-3.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-semibold">
+            {errorMsg}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Section 1: Sport & Tournament */}
           <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-blue-400 uppercase tracking-wider">
               <Trophy className="w-4 h-4" />
-              <span>Match Information</span>
+              <span>Select Broadcast Sport (8 Main Sports)</span>
+            </div>
+
+            {/* 8 Main Sports Grid Selector */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-6">
+              {[
+                { id: 'cricket', label: 'Cricket' },
+                { id: 'football', label: 'Football' },
+                { id: 'basketball', label: 'Basketball' },
+                { id: 'badminton', label: 'Badminton' },
+                { id: 'table_tennis', label: 'Table Tennis' },
+                { id: 'volleyball', label: 'Volleyball' },
+                { id: 'tennis', label: 'Lawn Tennis' },
+                { id: 'field_hockey', label: 'Field Hockey' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => handleSportChange(item.id as SportType)}
+                  className={`py-2.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                    sport === item.id
+                      ? 'bg-blue-600 border-blue-500 text-white shadow-sm'
+                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Sport Selector */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Sport
-                </label>
-                <select
-                  value={sport}
-                  onChange={(e) => setSport(e.target.value as SportType)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500"
-                >
-                  <option value="cricket">Cricket</option>
-                  <option value="football">Football</option>
-                  <option value="badminton">Badminton</option>
-                  <option value="table_tennis">Table Tennis</option>
-                  <option value="volleyball">Volleyball</option>
-                </select>
-              </div>
-
               {/* Tournament Name */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
@@ -226,22 +365,6 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                   type="text"
                   value={tournament}
                   onChange={(e) => setTournament(e.target.value)}
-                  placeholder="e.g. ICC Men's T20 World Cup"
-                  required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              {/* Match Title */}
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Match Title
-                </label>
-                <input
-                  type="text"
-                  value={matchName}
-                  onChange={(e) => setMatchName(e.target.value)}
-                  placeholder="e.g. India vs Australia - Final"
                   required
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                 />
@@ -250,13 +373,26 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
               {/* Venue */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Venue / Stadium
+                  Venue / Stadium / Arena
                 </label>
                 <input
                   type="text"
                   value={venue}
                   onChange={(e) => setVenue(e.target.value)}
-                  placeholder="e.g. Melbourne Cricket Ground"
+                  required
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {/* Match Title */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Match Title
+                </label>
+                <input
+                  type="text"
+                  value={matchName}
+                  onChange={(e) => setMatchName(e.target.value)}
                   required
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
                 />
@@ -347,14 +483,14 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
           <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
             <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-blue-400 uppercase tracking-wider">
               <Users className="w-4 h-4" />
-              <span>Teams & Squad Setup</span>
+              <span>Teams / Players Configuration</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Team A (Batting First by default) */}
+              {/* Team A */}
               <div className="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                  Team A (Batting First)
+                  {sport === 'cricket' ? 'Team A (Batting First)' : 'Home Team / Player A'}
                 </div>
                 <div className="space-y-3">
                   <div>
@@ -392,24 +528,26 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                       </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">
-                      Batters / Squad (Comma-separated)
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={teamABatters}
-                      onChange={(e) => setTeamABatters(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 font-mono"
-                    />
-                  </div>
+                  {sport === 'cricket' && (
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        Batters / Squad (Comma-separated)
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={teamABatters}
+                        onChange={(e) => setTeamABatters(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 font-mono"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Team B (Bowling First by default) */}
+              {/* Team B */}
               <div className="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
                 <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-                  Team B (Bowling First)
+                  {sport === 'cricket' ? 'Team B (Bowling First)' : 'Away Team / Player B'}
                 </div>
                 <div className="space-y-3">
                   <div>
@@ -447,17 +585,19 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                       </div>
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs text-slate-400 mb-1">
-                      Bowlers / Squad (Comma-separated)
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={teamBBowlers}
-                      onChange={(e) => setTeamBBowlers(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 font-mono"
-                    />
-                  </div>
+                  {sport === 'cricket' && (
+                    <div>
+                      <label className="block text-xs text-slate-400 mb-1">
+                        Bowlers / Squad (Comma-separated)
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={teamBBowlers}
+                        onChange={(e) => setTeamBBowlers(e.target.value)}
+                        className="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 font-mono"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

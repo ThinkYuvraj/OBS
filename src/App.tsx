@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Navbar } from './components/layout/Navbar';
 import { Dashboard } from './pages/Dashboard';
 import { CreateMatch } from './pages/CreateMatch';
@@ -24,6 +24,8 @@ export default function App() {
   const handleNavigate = (tab: string, matchId?: string) => {
     if (matchId) {
       setSelectedMatchId(matchId);
+    } else if (tab === 'multi-scoring' && selectedMatchId === 'match_t20_ind_aus') {
+      setSelectedMatchId('match_nba_lal_gsw');
     }
     setCurrentTab(tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -44,29 +46,31 @@ export default function App() {
 
         {currentTab === 'create' && (
           <CreateMatch
-            onMatchCreated={(newId) => handleNavigate('scoring', newId)}
+            onMatchCreated={(newId, sport) =>
+              handleNavigate(sport === 'cricket' ? 'scoring' : 'multi-scoring', newId)
+            }
             onCancel={() => handleNavigate('dashboard')}
           />
         )}
 
         {currentTab === 'scoring' && (
           <ScoringConsole
-            matchId={selectedMatchId || 'match_t20_ind_aus'}
+            matchId={
+              selectedMatchId.startsWith('match_t20') || selectedMatchId.includes('cricket')
+                ? selectedMatchId
+                : 'match_t20_ind_aus'
+            }
             onBack={() => handleNavigate('dashboard')}
           />
         )}
 
-        {currentTab === 'football-scoring' && (
+        {(currentTab === 'football-scoring' || currentTab === 'multi-scoring') && (
           <MultiSportConsole
-            matchId="match_ucl_rma_stu"
+            matchId={
+              selectedMatchId === 'match_t20_ind_aus' ? 'match_nba_lal_gsw' : selectedMatchId
+            }
             onBack={() => handleNavigate('dashboard')}
-          />
-        )}
-
-        {currentTab === 'multi-scoring' && (
-          <MultiSportConsole
-            matchId={selectedMatchId}
-            onBack={() => handleNavigate('dashboard')}
+            onOpenOverlayStudio={(id) => handleNavigate('overlay-control', id)}
           />
         )}
 

@@ -5,7 +5,9 @@ import { fetchMatch, fetchOverlay } from '../services/api';
 import { Template1BottomScoreBar } from '../components/overlay/Template1BottomScoreBar';
 import { CricketBottomBar } from '../components/overlay/CricketBottomBar';
 import { FootballScoreBug } from '../components/overlay/FootballScoreBug';
+import { BasketballScoreBug } from '../components/overlay/BasketballScoreBug';
 import { RacquetVolleyScoreBug } from '../components/overlay/RacquetVolleyScoreBug';
+import { OutdoorSportsScoreBug } from '../components/overlay/OutdoorSportsScoreBug';
 import { BroadcastAlertOverlay } from '../components/overlay/BroadcastAlertOverlay';
 
 interface OverlayViewProps {
@@ -17,7 +19,6 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
   const [config, setConfig] = useState<OverlayConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Initial load: Try overlay token first, fallback to direct match ID
   useEffect(() => {
     fetchOverlay(token)
       .then((data) => {
@@ -25,7 +26,6 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
         setConfig(data.config);
       })
       .catch(() => {
-        // If not found by token, try direct matchId
         fetchMatch(token)
           .then((m) => {
             setMatch(m);
@@ -38,7 +38,6 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
       });
   }, [token]);
 
-  // Real-time updates via WebSockets
   useRealtimeSocket({
     token,
     matchId: match?.id,
@@ -87,7 +86,7 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
         maxHeight: '100vh',
       }}
     >
-      {/* Broadcast Alert Popups (Wickets, Boundaries, Goals) */}
+      {/* Broadcast Alert Popups (Wickets, Boundaries, Goals, 3-Pointers, Aces) */}
       <BroadcastAlertOverlay
         alert={config.activeAlert || null}
         onDismiss={() => {
@@ -95,45 +94,69 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
         }}
       />
 
-      {/* Main Overlay Graphic: Bottom Score Bar */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 items-center flex flex-col pointer-events-none transition-all duration-200">
-        {match.sport === 'cricket' && match.cricketState && (
-          config.template === 'compact_bug' ? (
-            <CricketBottomBar
+      {/* Bottom Centered Overlays (Cricket & Basketball) */}
+      {(match.sport === 'cricket' || match.sport === 'basketball') && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 items-center flex flex-col pointer-events-none transition-all duration-200">
+          {match.sport === 'cricket' && match.cricketState && (
+            config.template === 'compact_bug' ? (
+              <CricketBottomBar
+                teamA={match.teamA}
+                teamB={match.teamB}
+                state={match.cricketState}
+                config={config}
+                tournamentName={match.tournament}
+              />
+            ) : (
+              <Template1BottomScoreBar
+                teamA={match.teamA}
+                teamB={match.teamB}
+                state={match.cricketState}
+                tournament={match.tournament}
+              />
+            )
+          )}
+
+          {match.sport === 'basketball' && match.basketballState && (
+            <BasketballScoreBug
               teamA={match.teamA}
               teamB={match.teamB}
-              state={match.cricketState}
+              state={match.basketballState}
               config={config}
               tournamentName={match.tournament}
             />
-          ) : (
-            <Template1BottomScoreBar
-              teamA={match.teamA}
-              teamB={match.teamB}
-              state={match.cricketState}
-              tournament={match.tournament}
-            />
-          )
-        )}
+          )}
+        </div>
+      )}
 
-        {match.sport === 'football' && match.footballState && (
-          <div className="absolute top-8 left-8">
-            <FootballScoreBug
-              teamA={match.teamA}
-              teamB={match.teamB}
-              state={match.footballState}
-              config={config}
-              tournamentName={match.tournament}
-            />
-          </div>
-        )}
+      {/* Top-Left Broadcast ScoreBugs (Football, Tennis, Badminton, Table Tennis, Volleyball, Field Hockey, Baseball, Rugby) */}
+      {match.sport === 'football' && match.footballState && (
+        <div className="absolute top-8 left-8 pointer-events-none">
+          <FootballScoreBug
+            teamA={match.teamA}
+            teamB={match.teamB}
+            state={match.footballState}
+            config={config}
+            tournamentName={match.tournament}
+          />
+        </div>
+      )}
 
-        {(match.sport === 'badminton' || match.sport === 'table_tennis' || match.sport === 'volleyball') && (
-          <div className="absolute top-8 left-8">
-            <RacquetVolleyScoreBug match={match} config={config} />
-          </div>
-        )}
-      </div>
+      {(match.sport === 'tennis' ||
+        match.sport === 'badminton' ||
+        match.sport === 'table_tennis' ||
+        match.sport === 'volleyball') && (
+        <div className="absolute top-8 left-8 pointer-events-none">
+          <RacquetVolleyScoreBug match={match} config={config} />
+        </div>
+      )}
+
+      {(match.sport === 'field_hockey' ||
+        match.sport === 'baseball' ||
+        match.sport === 'rugby') && (
+        <div className="absolute top-8 left-8 pointer-events-none">
+          <OutdoorSportsScoreBug match={match} config={config} />
+        </div>
+      )}
     </div>
   );
 };

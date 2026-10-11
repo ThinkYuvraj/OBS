@@ -16,9 +16,9 @@ export const FootballScoreBug: React.FC<FootballScoreBugProps> = ({
   config,
   tournamentName = 'CHAMPIONS LEAGUE',
 }) => {
-  // Format game clock e.g. "90:00"
+  // Format game clock e.g. "78:24" or "90:00"
   const minutesFormatted = String(Math.floor(state.minute)).padStart(2, '0');
-  const clockText = `${minutesFormatted}:00`;
+  const clockText = state.clock || `${minutesFormatted}:00`;
 
   const homeColor = teamA.color || '#FFFFFF';
   const awayColor = teamB.color || '#DC2626';

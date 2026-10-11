@@ -1,31 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { Match, SportType } from '../types/sports';
-import { fetchMatches, deleteMatch, toggleSimulation, generateNewOverlayToken } from '../services/api';
+import { Match } from '../types/sports';
+import { fetchMatches, deleteMatch } from '../services/api';
 import { useRealtimeSocket } from '../hooks/useRealtimeSocket';
 import {
-  Tv,
   Plus,
   Radio,
-  Play,
   Copy,
   Check,
   ExternalLink,
   Trash2,
   Sliders,
-  Sparkles,
-  Zap,
 } from 'lucide-react';
 
 interface DashboardProps {
   onNavigate: (tab: string, matchId?: string) => void;
 }
 
+const MAIN_SPORTS = [
+  { id: 'all', label: 'All 8 Sports' },
+  { id: 'cricket', label: 'Cricket' },
+  { id: 'football', label: 'Football' },
+  { id: 'basketball', label: 'Basketball' },
+  { id: 'badminton', label: 'Badminton' },
+  { id: 'table_tennis', label: 'Table Tennis' },
+  { id: 'volleyball', label: 'Volleyball' },
+  { id: 'tennis', label: 'Lawn Tennis' },
+  { id: 'field_hockey', label: 'Field Hockey' },
+];
+
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSport, setSelectedSport] = useState<string>('all');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
-  const [simulatingMap, setSimulatingMap] = useState<Record<string, boolean>>({});
 
   const loadData = () => {
     fetchMatches()
@@ -43,11 +50,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     loadData();
   }, []);
 
-  // Real-time listener for match state changes
   useRealtimeSocket({
     onMatchUpdate: (updatedMatch) => {
       setMatches((prev) =>
-        prev.map((m) => (m.id === updatedMatch.id ? updatedMatch : m))
+        prev.some((m) => m.id === updatedMatch.id)
+          ? prev.map((m) => (m.id === updatedMatch.id ? updatedMatch : m))
+          : [updatedMatch, ...prev]
       );
     },
   });
@@ -60,22 +68,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     setTimeout(() => setCopiedToken(null), 2500);
   };
 
-  const handleToggleSim = async (matchId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      const res = await toggleSimulation(matchId);
-      setSimulatingMap((prev) => ({ ...prev, [matchId]: res.simulating }));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const handleDelete = async (matchId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Delete this match and revoke its broadcast overlay tokens?')) {
-      await deleteMatch(matchId);
-      setMatches((prev) => prev.filter((m) => m.id !== matchId));
-    }
+    await deleteMatch(matchId);
+    setMatches((prev) => prev.filter((m) => m.id !== matchId));
   };
 
   const filteredMatches =
@@ -84,8 +80,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       : matches.filter((m) => m.sport === selectedSport);
 
   const activeCount = matches.filter((m) => m.status === 'live').length;
-  const cricketCount = matches.filter((m) => m.sport === 'cricket').length;
-  const footballCount = matches.filter((m) => m.sport === 'football').length;
+  const outdoorCount = matches.filter((m) =>
+    ['cricket', 'football', 'tennis', 'field_hockey', 'baseball', 'rugby'].includes(m.sport)
+  ).length;
+  const courtArenaCount = matches.filter((m) =>
+    ['basketball', 'badminton', 'table_tennis', 'volleyball'].includes(m.sport)
+  ).length;
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 pb-16">
@@ -95,27 +95,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-400">
               <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-              Live Sports Broadcast Engine
+              Multi-Sport Live Broadcast Engine
             </div>
             <h1 className="text-3xl font-black tracking-tight text-white mt-1">
               Production Overlay Studio
             </h1>
             <p className="text-sm text-slate-400 mt-1 max-w-2xl text-balance">
-              Zero-latency real-time score graphics for OBS Studio, vMix, and Streamlabs.
-              Engineered for Cricket, Football, Badminton, Table Tennis, and Volleyball.
+              High-contrast, zero-latency broadcast score graphics for OBS Studio, vMix, and Streamlabs.
+              Integrated across 8 main outdoor and arena sports: Cricket, Football, Basketball,
+              Badminton, Table Tennis, Volleyball, Lawn Tennis, and Field Hockey.
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => onNavigate('obs-guide')}
-              className="px-4 py-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-lg transition-colors cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
             >
               OBS Integration Setup
             </button>
             <button
               onClick={() => onNavigate('create')}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/20 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors shadow-lg shadow-blue-500/20 cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
               <span>Create Match</span>
@@ -126,27 +127,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         {/* Studio Summary Metrics */}
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
           <div className="bg-slate-900/60 border border-slate-800/80 p-4 rounded-xl">
-            <div className="text-xs text-slate-400">Live Broadcaster Matches</div>
+            <div className="text-xs text-slate-400">Live Broadcaster Channels</div>
             <div className="text-2xl font-black font-mono tabular-nums text-white mt-1">
               {activeCount}
             </div>
           </div>
           <div className="bg-slate-900/60 border border-slate-800/80 p-4 rounded-xl">
-            <div className="text-xs text-slate-400">Cricket Overlay Feeds</div>
+            <div className="text-xs text-slate-400">Outdoor Stadium Feeds</div>
             <div className="text-2xl font-black font-mono tabular-nums text-emerald-400 mt-1">
-              {cricketCount}
+              {outdoorCount}
             </div>
           </div>
           <div className="bg-slate-900/60 border border-slate-800/80 p-4 rounded-xl">
-            <div className="text-xs text-slate-400">Football UCL Graphics</div>
+            <div className="text-xs text-slate-400">Basketball & Court Feeds</div>
             <div className="text-2xl font-black font-mono tabular-nums text-cyan-400 mt-1">
-              {footballCount}
+              {courtArenaCount}
             </div>
           </div>
           <div className="bg-slate-900/60 border border-slate-800/80 p-4 rounded-xl">
-            <div className="text-xs text-slate-400">Supported Broadcast Sports</div>
+            <div className="text-xs text-slate-400">Integrated Main Sports</div>
             <div className="text-2xl font-black font-mono tabular-nums text-amber-400 mt-1">
-              5
+              8
             </div>
           </div>
         </div>
@@ -154,21 +155,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Main Workspace Area */}
       <div className="max-w-7xl mx-auto px-6 mt-8">
-        {/* Filter Navigation Tabs */}
+        {/* Filter Navigation Tabs for all 8 Main Sports */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
-          <div className="flex items-center gap-1.5 p-1 bg-slate-900/80 border border-slate-800 rounded-lg">
-            {[
-              { id: 'all', label: 'All Feeds' },
-              { id: 'cricket', label: 'Cricket' },
-              { id: 'football', label: 'Football' },
-              { id: 'badminton', label: 'Badminton' },
-              { id: 'table_tennis', label: 'Table Tennis' },
-              { id: 'volleyball', label: 'Volleyball' },
-            ].map((sport) => (
+          <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-900/80 border border-slate-800 rounded-lg">
+            {MAIN_SPORTS.map((sport) => (
               <button
                 key={sport.id}
                 onClick={() => setSelectedSport(sport.id)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer whitespace-nowrap ${
                   selectedSport === sport.id
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-slate-400 hover:text-white'
@@ -179,7 +173,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             ))}
           </div>
 
-          <div className="text-xs text-slate-400">
+          <div className="text-xs text-slate-400 font-mono tabular-nums">
             Showing <span className="text-white font-bold">{filteredMatches.length}</span> active match channels
           </div>
         </div>
@@ -194,20 +188,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <p className="text-slate-400 text-sm">No matches found for this sport category.</p>
             <button
               onClick={() => onNavigate('create')}
-              className="mt-3 px-4 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg"
+              className="mt-3 px-4 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg cursor-pointer"
             >
-              Create First Match
+              Create Match for This Sport
             </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-6">
             {filteredMatches.map((m) => {
               const isCricket = m.sport === 'cricket';
-              const isFootball = m.sport === 'football';
-              const isRacquetOrVolley =
-                m.sport === 'badminton' || m.sport === 'table_tennis' || m.sport === 'volleyball';
 
-              // Score preview text
               let scoreText = '0 - 0';
               let metaText = '';
 
@@ -217,18 +207,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   scoreText = `${inn.runs}/${inn.wickets}`;
                   metaText = `${inn.oversFormatted} ov • CRR: ${inn.currentRunRate.toFixed(2)}`;
                 }
-              } else if (isFootball && m.footballState) {
+              } else if (m.sport === 'football' && m.footballState) {
                 scoreText = `${m.footballState.homeScore} - ${m.footballState.awayScore}`;
-                metaText = `${m.footballState.minute}' • ${m.tournament}`;
+                metaText = `${m.footballState.minute}' (+${m.footballState.extraTime}) • ${m.footballState.half.toUpperCase()} HALF`;
+              } else if (m.sport === 'basketball' && m.basketballState) {
+                scoreText = `${m.basketballState.homeScore} - ${m.basketballState.awayScore}`;
+                metaText = `Q${m.basketballState.quarter} ${m.basketballState.clock} • Shot: ${m.basketballState.shotClock}s`;
               } else if (m.sport === 'badminton' && m.badmintonState) {
                 scoreText = `${m.badmintonState.homePoints} - ${m.badmintonState.awayPoints}`;
                 metaText = `Set ${m.badmintonState.currentSet + 1} • BWF Super 1000`;
               } else if (m.sport === 'table_tennis' && m.tableTennisState) {
                 scoreText = `${m.tableTennisState.homePoints} - ${m.tableTennisState.awayPoints}`;
-                metaText = `Set ${m.tableTennisState.currentSet + 1} • WTT Final`;
+                metaText = `Set ${m.tableTennisState.currentSet + 1} • WTT Grand Smash`;
               } else if (m.sport === 'volleyball' && m.volleyballState) {
                 scoreText = `${m.volleyballState.homeScore} - ${m.volleyballState.awayScore}`;
-                metaText = `Set ${m.volleyballState.currentSet + 1} • FIVB Final`;
+                metaText = `Set ${m.volleyballState.currentSet + 1} • FIVB Nations League`;
+              } else if (m.sport === 'tennis' && m.tennisState) {
+                const currSet = m.tennisState.sets[m.tennisState.currentSet] || { home: 0, away: 0 };
+                scoreText = `${m.tennisState.currentGame.homePoints} - ${m.tennisState.currentGame.awayPoints}`;
+                metaText = `Set ${m.tennisState.currentSet + 1} (${currSet.home}-${currSet.away}) • Aces: ${m.tennisState.homeAces ?? 0}-${m.tennisState.awayAces ?? 0}`;
+              } else if (m.sport === 'field_hockey' && m.fieldHockeyState) {
+                scoreText = `${m.fieldHockeyState.homeScore} - ${m.fieldHockeyState.awayScore}`;
+                metaText = `Q${m.fieldHockeyState.quarter} • ${m.fieldHockeyState.minute}' • PC: ${m.fieldHockeyState.homePenaltyCorners}-${m.fieldHockeyState.awayPenaltyCorners}`;
+              } else if (m.sport === 'baseball' && m.baseballState) {
+                scoreText = `${m.baseballState.awayScore} - ${m.baseballState.homeScore}`;
+                metaText = `${m.baseballState.half.toUpperCase()} ${m.baseballState.inning} • ${m.baseballState.outs} Out`;
+              } else if (m.sport === 'rugby' && m.rugbyState) {
+                scoreText = `${m.rugbyState.homeScore} - ${m.rugbyState.awayScore}`;
+                metaText = `${m.rugbyState.minute}' • Tries: ${m.rugbyState.homeTries}-${m.rugbyState.awayTries}`;
               }
 
               const obsUrl = `${window.location.origin}/overlay/${m.activeOverlayToken}`;
@@ -246,19 +252,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           {m.sport.replace('_', ' ')}
                         </span>
                         <span className="text-slate-600">•</span>
-                        <span className="text-xs text-slate-400 truncate max-w-[200px]">
+                        <span className="text-xs text-slate-400 truncate max-w-[220px]">
                           {m.tournament}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          LIVE
+                        <span className="text-[11px] font-bold text-emerald-400 font-mono">
+                          LIVE ON AIR
                         </span>
                         <button
                           onClick={(e) => handleDelete(m.id, e)}
-                          className="p-1 text-slate-500 hover:text-rose-400 transition-colors"
+                          className="p-1 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
                           title="Delete match"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -332,7 +337,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     {/* Action Buttons */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        {/* Go to Scorer Console */}
                         <button
                           onClick={() => {
                             if (isCricket) {
@@ -347,7 +351,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           <span>Scoring Console</span>
                         </button>
 
-                        {/* Overlay Controls */}
                         <button
                           onClick={() => onNavigate('overlay-control', m.id)}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors cursor-pointer"
@@ -357,7 +360,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         </button>
                       </div>
 
-                      {/* Direct Overlay Preview Link */}
                       <a
                         href={`/overlay/${m.activeOverlayToken}`}
                         target="_blank"
