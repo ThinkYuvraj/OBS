@@ -1,11 +1,14 @@
 import {
+  BadmintonMatchState,
   BaseballMatchState,
   BasketballMatchState,
   FieldHockeyMatchState,
   FootballMatchState,
   RugbyMatchState,
   SportType,
+  TableTennisMatchState,
   TennisMatchState,
+  VolleyballMatchState,
 } from '../types/sports';
 
 export interface ValidationResult {
@@ -693,5 +696,246 @@ export class FieldHockeyEngine implements SportEngine<FieldHockeyMatchState, Fie
     }
 
     return next;
+  }
+}
+
+// 7. Badminton scoring engine implementation (BWF 21-point win-by-2, 30-point cap)
+export interface BadmintonEvent {
+  type?: 'point' | 'swap_server' | 'reset_set';
+  winner?: 'home' | 'away';
+  delta?: number;
+}
+
+export class BadmintonEngine implements SportEngine<BadmintonMatchState, BadmintonEvent> {
+  sport: SportType = 'badminton';
+
+  initializeMatch(): BadmintonMatchState {
+    return {
+      sets: [{ home: 0, away: 0 }],
+      currentSet: 0,
+      homePoints: 0,
+      awayPoints: 0,
+      server: 'home',
+      isGamePoint: false,
+      isMatchPoint: false,
+    };
+  }
+
+  validateEvent(): ValidationResult {
+    return { valid: true };
+  }
+
+  processEvent(state: BadmintonMatchState, event: BadmintonEvent): BadmintonMatchState {
+    const bs: BadmintonMatchState = JSON.parse(JSON.stringify(state));
+    const delta = typeof event.delta === 'number' ? event.delta : 1;
+
+    if (event.type === 'swap_server') {
+      bs.server = bs.server === 'home' ? 'away' : 'home';
+    } else if (event.type === 'reset_set') {
+      bs.homePoints = 0;
+      bs.awayPoints = 0;
+      if (bs.sets[bs.currentSet]) {
+        bs.sets[bs.currentSet] = { home: 0, away: 0 };
+      }
+    } else {
+      const winner = event.winner || 'home';
+      if (winner === 'home') {
+        bs.homePoints = Math.max(0, bs.homePoints + delta);
+        if (delta > 0) bs.server = 'home';
+      } else {
+        bs.awayPoints = Math.max(0, bs.awayPoints + delta);
+        if (delta > 0) bs.server = 'away';
+      }
+    }
+
+    if (!bs.sets[bs.currentSet]) {
+      bs.sets[bs.currentSet] = { home: 0, away: 0 };
+    }
+    bs.sets[bs.currentSet].home = bs.homePoints;
+    bs.sets[bs.currentSet].away = bs.awayPoints;
+
+    if (
+      delta > 0 &&
+      (((bs.homePoints >= 21 || bs.awayPoints >= 21) &&
+        Math.abs(bs.homePoints - bs.awayPoints) >= 2) ||
+        bs.homePoints === 30 ||
+        bs.awayPoints === 30)
+    ) {
+      if (bs.currentSet < 2) {
+        bs.sets.push({ home: 0, away: 0 });
+        bs.currentSet += 1;
+        bs.homePoints = 0;
+        bs.awayPoints = 0;
+      }
+    }
+
+    bs.isGamePoint =
+      (bs.homePoints >= 20 || bs.awayPoints >= 20) &&
+      Math.abs(bs.homePoints - bs.awayPoints) >= 1;
+
+    return bs;
+  }
+}
+
+// 8. Table Tennis scoring engine implementation (ITTF 11-point win-by-2, 2-serve rotation, 1-serve at deuce)
+export interface TableTennisEvent {
+  type?: 'point' | 'swap_server' | 'reset_set';
+  winner?: 'home' | 'away';
+  delta?: number;
+}
+
+export class TableTennisEngine implements SportEngine<TableTennisMatchState, TableTennisEvent> {
+  sport: SportType = 'table_tennis';
+
+  initializeMatch(): TableTennisMatchState {
+    return {
+      sets: [{ home: 0, away: 0 }],
+      currentSet: 0,
+      homePoints: 0,
+      awayPoints: 0,
+      server: 'home',
+      servesInTurn: 0,
+      isGamePoint: false,
+      isMatchPoint: false,
+    };
+  }
+
+  validateEvent(): ValidationResult {
+    return { valid: true };
+  }
+
+  processEvent(state: TableTennisMatchState, event: TableTennisEvent): TableTennisMatchState {
+    const tts: TableTennisMatchState = JSON.parse(JSON.stringify(state));
+    const delta = typeof event.delta === 'number' ? event.delta : 1;
+
+    if (event.type === 'swap_server') {
+      tts.server = tts.server === 'home' ? 'away' : 'home';
+    } else if (event.type === 'reset_set') {
+      tts.homePoints = 0;
+      tts.awayPoints = 0;
+      if (tts.sets[tts.currentSet]) {
+        tts.sets[tts.currentSet] = { home: 0, away: 0 };
+      }
+    } else {
+      const winner = event.winner || 'home';
+      if (winner === 'home') {
+        tts.homePoints = Math.max(0, tts.homePoints + delta);
+      } else {
+        tts.awayPoints = Math.max(0, tts.awayPoints + delta);
+      }
+
+      if (!tts.sets[tts.currentSet]) {
+        tts.sets[tts.currentSet] = { home: 0, away: 0 };
+      }
+      tts.sets[tts.currentSet].home = tts.homePoints;
+      tts.sets[tts.currentSet].away = tts.awayPoints;
+
+      const totalPoints = tts.homePoints + tts.awayPoints;
+      if (tts.homePoints >= 10 && tts.awayPoints >= 10) {
+        tts.server = tts.server === 'home' ? 'away' : 'home';
+      } else if (totalPoints % 2 === 0 && delta > 0) {
+        tts.server = tts.server === 'home' ? 'away' : 'home';
+      }
+
+      if (
+        delta > 0 &&
+        (tts.homePoints >= 11 || tts.awayPoints >= 11) &&
+        Math.abs(tts.homePoints - tts.awayPoints) >= 2
+      ) {
+        tts.sets.push({ home: 0, away: 0 });
+        tts.currentSet += 1;
+        tts.homePoints = 0;
+        tts.awayPoints = 0;
+      }
+    }
+
+    tts.isGamePoint =
+      (tts.homePoints >= 10 || tts.awayPoints >= 10) &&
+      Math.abs(tts.homePoints - tts.awayPoints) >= 1;
+
+    return tts;
+  }
+}
+
+// 9. Volleyball scoring engine implementation (FIVB 25-point sets, 15-point 5th set, win-by-2)
+export interface VolleyballEvent {
+  type?: 'point' | 'timeout' | 'swap_server' | 'reset_set';
+  winner?: 'home' | 'away';
+  teamId?: 'home' | 'away';
+  delta?: number;
+}
+
+export class VolleyballEngine implements SportEngine<VolleyballMatchState, VolleyballEvent> {
+  sport: SportType = 'volleyball';
+
+  initializeMatch(): VolleyballMatchState {
+    return {
+      sets: [{ home: 0, away: 0 }],
+      currentSet: 0,
+      homeScore: 0,
+      awayScore: 0,
+      server: 'home',
+      homeTimeouts: 0,
+      awayTimeouts: 0,
+      isSetPoint: false,
+      isMatchPoint: false,
+    };
+  }
+
+  validateEvent(): ValidationResult {
+    return { valid: true };
+  }
+
+  processEvent(state: VolleyballMatchState, event: VolleyballEvent): VolleyballMatchState {
+    const vs: VolleyballMatchState = JSON.parse(JSON.stringify(state));
+    const delta = typeof event.delta === 'number' ? event.delta : 1;
+
+    if (event.type === 'timeout') {
+      if (event.teamId === 'home') vs.homeTimeouts = Math.min(2, vs.homeTimeouts + 1);
+      else vs.awayTimeouts = Math.min(2, vs.awayTimeouts + 1);
+    } else if (event.type === 'swap_server') {
+      vs.server = vs.server === 'home' ? 'away' : 'home';
+    } else if (event.type === 'reset_set') {
+      vs.homeScore = 0;
+      vs.awayScore = 0;
+      if (vs.sets[vs.currentSet]) {
+        vs.sets[vs.currentSet] = { home: 0, away: 0 };
+      }
+    } else {
+      const winner = event.winner || 'home';
+      if (winner === 'home') {
+        vs.homeScore = Math.max(0, vs.homeScore + delta);
+        if (delta > 0) vs.server = 'home';
+      } else {
+        vs.awayScore = Math.max(0, vs.awayScore + delta);
+        if (delta > 0) vs.server = 'away';
+      }
+    }
+
+    if (!vs.sets[vs.currentSet]) {
+      vs.sets[vs.currentSet] = { home: 0, away: 0 };
+    }
+    vs.sets[vs.currentSet].home = vs.homeScore;
+    vs.sets[vs.currentSet].away = vs.awayScore;
+
+    const pointCap = vs.currentSet === 4 ? 15 : 25;
+    if (
+      delta > 0 &&
+      (vs.homeScore >= pointCap || vs.awayScore >= pointCap) &&
+      Math.abs(vs.homeScore - vs.awayScore) >= 2
+    ) {
+      if (vs.currentSet < 4) {
+        vs.sets.push({ home: 0, away: 0 });
+        vs.currentSet += 1;
+        vs.homeScore = 0;
+        vs.awayScore = 0;
+      }
+    }
+
+    vs.isSetPoint =
+      (vs.homeScore >= pointCap - 1 || vs.awayScore >= pointCap - 1) &&
+      Math.abs(vs.homeScore - vs.awayScore) >= 1;
+
+    return vs;
   }
 }

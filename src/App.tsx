@@ -7,6 +7,7 @@ import { MultiSportConsole } from './pages/MultiSportConsole';
 import { OverlayControl } from './pages/OverlayControl';
 import { ObsSetupGuide } from './pages/ObsSetupGuide';
 import { OverlayView } from './pages/OverlayView';
+import { ArchitectureView } from './pages/ArchitectureView';
 import { useRealtimeSocket } from './hooks/useRealtimeSocket';
 
 export default function App() {
@@ -32,7 +33,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] antialiased selection:bg-cyan-500 selection:text-white">
       {/* Universal Top Bar */}
       <Navbar
         currentTab={currentTab}
@@ -82,7 +83,17 @@ export default function App() {
         )}
 
         {currentTab === 'obs-guide' && (
-          <ObsSetupGuide onBack={() => handleNavigate('dashboard')} />
+          <ObsSetupGuide
+            onBack={() => handleNavigate('dashboard')}
+            onNavigate={handleNavigate}
+          />
+        )}
+
+        {currentTab === 'architecture' && (
+          <ArchitectureView
+            onBack={() => handleNavigate('dashboard')}
+            onNavigate={handleNavigate}
+          />
         )}
       </main>
     </div>

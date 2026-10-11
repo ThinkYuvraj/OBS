@@ -1,6 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { BallEvent, CricketInnings, Match, WicketType } from '../types/sports';
-import { fetchMatch, postBallEvent, undoBallEvent, redoBallEvent } from '../services/api';
+import {
+  fetchMatch,
+  postBallEvent,
+  undoBallEvent,
+  redoBallEvent,
+  updateMatch,
+} from '../services/api';
+import { useRealtimeSocket } from '../hooks/useRealtimeSocket';
 import {
   ArrowLeft,
   RotateCcw,
@@ -10,7 +17,6 @@ import {
   AlertTriangle,
   History,
   Activity,
-  Layers,
   CheckCircle2,
 } from 'lucide-react';
 
@@ -29,6 +35,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
   const [selectedDismissedBatter, setSelectedDismissedBatter] = useState<string>('striker');
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [commentaryText, setCommentaryText] = useState('');
+  const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadMatch = useCallback(async () => {
     try {
@@ -45,62 +52,81 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
     loadMatch();
   }, [loadMatch]);
 
-  const showToast = (msg: string) => {
+  useRealtimeSocket({
+    matchId,
+    onMatchUpdate: (updated) => {
+      if (updated.id === matchId) {
+        setMatch(updated);
+      }
+    },
+  });
+
+  const showToast = useCallback((msg: string) => {
     setActionFeedback(msg);
-    setTimeout(() => setActionFeedback(null), 2000);
-  };
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => setActionFeedback(null), 2200);
+  }, []);
 
-  const handleRecordBall = async (ballData: Partial<BallEvent>) => {
-    if (!match || !match.cricketState) return;
-    try {
-      const res = await postBallEvent(matchId, ballData);
-      setMatch(res.match);
-      showToast(
-        ballData.isWicket
-          ? 'Wicket recorded!'
-          : ballData.runsOffBat === 4
-          ? 'FOUR!'
-          : ballData.runsOffBat === 6
-          ? 'SIX!'
-          : `${ballData.runsOffBat ?? 0} run(s) recorded`
-      );
-    } catch (err: any) {
-      alert(err.message || 'Failed to record ball');
-    }
-  };
+  const handleRecordBall = useCallback(
+    async (ballData: Partial<BallEvent>) => {
+      if (!match || !match.cricketState) return;
+      try {
+        const res = await postBallEvent(matchId, ballData);
+        setMatch(res.match);
+        showToast(
+          ballData.isWicket
+            ? 'Wicket recorded!'
+            : ballData.runsOffBat === 4
+            ? 'FOUR!'
+            : ballData.runsOffBat === 6
+            ? 'SIX!'
+            : `${ballData.runsOffBat ?? 0} run(s) recorded`
+        );
+      } catch (err: any) {
+        showToast(err.message || 'Failed to record ball');
+      }
+    },
+    [match, matchId, showToast]
+  );
 
-  const handleUndo = async () => {
+  const handleUndo = useCallback(async () => {
     if (!match) return;
     try {
       const res = await undoBallEvent(matchId);
       setMatch(res.match);
       showToast('Undid previous ball');
     } catch (err: any) {
-      alert(err.message || 'Nothing to undo');
+      showToast(err.message || 'Nothing to undo');
     }
-  };
+  }, [match, matchId, showToast]);
 
-  const handleRedo = async () => {
+  const handleRedo = useCallback(async () => {
     if (!match) return;
     try {
       const res = await redoBallEvent(matchId);
       setMatch(res.match);
       showToast('Redid ball');
     } catch (err: any) {
-      alert(err.message || 'Nothing to redo');
+      showToast(err.message || 'Nothing to redo');
     }
-  };
+  }, [match, matchId, showToast]);
 
-  const handleSwapStriker = () => {
+  const handleSwapStriker = async () => {
     if (!match || !match.cricketState) return;
-    const inn = match.cricketState.innings[match.cricketState.currentInningsIndex];
+    const nextCricketState = JSON.parse(JSON.stringify(match.cricketState));
+    const inn = nextCricketState.innings[nextCricketState.currentInningsIndex];
     if (!inn) return;
 
     const temp = inn.currentStrikerId;
     inn.currentStrikerId = inn.currentNonStrikerId;
     inn.currentNonStrikerId = temp;
-    setMatch({ ...match });
+    setMatch({ ...match, cricketState: nextCricketState });
     showToast('Swapped striker and non-striker');
+    try {
+      await updateMatch(match.id, { cricketState: nextCricketState });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleConfirmWicket = async () => {
@@ -131,10 +157,9 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
     setNextBatterName('');
   };
 
-  // Keyboard shortcut listener
+  // Stable Keyboard shortcut listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) {
         return;
       }
@@ -160,21 +185,21 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [match, handleRecordBall, handleUndo]);
+  }, [handleRecordBall, handleUndo]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 font-mono text-sm">
-        Loading match scoring console...
+      <div className="min-h-screen bg-[#070b14] flex items-center justify-center text-cyan-400 font-mono text-sm">
+        Loading MarketinGlu Cyan-Sky scoring console...
       </div>
     );
   }
 
   if (!match || !match.cricketState) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-[#070b14] flex flex-col items-center justify-center p-6 text-center">
         <p className="text-slate-300 mb-4">No cricket match state found.</p>
-        <button onClick={onBack} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">
+        <button onClick={onBack} className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-bold">
           Return to Dashboard
         </button>
       </div>
@@ -195,28 +220,31 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
   const currentBalls = currentOverSummary?.balls || [];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-16 font-sans">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-16 font-sans">
       {/* Top Header */}
-      <div className="bg-slate-900 border-b border-slate-800 px-6 py-3 flex items-center justify-between sticky top-0 z-30">
+      <div className="bg-gradient-to-r from-[#0c1424] via-[#090f1f] to-[#0c1424] border-b border-slate-800/80 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-300 transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 uppercase tracking-wider font-mono">
               <span>{match.tournament}</span>
               <span className="text-slate-600">•</span>
               <span className="text-slate-400">{match.venue}</span>
             </div>
-            <h1 className="text-lg font-bold text-white tracking-tight">{match.name}</h1>
+            <h1 className="text-lg font-black text-white tracking-tight font-['Space_Grotesk',sans-serif]">{match.name}</h1>
           </div>
         </div>
 
-        {/* Global Undo / Redo */}
-        <div className="flex items-center gap-2">
+        {/* Global Undo / Redo + Default Theme Pill */}
+        <div className="flex items-center gap-2.5">
+          <span className="hidden sm:inline-flex px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-400 text-[10px] font-mono font-bold text-cyan-300">
+            MarketinGlu Cyan-Sky • DEFAULT
+          </span>
           {actionFeedback && (
             <div className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-semibold rounded-lg animate-pulse">
               {actionFeedback}
@@ -224,7 +252,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
           )}
           <button
             onClick={handleUndo}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-300 rounded-lg cursor-pointer"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 rounded-xl cursor-pointer"
             title="Shortcut: U"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -232,7 +260,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
           </button>
           <button
             onClick={handleRedo}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-300 rounded-lg cursor-pointer"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 rounded-xl cursor-pointer"
           >
             <RotateCw className="w-3.5 h-3.5" />
             <span>Redo</span>
@@ -242,16 +270,16 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
 
       <div className="max-w-7xl mx-auto px-6 mt-6 space-y-6">
         {/* Main Situation Board */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 pb-6 border-b border-slate-800">
             {/* Score & Batting Team */}
             <div className="flex items-center gap-5">
               <div
                 className="w-3 h-16 rounded-full shrink-0"
-                style={{ backgroundColor: battingTeam.color || '#3b82f6' }}
+                style={{ backgroundColor: battingTeam.color || '#06b6d4' }}
               />
               <div>
-                <div className="text-xs font-extrabold uppercase tracking-widest text-slate-400">
+                <div className="text-xs font-extrabold uppercase tracking-widest text-cyan-400 font-mono">
                   {battingTeam.name} Batting • {innings.inningsNumber === 1 ? '1st Innings' : '2nd Innings'}
                 </div>
                 <div className="flex items-baseline gap-3 mt-0.5">
@@ -269,10 +297,10 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
             </div>
 
             {/* Run Rates & Target */}
-            <div className="flex items-center gap-6 bg-slate-950 p-4 rounded-xl border border-slate-800/80">
+            <div className="flex items-center gap-6 bg-[#060a14] p-4 rounded-xl border border-slate-800/80">
               <div>
                 <div className="text-[11px] font-mono text-slate-400 uppercase">Current Run Rate</div>
-                <div className="text-2xl font-black font-mono text-amber-400 tabular-nums">
+                <div className="text-2xl font-black font-mono text-cyan-400 tabular-nums">
                   {innings.currentRunRate.toFixed(2)}
                 </div>
               </div>
@@ -306,14 +334,14 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
           {/* Batsmen and Bowler Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
             {/* Batsmen Crease */}
-            <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800/80">
+            <div className="bg-[#060a14]/90 p-4 rounded-xl border border-slate-800/80">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
                   Batters At Crease
                 </span>
                 <button
                   onClick={handleSwapStriker}
-                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-slate-900 hover:bg-slate-800 border border-slate-800 text-blue-400 rounded transition-colors cursor-pointer"
+                  className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-[#0c1424] hover:bg-[#0d1a33] border border-slate-800 text-cyan-400 rounded-lg transition-colors cursor-pointer"
                 >
                   <Repeat className="w-3.5 h-3.5" />
                   <span>Swap Striker</span>
@@ -321,13 +349,13 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
               </div>
 
               {/* Striker */}
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-blue-950/20 border border-blue-500/30 mb-2">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-cyan-500/10 border border-cyan-500/30 mb-2">
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
                   <div>
                     <div className="font-extrabold text-sm text-white flex items-center gap-1.5">
                       <span>{striker?.name || 'Striker'}</span>
-                      <span className="text-amber-400 text-xs">*</span>
+                      <span className="text-cyan-400 text-xs">*</span>
                     </div>
                     <div className="text-xs font-mono text-slate-400">
                       4s: {striker?.fours || 0} | 6s: {striker?.sixes || 0} | SR:{' '}
@@ -346,7 +374,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
               </div>
 
               {/* Non-Striker */}
-              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-[#090f1f] border border-slate-800">
                 <div className="pl-4">
                   <div className="font-bold text-sm text-slate-300">
                     {nonStriker?.name || 'Non-Striker'}
@@ -368,10 +396,10 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
             </div>
 
             {/* Bowler Details */}
-            <div className="bg-slate-950/80 p-4 rounded-xl border border-slate-800/80 flex flex-col justify-between">
+            <div className="bg-[#060a14]/90 p-4 rounded-xl border border-slate-800/80 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
                     Current Bowler ({bowlingTeam.shortName})
                   </span>
                   <div className="text-xs font-mono text-slate-400">
@@ -379,7 +407,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                   </div>
                 </div>
 
-                <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
+                <div className="p-3 rounded-lg bg-[#090f1f] border border-slate-800 flex items-center justify-between">
                   <div>
                     <div className="text-base font-black text-white">{bowler?.name || 'Bowler'}</div>
                     <div className="text-xs font-mono text-slate-400 mt-0.5">
@@ -414,12 +442,12 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                           b.isWicket
                             ? 'bg-rose-600 text-white animate-pulse'
                             : b.runs === 4
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-cyan-500 text-white'
                             : b.runs === 6
                             ? 'bg-amber-500 text-slate-950 font-black'
                             : b.runs > 0
-                            ? 'bg-slate-700 text-white'
-                            : 'bg-slate-800 text-slate-400 border border-slate-700'
+                            ? 'bg-[#0c1424] text-white border border-slate-700'
+                            : 'bg-[#090f1f] text-slate-400 border border-slate-800'
                         }`}
                       >
                         {b.text}
@@ -433,13 +461,13 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
         </div>
 
         {/* Operator Controls: Large Buttons */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-bold text-blue-400 uppercase tracking-wider flex items-center gap-2">
+            <h2 className="text-sm font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
               <Activity className="w-4 h-4" />
               <span>Scoring Input Console (Single-Click / Keyboard Friendly)</span>
             </h2>
-            <div className="hidden md:flex items-center gap-2 text-xs text-slate-500 font-mono">
+            <div className="hidden md:flex items-center gap-2 text-xs text-slate-400 font-mono">
               <span>Keys: 0-6 = Runs</span>
               <span>•</span>
               <span>W = Wicket</span>
@@ -460,10 +488,10 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                 onClick={() => handleRecordBall({ runsOffBat: num })}
                 className={`h-16 rounded-xl font-mono text-2xl font-black transition-all shadow-md active:scale-95 flex flex-col items-center justify-center cursor-pointer ${
                   num === 4
-                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-cyan-500/20'
                     : num === 6
                     ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/20'
-                    : 'bg-slate-800 hover:bg-slate-700 text-white'
+                    : 'bg-[#060a14] hover:bg-[#0d1a33] border border-slate-800 text-white'
                 }`}
               >
                 <span>{num}</span>
@@ -479,7 +507,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
             {/* Wide */}
             <button
               onClick={() => handleRecordBall({ isWide: true, runsOffBat: 0 })}
-              className="h-13 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex flex-col items-center justify-center text-amber-400 font-bold transition-all active:scale-95 cursor-pointer"
+              className="h-13 bg-[#060a14] hover:bg-[#0d1a33] border border-slate-800 rounded-xl flex flex-col items-center justify-center text-amber-400 font-bold transition-all active:scale-95 cursor-pointer"
             >
               <span className="font-mono text-base">WD</span>
               <span className="text-[10px] text-slate-400">Wide (+1)</span>
@@ -488,7 +516,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
             {/* No Ball */}
             <button
               onClick={() => handleRecordBall({ isNoBall: true, runsOffBat: 0 })}
-              className="h-13 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex flex-col items-center justify-center text-amber-400 font-bold transition-all active:scale-95 cursor-pointer"
+              className="h-13 bg-[#060a14] hover:bg-[#0d1a33] border border-slate-800 rounded-xl flex flex-col items-center justify-center text-amber-400 font-bold transition-all active:scale-95 cursor-pointer"
             >
               <span className="font-mono text-base">NB</span>
               <span className="text-[10px] text-slate-400">No Ball (+1)</span>
@@ -497,7 +525,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
             {/* Bye */}
             <button
               onClick={() => handleRecordBall({ isBye: true, runsOffBat: 1 })}
-              className="h-13 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex flex-col items-center justify-center text-slate-200 font-bold transition-all active:scale-95 cursor-pointer"
+              className="h-13 bg-[#060a14] hover:bg-[#0d1a33] border border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-200 font-bold transition-all active:scale-95 cursor-pointer"
             >
               <span className="font-mono text-base">BYE</span>
               <span className="text-[10px] text-slate-400">1 Bye</span>
@@ -506,7 +534,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
             {/* Leg Bye */}
             <button
               onClick={() => handleRecordBall({ isLegBye: true, runsOffBat: 1 })}
-              className="h-13 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex flex-col items-center justify-center text-slate-200 font-bold transition-all active:scale-95 cursor-pointer"
+              className="h-13 bg-[#060a14] hover:bg-[#0d1a33] border border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-200 font-bold transition-all active:scale-95 cursor-pointer"
             >
               <span className="font-mono text-base">LB</span>
               <span className="text-[10px] text-slate-400">1 Leg Bye</span>
@@ -515,7 +543,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
             {/* Penalty 5 */}
             <button
               onClick={() => handleRecordBall({ penaltyRuns: 5, runsOffBat: 0 })}
-              className="h-13 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex flex-col items-center justify-center text-slate-200 font-bold transition-all active:scale-95 cursor-pointer"
+              className="h-13 bg-[#060a14] hover:bg-[#0d1a33] border border-slate-800 rounded-xl flex flex-col items-center justify-center text-slate-200 font-bold transition-all active:scale-95 cursor-pointer"
             >
               <span className="font-mono text-base">+5</span>
               <span className="text-[10px] text-slate-400">Penalty Runs</span>
@@ -535,7 +563,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
         {/* Fall of Wickets Timeline & Match Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Fall of Wickets */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-6">
             <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Layers className="w-4 h-4 text-rose-400" />
               <span>Fall of Wickets ({innings.fallOfWickets.length})</span>
@@ -550,7 +578,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                 {innings.fallOfWickets.map((fow) => (
                   <div
                     key={fow.wicketNumber}
-                    className="flex items-center justify-between p-2.5 bg-slate-950 rounded-lg border border-slate-800/80 text-xs"
+                    className="flex items-center justify-between p-2.5 bg-[#060a14] rounded-xl border border-slate-800/80 text-xs"
                   >
                     <div className="flex items-center gap-2">
                       <span className="w-5 h-5 rounded-full bg-rose-600/20 text-rose-400 font-mono font-bold flex items-center justify-center text-[10px]">
@@ -572,9 +600,9 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
           </div>
 
           {/* Over-by-Over Progression */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-6">
             <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <History className="w-4 h-4 text-blue-400" />
+              <History className="w-4 h-4 text-cyan-400" />
               <span>Over Progression History</span>
             </h3>
 
@@ -587,7 +615,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                 {innings.oversHistory.map((ov) => (
                   <div
                     key={ov.overNumber}
-                    className="flex items-center justify-between p-2.5 bg-slate-950 rounded-lg border border-slate-800/80 text-xs"
+                    className="flex items-center justify-between p-2.5 bg-[#060a14] rounded-xl border border-slate-800/80 text-xs"
                   >
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-slate-400">
@@ -601,10 +629,10 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                               b.isWicket
                                 ? 'bg-rose-600 text-white'
                                 : b.runs === 4
-                                ? 'bg-blue-600 text-white'
+                                ? 'bg-cyan-500 text-white'
                                 : b.runs === 6
                                 ? 'bg-amber-500 text-slate-950'
-                                : 'bg-slate-800 text-slate-300'
+                                : 'bg-[#0c1424] text-slate-300'
                             }`}
                           >
                             {b.text}
@@ -625,9 +653,9 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
 
       {/* Wicket Modal */}
       {wicketModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+        <div className="fixed inset-0 z-50 bg-[#070b14]/85 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-[#0c1424] to-[#060a14] border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2 font-['Space_Grotesk',sans-serif]">
               <span className="w-3 h-3 rounded-full bg-rose-500" />
               <span>Record Wicket Dismissal</span>
             </h3>
@@ -642,10 +670,10 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                   <button
                     type="button"
                     onClick={() => setSelectedDismissedBatter('striker')}
-                    className={`p-2.5 text-xs font-semibold rounded-lg border text-center transition-colors cursor-pointer ${
+                    className={`p-2.5 text-xs font-semibold rounded-xl border text-center transition-colors cursor-pointer ${
                       selectedDismissedBatter === 'striker'
                         ? 'bg-rose-600 border-rose-500 text-white'
-                        : 'bg-slate-950 border-slate-800 text-slate-400'
+                        : 'bg-[#060a14] border-slate-800 text-slate-400'
                     }`}
                   >
                     Striker: {striker?.name}
@@ -653,10 +681,10 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                   <button
                     type="button"
                     onClick={() => setSelectedDismissedBatter('nonStriker')}
-                    className={`p-2.5 text-xs font-semibold rounded-lg border text-center transition-colors cursor-pointer ${
+                    className={`p-2.5 text-xs font-semibold rounded-xl border text-center transition-colors cursor-pointer ${
                       selectedDismissedBatter === 'nonStriker'
                         ? 'bg-rose-600 border-rose-500 text-white'
-                        : 'bg-slate-950 border-slate-800 text-slate-400'
+                        : 'bg-[#060a14] border-slate-800 text-slate-400'
                     }`}
                   >
                     Non-Striker: {nonStriker?.name}
@@ -672,7 +700,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                 <select
                   value={wicketType}
                   onChange={(e) => setWicketType(e.target.value as WicketType)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white"
+                  className="w-full bg-[#060a14] border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
                 >
                   <option value="caught">Caught</option>
                   <option value="bowled">Bowled</option>
@@ -695,7 +723,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                     value={fielderName}
                     onChange={(e) => setFielderName(e.target.value)}
                     placeholder="e.g. Warner"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white"
+                    className="w-full bg-[#060a14] border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
                   />
                 </div>
               )}
@@ -710,7 +738,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
                   value={nextBatterName}
                   onChange={(e) => setNextBatterName(e.target.value)}
                   placeholder={`Batter #${innings.wickets + 3}`}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white"
+                  className="w-full bg-[#060a14] border border-slate-800 rounded-xl px-3 py-2 text-sm text-white"
                 />
               </div>
             </div>
@@ -719,14 +747,14 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
               <button
                 type="button"
                 onClick={() => setWicketModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-400 bg-slate-950 rounded-lg cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-slate-400 bg-[#060a14] border border-slate-800 rounded-xl cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleConfirmWicket}
-                className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg shadow-lg cursor-pointer"
+                className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-xl shadow-lg cursor-pointer"
               >
                 Confirm Wicket
               </button>

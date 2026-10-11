@@ -298,12 +298,7 @@ export interface TennisMatchState {
 
 export type OverlayTemplate = 'bottom_bar' | 'compact_bug' | 'full_panel' | 'ticker';
 
-export type OverlayTheme =
-  | 'sky_broadcast'
-  | 'dark_neon'
-  | 'crimson_pulse'
-  | 'gold_trophy'
-  | 'emerald_turf';
+export type OverlayTheme = 'sky_broadcast';
 
 export interface OverlayAlert {
   id: string;
@@ -324,6 +319,46 @@ export interface OverlayAlert {
   player?: string;
   timestamp: number;
   durationMs: number;
+}
+
+export type StreamCameraSourceType =
+  | 'stadium'
+  | 'youtube_live'
+  | 'twitch_live'
+  | 'webcam'
+  | 'custom_stream'
+  | 'dark'
+  | 'transparent';
+
+export type BroadcastPushPlatform =
+  | 'youtube_live'
+  | 'itv_broadcast'
+  | 'twitch_tv'
+  | 'facebook_live'
+  | 'custom_rtmp';
+
+export interface ProductionDestination {
+  id: string;
+  platform: BroadcastPushPlatform;
+  name: string;
+  rtmpUrl: string;
+  streamKey: string;
+  enabled: boolean;
+  status: 'idle' | 'connecting' | 'live';
+  bitrateKbps: number;
+  resolution: '1080p60' | '720p60' | '4K60';
+  startedAt?: number;
+}
+
+export interface StreamFeedConfig {
+  activeSource: StreamCameraSourceType;
+  youtubeUrl: string;
+  twitchChannel: string;
+  customStreamUrl: string;
+  webcamDeviceId?: string;
+  webcamAudioMuted: boolean;
+  embedInOverlay: boolean;
+  destinations: ProductionDestination[];
 }
 
 export interface OverlayConfig {
@@ -347,6 +382,7 @@ export interface OverlayConfig {
   animationsEnabled: boolean;
   animationDuration: number;
   activeAlert?: OverlayAlert | null;
+  streamFeed?: StreamFeedConfig;
 }
 
 export interface Match {

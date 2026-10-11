@@ -1,13 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Match } from '../types/sports';
 import {
   fetchMatch,
   fetchMatches,
+  postBadmintonEvent,
   postBaseballEvent,
   postBasketballEvent,
   postFieldHockeyEvent,
   postFootballEvent,
   postRugbyEvent,
+  postTableTennisEvent,
+  postTennisEvent,
+  postVolleyballEvent,
 } from '../services/api';
 import { useRealtimeSocket } from '../hooks/useRealtimeSocket';
 import {
@@ -16,26 +20,29 @@ import {
   Check,
   ExternalLink,
   Sliders,
-  Zap,
+  Keyboard,
   RotateCcw,
-  ShieldAlert,
-  Timer,
+  ArrowLeftRight,
+  Layers,
 } from 'lucide-react';
 import { FootballScoreBug } from '../components/overlay/FootballScoreBug';
 import { BasketballScoreBug } from '../components/overlay/BasketballScoreBug';
 import { RacquetVolleyScoreBug } from '../components/overlay/RacquetVolleyScoreBug';
 import { OutdoorSportsScoreBug } from '../components/overlay/OutdoorSportsScoreBug';
+import { BroadcastGameTimer } from '../components/console/BroadcastGameTimer';
 
 interface MultiSportConsoleProps {
   matchId: string;
   onBack: () => void;
   onOpenOverlayStudio?: (matchId: string) => void;
+  onOpenArchitecture?: () => void;
 }
 
 export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
   matchId,
   onBack,
   onOpenOverlayStudio,
+  onOpenArchitecture,
 }) => {
   const [activeId, setActiveId] = useState<string>(matchId);
   const [allMatches, setAllMatches] = useState<Match[]>([]);
@@ -43,18 +50,26 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
+  // Interactive Keyboard Hotkey Mode
+  const [keyboardEnabled, setKeyboardEnabled] = useState(true);
+  const [lastKeyPressed, setLastKeyPressed] = useState<string | null>(null);
+  const [activityLog, setActivityLog] = useState<string[]>([]);
+
   // Inline player / clock inputs
   const [playerNameInput, setPlayerNameInput] = useState('');
-  const [clockInput, setClockInput] = useState('02:14');
   const [minuteInput, setMinuteInput] = useState(78);
   const [extraTimeInput, setExtraTimeInput] = useState(4);
+
+  const pushActivity = useCallback((msg: string) => {
+    const time = new Date().toLocaleTimeString();
+    setActivityLog((prev) => [`[${time}] ${msg}`, ...prev.slice(0, 7)]);
+  }, []);
 
   const loadData = async (idToLoad: string) => {
     try {
       const [data, list] = await Promise.all([fetchMatch(idToLoad), fetchMatches()]);
       setMatch(data);
       setAllMatches(list.filter((m) => m.sport !== 'cricket'));
-      if (data.basketballState?.clock) setClockInput(data.basketballState.clock);
       if (data.footballState) {
         setMinuteInput(data.footballState.minute);
         setExtraTimeInput(data.footballState.extraTime);
@@ -83,10 +98,219 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
     },
   });
 
+  // --- Football Actions ---
+  const handleFootballAction = async (
+    type: 'goal' | 'yellow' | 'red' | 'corner' | 'shot' | 'foul' | 'clock',
+    teamId: 'home' | 'away',
+    customHalf?: string,
+    clockPayload?: {
+      minute: number;
+      clock: string;
+      extraTime: number;
+      half: string;
+      isTimerRunning: boolean;
+    }
+  ) => {
+    if (!match) return;
+    const defaultPlayer =
+      playerNameInput.trim() ||
+      (teamId === 'home' ? `${match.teamA.shortName} Player` : `${match.teamB.shortName} Player`);
+    const updated = await postFootballEvent(match.id, {
+      type,
+      teamId,
+      player: defaultPlayer,
+      minute: clockPayload ? clockPayload.minute : minuteInput,
+      clock: clockPayload?.clock,
+      extraTime: clockPayload ? clockPayload.extraTime : extraTimeInput,
+      half: clockPayload ? clockPayload.half : customHalf || match.footballState?.half,
+      isTimerRunning: clockPayload?.isTimerRunning,
+    });
+    setMatch(updated);
+    if (type !== 'clock') {
+      pushActivity(
+        `${type.toUpperCase()} recorded for ${
+          teamId === 'home' ? match.teamA.shortName : match.teamB.shortName
+        }`
+      );
+    }
+    if (type === 'goal') setPlayerNameInput('');
+  };
+
+  // --- Basketball Actions ---
+  const handleBasketballAction = async (payload: {
+    type: string;
+    teamId?: 'home' | 'away';
+    points?: number;
+    quarter?: 1 | 2 | 3 | 4 | 'OT';
+    clock?: string;
+    shotClock?: number;
+    isTimerRunning?: boolean;
+  }) => {
+    if (!match) return;
+    const updated = await postBasketballEvent(match.id, {
+      ...payload,
+      player:
+        playerNameInput.trim() ||
+        (payload.teamId === 'home' ? match.teamA.shortName : match.teamB.shortName),
+    });
+    setMatch(updated);
+    if (payload.type === 'score') {
+      pushActivity(
+        `${payload.teamId === 'home' ? match.teamA.shortName : match.teamB.shortName} ${
+          (payload.points || 0) > 0 ? `+${payload.points}` : payload.points
+        } pts`
+      );
+    }
+  };
+
+  // --- Racquet & Volleyball Actions (Badminton, Table Tennis, Volleyball, Tennis) ---
+  const handleRacquetPoint = async (
+    sport: string,
+    winner: 'home' | 'away',
+    extra?: { isAce?: boolean; type?: any; teamId?: 'home' | 'away'; delta?: number }
+  ) => {
+    if (!match) return;
+    try {
+      let updated: Match;
+      if (sport === 'badminton') {
+        updated = await postBadmintonEvent(match.id, { winner, ...extra });
+      } else if (sport === 'table_tennis') {
+        updated = await postTableTennisEvent(match.id, { winner, ...extra });
+      } else if (sport === 'tennis') {
+        updated = await postTennisEvent(match.id, { winner, isAce: extra?.isAce });
+      } else {
+        updated = await postVolleyballEvent(match.id, { winner, ...extra });
+      }
+      setMatch(updated);
+      const label =
+        extra?.type === 'swap_server'
+          ? 'Server swapped'
+          : extra?.type === 'reset_set'
+          ? 'Current set reset to 0-0'
+          : `${winner === 'home' ? match.teamA.shortName : match.teamB.shortName} ${
+              extra?.delta === -1 ? '-1 Pt Correction' : '+1 Point'
+            }`;
+      pushActivity(label);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // --- Field Hockey Actions ---
+  const handleFieldHockeyAction = async (
+    type: string,
+    teamId: 'home' | 'away',
+    quarter?: 1 | 2 | 3 | 4 | 'SO'
+  ) => {
+    if (!match) return;
+    const updated = await postFieldHockeyEvent(match.id, {
+      type,
+      teamId,
+      player: playerNameInput.trim() || undefined,
+      quarter: quarter || match.fieldHockeyState?.quarter,
+      minute: minuteInput,
+    });
+    setMatch(updated);
+    pushActivity(
+      `${type.replace('_', ' ').toUpperCase()} (${
+        teamId === 'home' ? match.teamA.shortName : match.teamB.shortName
+      })`
+    );
+  };
+
+  // --- Baseball Actions ---
+  const handleBaseballAction = async (
+    type: string,
+    extra?: { teamId?: 'home' | 'away'; base?: 'first' | 'second' | 'third' }
+  ) => {
+    if (!match) return;
+    const updated = await postBaseballEvent(match.id, {
+      type,
+      player: playerNameInput.trim() || undefined,
+      ...extra,
+    });
+    setMatch(updated);
+    pushActivity(`Baseball: ${type.toUpperCase()}`);
+  };
+
+  // --- Rugby Actions ---
+  const handleRugbyAction = async (type: string, teamId: 'home' | 'away', half?: string) => {
+    if (!match) return;
+    const updated = await postRugbyEvent(match.id, {
+      type,
+      teamId,
+      player: playerNameInput.trim() || undefined,
+      minute: minuteInput,
+      half: half || match.rugbyState?.half,
+    });
+    setMatch(updated);
+    pushActivity(`Rugby: ${type.toUpperCase()}`);
+  };
+
+  // --- Global Keyboard Hotkey Listener ---
+  useEffect(() => {
+    if (!keyboardEnabled || !match) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Do not intercept if user is typing in an input or textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      const key = e.key.toUpperCase();
+      setLastKeyPressed(key === 'ARROWLEFT' ? '←' : key === 'ARROWRIGHT' ? '→' : key);
+      setTimeout(() => setLastKeyPressed(null), 350);
+
+      const isRacquetOrVolley =
+        match.sport === 'table_tennis' ||
+        match.sport === 'volleyball' ||
+        match.sport === 'badminton' ||
+        match.sport === 'tennis';
+
+      if (isRacquetOrVolley) {
+        if (key === 'A' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          handleRacquetPoint(match.sport, 'home');
+        } else if (key === 'L' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          handleRacquetPoint(match.sport, 'away');
+        } else if (key === 'Z') {
+          e.preventDefault();
+          handleRacquetPoint(match.sport, 'home', { delta: -1 });
+        } else if (key === 'M') {
+          e.preventDefault();
+          handleRacquetPoint(match.sport, 'away', { delta: -1 });
+        } else if (key === 'S') {
+          e.preventDefault();
+          handleRacquetPoint(match.sport, 'home', { type: 'swap_server' });
+        } else if (key === 'R') {
+          e.preventDefault();
+          handleRacquetPoint(match.sport, 'home', { type: 'reset_set' });
+        }
+      } else if (match.sport === 'basketball') {
+        if (key === '1') handleBasketballAction({ type: 'score', teamId: 'home', points: 1 });
+        else if (key === '2') handleBasketballAction({ type: 'score', teamId: 'home', points: 2 });
+        else if (key === '3') handleBasketballAction({ type: 'score', teamId: 'home', points: 3 });
+        else if (key === '8') handleBasketballAction({ type: 'score', teamId: 'away', points: 1 });
+        else if (key === '9') handleBasketballAction({ type: 'score', teamId: 'away', points: 2 });
+        else if (key === '0') handleBasketballAction({ type: 'score', teamId: 'away', points: 3 });
+        else if (key === 'S') handleBasketballAction({ type: 'possession' });
+      } else if (match.sport === 'football') {
+        if (key === 'A') handleFootballAction('goal', 'home');
+        else if (key === 'L') handleFootballAction('goal', 'away');
+      } else if (match.sport === 'field_hockey') {
+        if (key === 'A') handleFieldHockeyAction('goal', 'home');
+        else if (key === 'L') handleFieldHockeyAction('goal', 'away');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [keyboardEnabled, match, playerNameInput, minuteInput, extraTimeInput]);
+
   if (loading || !match) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400 font-mono text-sm">
-        Loading broadcast scorer console...
+      <div className="min-h-screen bg-[#070b14] flex items-center justify-center text-cyan-400 font-mono text-sm">
+        Loading MarketinGlu Cyan-Sky broadcast scorer console...
       </div>
     );
   }
@@ -99,119 +323,15 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // --- Football Actions ---
-  const handleFootballAction = async (
-    type: 'goal' | 'yellow' | 'red' | 'corner' | 'shot' | 'foul' | 'clock',
-    teamId: 'home' | 'away',
-    customHalf?: string
-  ) => {
-    const defaultPlayer =
-      playerNameInput.trim() ||
-      (teamId === 'home' ? `${match.teamA.shortName} Player` : `${match.teamB.shortName} Player`);
-    const updated = await postFootballEvent(match.id, {
-      type,
-      teamId,
-      player: defaultPlayer,
-      minute: minuteInput,
-      extraTime: extraTimeInput,
-      half: customHalf || match.footballState?.half,
-    });
-    setMatch(updated);
-    if (type === 'goal') setPlayerNameInput('');
-  };
-
-  // --- Basketball Actions ---
-  const handleBasketballAction = async (payload: {
-    type: string;
-    teamId?: 'home' | 'away';
-    points?: number;
-    quarter?: 1 | 2 | 3 | 4 | 'OT';
-    clock?: string;
-    shotClock?: number;
-  }) => {
-    const updated = await postBasketballEvent(match.id, {
-      ...payload,
-      player:
-        playerNameInput.trim() ||
-        (payload.teamId === 'home' ? match.teamA.shortName : match.teamB.shortName),
-    });
-    setMatch(updated);
-  };
-
-  // --- Racquet & Volleyball Actions (Badminton, Table Tennis, Volleyball, Tennis) ---
-  const handleRacquetPoint = async (
-    sport: string,
-    winner: 'home' | 'away',
-    extra?: { isAce?: boolean; type?: string; teamId?: string }
-  ) => {
-    const endpoint =
-      sport === 'badminton'
-        ? `/api/matches/${match.id}/badminton/point`
-        : sport === 'table_tennis'
-        ? `/api/matches/${match.id}/table-tennis/point`
-        : sport === 'tennis'
-        ? `/api/matches/${match.id}/tennis/point`
-        : `/api/matches/${match.id}/volleyball/point`;
-
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ winner, ...extra }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setMatch(data.match);
-    }
-  };
-
-  // --- Field Hockey Actions ---
-  const handleFieldHockeyAction = async (
-    type: string,
-    teamId: 'home' | 'away',
-    quarter?: 1 | 2 | 3 | 4 | 'SO'
-  ) => {
-    const updated = await postFieldHockeyEvent(match.id, {
-      type,
-      teamId,
-      player: playerNameInput.trim() || undefined,
-      quarter: quarter || match.fieldHockeyState?.quarter,
-      minute: minuteInput,
-    });
-    setMatch(updated);
-  };
-
-  // --- Baseball Actions ---
-  const handleBaseballAction = async (
-    type: string,
-    extra?: { teamId?: 'home' | 'away'; base?: 'first' | 'second' | 'third' }
-  ) => {
-    const updated = await postBaseballEvent(match.id, {
-      type,
-      player: playerNameInput.trim() || undefined,
-      ...extra,
-    });
-    setMatch(updated);
-  };
-
-  // --- Rugby Actions ---
-  const handleRugbyAction = async (type: string, teamId: 'home' | 'away', half?: string) => {
-    const updated = await postRugbyEvent(match.id, {
-      type,
-      teamId,
-      player: playerNameInput.trim() || undefined,
-      minute: minuteInput,
-      half: half || match.rugbyState?.half,
-    });
-    setMatch(updated);
-  };
-
   // Compute main headline score for top console card
   let mainScoreDisplay = '0 - 0';
   let subStatusDisplay = 'LIVE BROADCAST FEED';
 
   if (match.sport === 'football' && match.footballState) {
     mainScoreDisplay = `${match.footballState.homeScore} - ${match.footballState.awayScore}`;
-    subStatusDisplay = `${match.footballState.half.toUpperCase()} HALF • ${match.footballState.minute}' (+${match.footballState.extraTime})`;
+    subStatusDisplay = `${match.footballState.half.toUpperCase()} HALF • ${
+      match.footballState.clock || `${match.footballState.minute}:00`
+    } (+${match.footballState.extraTime})`;
   } else if (match.sport === 'basketball' && match.basketballState) {
     mainScoreDisplay = `${match.basketballState.homeScore} - ${match.basketballState.awayScore}`;
     subStatusDisplay = `Q${match.basketballState.quarter} • ${match.basketballState.clock} • SHOT CLOCK: ${match.basketballState.shotClock}s`;
@@ -240,26 +360,38 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
     subStatusDisplay = `${match.rugbyState.half.toUpperCase()} HALF • ${match.rugbyState.minute}' • TRIES: ${match.rugbyState.homeTries}-${match.rugbyState.awayTries}`;
   }
 
+  // Extract Sets Array for Table Tennis, Volleyball, Badminton, Tennis
+  const activeSets =
+    match.sport === 'table_tennis'
+      ? match.tableTennisState?.sets || []
+      : match.sport === 'volleyball'
+      ? match.volleyballState?.sets || []
+      : match.sport === 'badminton'
+      ? match.badmintonState?.sets || []
+      : match.sport === 'tennis'
+      ? match.tennisState?.sets || []
+      : [];
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 pb-16">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-16">
       {/* Top Studio Header */}
-      <div className="bg-slate-900 border-b border-slate-800 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#0c1424] via-[#090f1f] to-[#0c1424] border-b border-slate-800/80 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-lg bg-slate-950 border border-slate-800 hover:bg-slate-800 text-slate-300 transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 transition-colors cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <div className="text-[11px] font-extrabold text-blue-400 uppercase tracking-wider font-mono">
-              {match.sport.replace('_', ' ').toUpperCase()} PRODUCTION SCORER CONSOLE
+            <div className="text-[11px] font-extrabold text-cyan-400 uppercase tracking-wider font-mono">
+              {match.sport.replace('_', ' ').toUpperCase()} • MARKETINGLU CYAN-SKY DEFAULT
             </div>
-            <h1 className="text-lg font-bold text-white">{match.name}</h1>
+            <h1 className="text-lg font-black text-white font-['Space_Grotesk',sans-serif]">{match.name}</h1>
           </div>
         </div>
 
-        {/* Match Selector + OBS Copy Controls */}
+        {/* Quick Sport Switcher Bar + OBS Copy Controls */}
         <div className="flex flex-wrap items-center gap-2.5">
           {allMatches.length > 1 && (
             <select
@@ -268,7 +400,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                 setActiveId(e.target.value);
                 loadData(e.target.value);
               }}
-              className="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 font-semibold focus:outline-none focus:border-blue-500"
+              className="bg-[#060a14] border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-200 font-semibold focus:outline-none focus:border-cyan-400"
             >
               {allMatches.map((m) => (
                 <option key={m.id} value={m.id}>
@@ -278,19 +410,29 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
             </select>
           )}
 
+          {onOpenArchitecture && (
+            <button
+              onClick={onOpenArchitecture}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-200 rounded-xl transition-colors cursor-pointer"
+            >
+              <Layers className="w-3.5 h-3.5 text-amber-400" />
+              <span>3-Tier Architecture</span>
+            </button>
+          )}
+
           {onOpenOverlayStudio && (
             <button
               onClick={() => onOpenOverlayStudio(match.id)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-200 rounded-xl transition-colors cursor-pointer"
             >
-              <Sliders className="w-3.5 h-3.5" />
+              <Sliders className="w-3.5 h-3.5 text-cyan-400" />
               <span>Overlay Studio</span>
             </button>
           )}
 
           <button
             onClick={handleCopyUrl}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl transition-colors cursor-pointer shadow-md shadow-cyan-500/20"
           >
             {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             <span>{copied ? 'Copied OBS URL' : 'Copy OBS URL'}</span>
@@ -300,7 +442,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
             href={obsUrl}
             target="_blank"
             rel="noreferrer"
-            className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg"
+            className="p-2 bg-[#0c1424] border border-slate-800 hover:border-cyan-500/40 text-cyan-300 rounded-xl"
             title="Open Live Broadcast Overlay"
           >
             <ExternalLink className="w-4 h-4" />
@@ -309,17 +451,58 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
       </div>
 
       <div className="max-w-6xl mx-auto px-6 mt-6 space-y-6">
+        {/* Fast Sport Channel Pills (Instant 1-Click Switch between Table Tennis, Volleyball, Badminton, Basketball, Football, Tennis, Field Hockey) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#090f1f] border border-slate-800/80 rounded-xl p-2.5">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {allMatches.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => {
+                  setActiveId(m.id);
+                  loadData(m.id);
+                }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  m.id === activeId
+                    ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-md shadow-cyan-500/20'
+                    : 'bg-[#060a14] text-slate-400 hover:text-white border border-slate-800/80'
+                }`}
+              >
+                {m.sport.replace('_', ' ').toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          {/* Keyboard Hotkeys Active Toggle */}
+          <button
+            type="button"
+            onClick={() => setKeyboardEnabled((v) => !v)}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-bold border cursor-pointer transition-colors ${
+              keyboardEnabled
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400'
+                : 'bg-[#060a14] border-slate-800 text-slate-400'
+            }`}
+          >
+            <Keyboard className="w-3.5 h-3.5" />
+            <span>KEYBOARD HOTKEYS: {keyboardEnabled ? 'ACTIVE' : 'OFF'}</span>
+            {lastKeyPressed && (
+              <span className="px-1.5 py-0.2 rounded bg-cyan-400 text-slate-950 font-black">
+                [{lastKeyPressed}]
+              </span>
+            )}
+          </button>
+        </div>
+
         {/* High-Contrast Scoreboard & Live Bug Preview */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left 7 Cols: Master Score & Player Attribution */}
-          <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-6 flex flex-col justify-between">
+          <div className="lg:col-span-7 bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
             <div className="flex items-center justify-between">
               {/* Team A */}
               <div className="flex-1 text-center">
                 <div className="inline-flex items-center gap-2">
                   <span
                     className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: match.teamA.color || '#2563EB' }}
+                    style={{ backgroundColor: match.teamA.color || '#06b6d4' }}
                   />
                   <span className="text-lg font-extrabold text-white">{match.teamA.name}</span>
                 </div>
@@ -328,10 +511,10 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
 
               {/* Center Score */}
               <div className="px-6 text-center">
-                <div className="text-4xl font-black font-mono tabular-nums text-white tracking-tight">
+                <div className="text-5xl font-black font-mono tabular-nums text-white tracking-tight">
                   {mainScoreDisplay}
                 </div>
-                <div className="text-[11px] text-amber-400 font-mono font-bold mt-1.5 uppercase tracking-wider">
+                <div className="text-[11px] text-cyan-400 font-mono font-bold mt-1.5 uppercase tracking-wider">
                   {subStatusDisplay}
                 </div>
               </div>
@@ -359,18 +542,18 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                 value={playerNameInput}
                 onChange={(e) => setPlayerNameInput(e.target.value)}
                 placeholder="Enter player name for broadcast graphic alert (e.g. LeBron James, K. Mbappé)..."
-                className="flex-1 min-w-[220px] bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                className="flex-1 min-w-[220px] bg-[#060a14] border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
               />
             </div>
           </div>
 
           {/* Right 5 Cols: Real-Time Broadcast Graphic Monitor */}
-          <div className="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between overflow-hidden">
+          <div className="lg:col-span-5 bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-4 flex flex-col justify-between overflow-hidden shadow-xl">
             <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-2">
-              <span>LIVE OBS GRAPHIC MONITOR</span>
+              <span className="text-cyan-400 font-bold">LIVE OBS GRAPHIC MONITOR</span>
               <span className="text-emerald-400 font-bold">ON AIR</span>
             </div>
-            <div className="bg-slate-950 border border-slate-800/90 rounded-lg p-4 flex items-center justify-center overflow-x-auto min-h-[120px]">
+            <div className="bg-[#060a14] border border-slate-800/90 rounded-xl p-4 flex items-center justify-center overflow-x-auto min-h-[120px]">
               {match.sport === 'football' && match.footballState && (
                 <FootballScoreBug
                   teamA={match.teamA}
@@ -410,13 +593,31 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
           </div>
         </div>
 
+        {/* ==================== CONFIGURABLE COUNTDOWN / GAME TIMER (BASKETBALL & FOOTBALL) ==================== */}
+        {(match.sport === 'basketball' || match.sport === 'football') && (
+          <BroadcastGameTimer
+            match={match}
+            onSyncBasketballClock={async (payload) => {
+              await handleBasketballAction({
+                type: payload.quarter ? 'quarter' : 'clock',
+                clock: payload.clock,
+                shotClock: payload.shotClock,
+                quarter: payload.quarter,
+                isTimerRunning: payload.isTimerRunning,
+              });
+            }}
+            onSyncFootballClock={async (payload) => {
+              await handleFootballAction('clock', 'home', payload.half, payload);
+            }}
+          />
+        )}
+
         {/* ==================== 1. BASKETBALL SCORING DECK ==================== */}
         {match.sport === 'basketball' && match.basketballState && (
           <div className="space-y-6">
-            {/* Team Scoring Decks */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Home Team Deck */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <span
@@ -435,25 +636,28 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                     onClick={() =>
                       handleBasketballAction({ type: 'score', teamId: 'home', points: 1 })
                     }
-                    className="py-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-black text-white text-lg cursor-pointer transition-colors"
+                    className="py-4 rounded-xl bg-[#060a14] hover:bg-[#0d1a33] border border-slate-800 font-black text-white text-lg cursor-pointer transition-colors flex flex-col items-center"
                   >
-                    +1 FT
+                    <span>+1 FT</span>
+                    <span className="text-[10px] font-mono text-slate-400 mt-0.5">Key [1]</span>
                   </button>
                   <button
                     onClick={() =>
                       handleBasketballAction({ type: 'score', teamId: 'home', points: 2 })
                     }
-                    className="py-4 rounded-xl bg-blue-600 hover:bg-blue-500 font-black text-white text-lg cursor-pointer transition-colors"
+                    className="py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-black text-white text-lg cursor-pointer transition-colors flex flex-col items-center"
                   >
-                    +2 FG
+                    <span>+2 FG</span>
+                    <span className="text-[10px] font-mono text-cyan-100 mt-0.5">Key [2]</span>
                   </button>
                   <button
                     onClick={() =>
                       handleBasketballAction({ type: 'score', teamId: 'home', points: 3 })
                     }
-                    className="py-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-lg cursor-pointer transition-colors"
+                    className="py-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-lg cursor-pointer transition-colors flex flex-col items-center"
                   >
-                    +3 3PT
+                    <span>+3 3PT</span>
+                    <span className="text-[10px] font-mono text-slate-900 mt-0.5">Key [3]</span>
                   </button>
                 </div>
 
@@ -466,7 +670,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                   </button>
                   <button
                     onClick={() => handleBasketballAction({ type: 'timeout', teamId: 'home' })}
-                    className="py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs hover:bg-slate-700 cursor-pointer"
+                    className="py-2 rounded-lg bg-[#060a14] border border-slate-800 text-slate-300 font-bold text-xs hover:border-cyan-500/40 cursor-pointer"
                   >
                     Call Timeout
                   </button>
@@ -474,7 +678,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                     onClick={() =>
                       handleBasketballAction({ type: 'score', teamId: 'home', points: -1 })
                     }
-                    className="py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 font-bold text-xs hover:text-white cursor-pointer"
+                    className="py-2 rounded-lg bg-[#060a14] border border-slate-800 text-slate-400 font-bold text-xs hover:text-white cursor-pointer"
                   >
                     -1 Pt Fix
                   </button>
@@ -482,7 +686,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
               </div>
 
               {/* Away Team Deck */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <div className="flex items-center gap-2">
                     <span
@@ -501,25 +705,28 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                     onClick={() =>
                       handleBasketballAction({ type: 'score', teamId: 'away', points: 1 })
                     }
-                    className="py-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 font-black text-white text-lg cursor-pointer transition-colors"
+                    className="py-4 rounded-xl bg-[#060a14] hover:bg-[#0d1a33] border border-slate-800 font-black text-white text-lg cursor-pointer transition-colors flex flex-col items-center"
                   >
-                    +1 FT
+                    <span>+1 FT</span>
+                    <span className="text-[10px] font-mono text-slate-400 mt-0.5">Key [8]</span>
                   </button>
                   <button
                     onClick={() =>
                       handleBasketballAction({ type: 'score', teamId: 'away', points: 2 })
                     }
-                    className="py-4 rounded-xl bg-blue-600 hover:bg-blue-500 font-black text-white text-lg cursor-pointer transition-colors"
+                    className="py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-black text-white text-lg cursor-pointer transition-colors flex flex-col items-center"
                   >
-                    +2 FG
+                    <span>+2 FG</span>
+                    <span className="text-[10px] font-mono text-cyan-100 mt-0.5">Key [9]</span>
                   </button>
                   <button
                     onClick={() =>
                       handleBasketballAction({ type: 'score', teamId: 'away', points: 3 })
                     }
-                    className="py-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-lg cursor-pointer transition-colors"
+                    className="py-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-lg cursor-pointer transition-colors flex flex-col items-center"
                   >
-                    +3 3PT
+                    <span>+3 3PT</span>
+                    <span className="text-[10px] font-mono text-slate-900 mt-0.5">Key [0]</span>
                   </button>
                 </div>
 
@@ -532,7 +739,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                   </button>
                   <button
                     onClick={() => handleBasketballAction({ type: 'timeout', teamId: 'away' })}
-                    className="py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs hover:bg-slate-700 cursor-pointer"
+                    className="py-2 rounded-lg bg-[#060a14] border border-slate-800 text-slate-300 font-bold text-xs hover:border-cyan-500/40 cursor-pointer"
                   >
                     Call Timeout
                   </button>
@@ -540,71 +747,11 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                     onClick={() =>
                       handleBasketballAction({ type: 'score', teamId: 'away', points: -1 })
                     }
-                    className="py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 font-bold text-xs hover:text-white cursor-pointer"
+                    className="py-2 rounded-lg bg-[#060a14] border border-slate-800 text-slate-400 font-bold text-xs hover:text-white cursor-pointer"
                   >
                     -1 Pt Fix
                   </button>
                 </div>
-              </div>
-            </div>
-
-            {/* Quarter, Shot Clock & Possession Control Strip */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
-              {/* Quarter Buttons */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 uppercase mr-1">Quarter:</span>
-                {([1, 2, 3, 4, 'OT'] as const).map((q) => (
-                  <button
-                    key={String(q)}
-                    onClick={() => handleBasketballAction({ type: 'quarter', quarter: q })}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold cursor-pointer ${
-                      match.basketballState?.quarter === q
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {q === 'OT' ? 'OT' : `Q${q}`}
-                  </button>
-                ))}
-              </div>
-
-              {/* Shot Clock Reset & Possession */}
-              <div className="flex flex-wrap items-center gap-2.5">
-                <button
-                  onClick={() => handleBasketballAction({ type: 'shot_clock', shotClock: 24 })}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold hover:bg-amber-500/30 cursor-pointer"
-                >
-                  Reset 24s
-                </button>
-                <button
-                  onClick={() => handleBasketballAction({ type: 'shot_clock', shotClock: 14 })}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold hover:bg-amber-500/30 cursor-pointer"
-                >
-                  Reset 14s
-                </button>
-                <button
-                  onClick={() => handleBasketballAction({ type: 'possession' })}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
-                >
-                  Swap Possession Arrow
-                </button>
-              </div>
-
-              {/* Clock Update */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={clockInput}
-                  onChange={(e) => setClockInput(e.target.value)}
-                  className="w-20 bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-center text-white"
-                  placeholder="08:42"
-                />
-                <button
-                  onClick={() => handleBasketballAction({ type: 'clock', clock: clockInput })}
-                  className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold cursor-pointer"
-                >
-                  Set Clock
-                </button>
               </div>
             </div>
           </div>
@@ -615,7 +762,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Home Team Football Controls */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <span className="font-bold text-base text-white">{match.teamA.name} (Home)</span>
                   <span className="font-mono text-xs text-slate-400">
@@ -624,9 +771,10 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                 </div>
                 <button
                   onClick={() => handleFootballAction('goal', 'home')}
-                  className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-black text-white text-lg shadow-lg cursor-pointer transition-colors"
+                  className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-black text-white text-lg shadow-lg cursor-pointer transition-colors flex flex-col items-center"
                 >
-                  + GOAL ({match.teamA.shortName})
+                  <span>+ GOAL ({match.teamA.shortName})</span>
+                  <span className="text-[10px] font-mono text-emerald-200">Hotkey [A]</span>
                 </button>
                 <div className="grid grid-cols-3 gap-2.5">
                   <button
@@ -643,7 +791,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                   </button>
                   <button
                     onClick={() => handleFootballAction('corner', 'home')}
-                    className="py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs hover:bg-slate-700 cursor-pointer"
+                    className="py-2.5 rounded-lg bg-[#060a14] border border-slate-800 text-slate-200 font-bold text-xs hover:border-cyan-500/40 cursor-pointer"
                   >
                     +1 Corner
                   </button>
@@ -651,7 +799,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
               </div>
 
               {/* Away Team Football Controls */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <span className="font-bold text-base text-white">{match.teamB.name} (Away)</span>
                   <span className="font-mono text-xs text-slate-400">
@@ -660,9 +808,10 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                 </div>
                 <button
                   onClick={() => handleFootballAction('goal', 'away')}
-                  className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 font-black text-white text-lg shadow-lg cursor-pointer transition-colors"
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-black text-white text-lg shadow-lg cursor-pointer transition-colors flex flex-col items-center"
                 >
-                  + GOAL ({match.teamB.shortName})
+                  <span>+ GOAL ({match.teamB.shortName})</span>
+                  <span className="text-[10px] font-mono text-cyan-100">Hotkey [L]</span>
                 </button>
                 <div className="grid grid-cols-3 gap-2.5">
                   <button
@@ -679,128 +828,153 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                   </button>
                   <button
                     onClick={() => handleFootballAction('corner', 'away')}
-                    className="py-2.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs hover:bg-slate-700 cursor-pointer"
+                    className="py-2.5 rounded-lg bg-[#060a14] border border-slate-800 text-slate-200 font-bold text-xs hover:border-cyan-500/40 cursor-pointer"
                   >
                     +1 Corner
                   </button>
                 </div>
               </div>
             </div>
-
-            {/* Match Clock & Half Controls */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 uppercase">Period:</span>
-                {(['1st', '2nd', 'extra_1', 'penalties', 'full_time'] as const).map((h) => (
-                  <button
-                    key={h}
-                    onClick={() => handleFootballAction('clock', 'home', h)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold uppercase cursor-pointer ${
-                      match.footballState?.half === h
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {h.replace('_', ' ')}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-slate-400">Minute:</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={130}
-                    value={minuteInput}
-                    onChange={(e) => setMinuteInput(Number(e.target.value))}
-                    className="w-16 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-white text-center"
-                  />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-slate-400">Added (+):</span>
-                  <input
-                    type="number"
-                    min={0}
-                    max={20}
-                    value={extraTimeInput}
-                    onChange={(e) => setExtraTimeInput(Number(e.target.value))}
-                    className="w-14 bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs font-mono text-white text-center"
-                  />
-                </div>
-                <button
-                  onClick={() => handleFootballAction('clock', 'home')}
-                  className="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold cursor-pointer"
-                >
-                  Update Clock
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
-        {/* ==================== 3. BADMINTON, TABLE TENNIS, VOLLEYBALL & TENNIS DECK ==================== */}
+        {/* ==================== 3. TABLE TENNIS, VOLLEYBALL, BADMINTON & TENNIS INTERACTIVE KEYBOARD DECK ==================== */}
         {(match.sport === 'badminton' ||
           match.sport === 'table_tennis' ||
           match.sport === 'volleyball' ||
           match.sport === 'tennis') && (
           <div className="space-y-6">
+            {/* Primary Tactile Rally Point Buttons */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <button
-                onClick={() => handleRacquetPoint(match.sport, 'home')}
-                className="py-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-black text-white text-2xl shadow-lg cursor-pointer flex flex-col items-center justify-center gap-1.5 transition-colors"
-              >
-                <span>+ Point {match.teamA.shortName}</span>
-                <span className="text-xs font-semibold opacity-90">{match.teamA.name}</span>
-              </button>
+              <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+                <button
+                  onClick={() => handleRacquetPoint(match.sport, 'home')}
+                  className="w-full py-8 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-black text-white text-2xl shadow-lg cursor-pointer flex flex-col items-center justify-center gap-1.5 transition-colors"
+                >
+                  <span>+1 Point {match.teamA.shortName}</span>
+                  <span className="text-xs font-semibold opacity-90">{match.teamA.name}</span>
+                  <span className="mt-1 px-2.5 py-0.5 rounded bg-slate-950/40 text-[11px] font-mono text-emerald-200">
+                    Press [A] or [← Left Arrow]
+                  </span>
+                </button>
 
-              <button
-                onClick={() => handleRacquetPoint(match.sport, 'away')}
-                className="py-10 rounded-xl bg-blue-600 hover:bg-blue-500 font-black text-white text-2xl shadow-lg cursor-pointer flex flex-col items-center justify-center gap-1.5 transition-colors"
-              >
-                <span>+ Point {match.teamB.shortName}</span>
-                <span className="text-xs font-semibold opacity-90">{match.teamB.name}</span>
-              </button>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    onClick={() => handleRacquetPoint(match.sport, 'home', { delta: -1 })}
+                    className="py-2.5 rounded-xl bg-[#060a14] border border-slate-800 text-slate-300 hover:text-white font-mono text-xs font-bold cursor-pointer"
+                  >
+                    -1 Pt Correction [Z]
+                  </button>
+                  {match.sport === 'tennis' ? (
+                    <button
+                      onClick={() => handleRacquetPoint('tennis', 'home', { isAce: true })}
+                      className="py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs hover:bg-amber-500/30 cursor-pointer"
+                    >
+                      ⚡ Service Ace
+                    </button>
+                  ) : match.sport === 'volleyball' ? (
+                    <button
+                      onClick={() =>
+                        handleRacquetPoint('volleyball', 'home', { type: 'timeout', teamId: 'home' })
+                      }
+                      className="py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs hover:bg-amber-500/30 cursor-pointer"
+                    >
+                      Timeout ({match.volleyballState?.homeTimeouts ?? 0}/2)
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleRacquetPoint(match.sport, 'home', { type: 'swap_server' })}
+                      className="py-2.5 rounded-xl bg-[#060a14] border border-slate-800 text-slate-200 font-bold text-xs hover:border-cyan-500/40 cursor-pointer"
+                    >
+                      Set Server [S]
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 space-y-4">
+                <button
+                  onClick={() => handleRacquetPoint(match.sport, 'away')}
+                  className="w-full py-8 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-black text-white text-2xl shadow-lg cursor-pointer flex flex-col items-center justify-center gap-1.5 transition-colors"
+                >
+                  <span>+1 Point {match.teamB.shortName}</span>
+                  <span className="text-xs font-semibold opacity-90">{match.teamB.name}</span>
+                  <span className="mt-1 px-2.5 py-0.5 rounded bg-slate-950/40 text-[11px] font-mono text-cyan-100">
+                    Press [L] or [→ Right Arrow]
+                  </span>
+                </button>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    onClick={() => handleRacquetPoint(match.sport, 'away', { delta: -1 })}
+                    className="py-2.5 rounded-xl bg-[#060a14] border border-slate-800 text-slate-300 hover:text-white font-mono text-xs font-bold cursor-pointer"
+                  >
+                    -1 Pt Correction [M]
+                  </button>
+                  {match.sport === 'tennis' ? (
+                    <button
+                      onClick={() => handleRacquetPoint('tennis', 'away', { isAce: true })}
+                      className="py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs hover:bg-amber-500/30 cursor-pointer"
+                    >
+                      ⚡ Service Ace
+                    </button>
+                  ) : match.sport === 'volleyball' ? (
+                    <button
+                      onClick={() =>
+                        handleRacquetPoint('volleyball', 'away', { type: 'timeout', teamId: 'away' })
+                      }
+                      className="py-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs hover:bg-amber-500/30 cursor-pointer"
+                    >
+                      Timeout ({match.volleyballState?.awayTimeouts ?? 0}/2)
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleRacquetPoint(match.sport, 'away', { type: 'swap_server' })}
+                      className="py-2.5 rounded-xl bg-[#060a14] border border-slate-800 text-slate-200 font-bold text-xs hover:border-cyan-500/40 cursor-pointer"
+                    >
+                      Set Server [S]
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {match.sport === 'tennis' && (
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => handleRacquetPoint('tennis', 'home', { isAce: true })}
-                  className="py-3 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 cursor-pointer"
-                >
-                  ⚡ Service Ace + Point ({match.teamA.shortName})
-                </button>
-                <button
-                  onClick={() => handleRacquetPoint('tennis', 'away', { isAce: true })}
-                  className="py-3 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 cursor-pointer"
-                >
-                  ⚡ Service Ace + Point ({match.teamB.shortName})
-                </button>
+            {/* Interactive Set-by-Set Score Matrix & Court Controls */}
+            <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono">
+                  SET SCOREBOARD:
+                </span>
+                <div className="flex items-center gap-2">
+                  {activeSets.map((s, idx) => (
+                    <div
+                      key={idx}
+                      className="px-3 py-1.5 rounded-xl bg-[#060a14] border border-slate-800 font-mono text-xs font-bold text-white"
+                    >
+                      Set {idx + 1}: <span className="text-emerald-400">{s.home}</span> -{' '}
+                      <span className="text-cyan-400">{s.away}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
 
-            {match.sport === 'volleyball' && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-2.5">
                 <button
-                  onClick={() =>
-                    handleRacquetPoint('volleyball', 'home', { type: 'timeout', teamId: 'home' })
-                  }
-                  className="py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-800 cursor-pointer"
+                  onClick={() => handleRacquetPoint(match.sport, 'home', { type: 'swap_server' })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-xs font-bold text-white cursor-pointer"
                 >
-                  Call Timeout ({match.teamA.shortName})
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Swap Server [S]</span>
                 </button>
                 <button
-                  onClick={() =>
-                    handleRacquetPoint('volleyball', 'away', { type: 'timeout', teamId: 'away' })
-                  }
-                  className="py-3 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-bold text-xs hover:bg-slate-800 cursor-pointer"
+                  onClick={() => handleRacquetPoint(match.sport, 'home', { type: 'reset_set' })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#060a14] border border-slate-800 hover:border-slate-700 text-xs font-bold text-slate-300 hover:text-white cursor-pointer"
                 >
-                  Call Timeout ({match.teamB.shortName})
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Current Set [R]</span>
                 </button>
               </div>
-            )}
+            </div>
           </div>
         )}
 
@@ -809,7 +983,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Home Team Hockey */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <span className="font-bold text-base text-white">{match.teamA.name}</span>
                   <span className="font-mono text-xs text-slate-400">
@@ -821,11 +995,11 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                     onClick={() => handleFieldHockeyAction('goal', 'home')}
                     className="py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-black text-white text-lg cursor-pointer"
                   >
-                    +1 GOAL
+                    +1 GOAL [A]
                   </button>
                   <button
                     onClick={() => handleFieldHockeyAction('penalty_corner', 'home')}
-                    className="py-4 rounded-xl bg-blue-600 hover:bg-blue-500 font-black text-white text-sm cursor-pointer"
+                    className="py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-black text-white text-sm cursor-pointer"
                   >
                     + Penalty Corner
                   </button>
@@ -853,7 +1027,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
               </div>
 
               {/* Away Team Hockey */}
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
+              <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                   <span className="font-bold text-base text-white">{match.teamB.name}</span>
                   <span className="font-mono text-xs text-slate-400">
@@ -865,11 +1039,11 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                     onClick={() => handleFieldHockeyAction('goal', 'away')}
                     className="py-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-black text-white text-lg cursor-pointer"
                   >
-                    +1 GOAL
+                    +1 GOAL [L]
                   </button>
                   <button
                     onClick={() => handleFieldHockeyAction('penalty_corner', 'away')}
-                    className="py-4 rounded-xl bg-blue-600 hover:bg-blue-500 font-black text-white text-sm cursor-pointer"
+                    className="py-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 font-black text-white text-sm cursor-pointer"
                   >
                     + Penalty Corner
                   </button>
@@ -898,7 +1072,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
             </div>
 
             {/* Quarter & Clock Strip */}
-            <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-400 uppercase">Quarter:</span>
                 {([1, 2, 3, 4, 'SO'] as const).map((q) => (
@@ -907,8 +1081,8 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                     onClick={() => handleFieldHockeyAction('quarter', 'home', q)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold cursor-pointer ${
                       match.fieldHockeyState?.quarter === q
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-950 border border-slate-800 text-slate-400'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
+                        : 'bg-[#060a14] border border-slate-800 text-slate-400'
                     }`}
                   >
                     {q === 'SO' ? 'SHOOTOUT' : `Q${q}`}
@@ -919,13 +1093,13 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
           </div>
         )}
 
-        {/* ==================== 5. BASEBALL SCORING DECK ==================== */}
+        {/* ==================== 5. BASEBALL & RUGBY SCORING DECKS ==================== */}
         {match.sport === 'baseball' && match.baseballState && (
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
+          <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-6 space-y-6">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <button
                 onClick={() => handleBaseballAction('ball')}
-                className="py-4 rounded-xl bg-slate-800 hover:bg-slate-700 font-black text-white text-base cursor-pointer"
+                className="py-4 rounded-xl bg-[#060a14] hover:bg-[#0d1a33] border border-slate-800 font-black text-white text-base cursor-pointer"
               >
                 +1 Ball ({match.baseballState.balls})
               </button>
@@ -943,7 +1117,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
               </button>
               <button
                 onClick={() => handleBaseballAction('next_half')}
-                className="py-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 font-bold text-xs cursor-pointer"
+                className="py-4 rounded-xl bg-[#060a14] border border-slate-800 text-slate-300 font-bold text-xs cursor-pointer"
               >
                 Next Half-Inning
               </button>
@@ -952,19 +1126,19 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <button
                 onClick={() => handleBaseballAction('single')}
-                className="py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white text-sm cursor-pointer"
+                className="py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold text-white text-sm cursor-pointer"
               >
                 Single (1B)
               </button>
               <button
                 onClick={() => handleBaseballAction('double')}
-                className="py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white text-sm cursor-pointer"
+                className="py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold text-white text-sm cursor-pointer"
               >
                 Double (2B)
               </button>
               <button
                 onClick={() => handleBaseballAction('triple')}
-                className="py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white text-sm cursor-pointer"
+                className="py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold text-white text-sm cursor-pointer"
               >
                 Triple (3B)
               </button>
@@ -978,7 +1152,6 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
           </div>
         )}
 
-        {/* ==================== 6. RUGBY SCORING DECK ==================== */}
         {match.sport === 'rugby' && match.rugbyState && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {(['home', 'away'] as const).map((side) => {
@@ -986,7 +1159,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
               return (
                 <div
                   key={side}
-                  className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3"
+                  className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 space-y-3"
                 >
                   <div className="font-bold text-base text-white border-b border-slate-800 pb-2">
                     {team.name}
@@ -1000,19 +1173,19 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                     </button>
                     <button
                       onClick={() => handleRugbyAction('conversion', side)}
-                      className="py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-white text-sm cursor-pointer"
+                      className="py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold text-white text-sm cursor-pointer"
                     >
                       +2 Conversion
                     </button>
                     <button
                       onClick={() => handleRugbyAction('penalty', side)}
-                      className="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-white text-xs cursor-pointer"
+                      className="py-3 rounded-xl bg-[#060a14] border border-slate-800 font-bold text-white text-xs cursor-pointer"
                     >
                       +3 Penalty Goal
                     </button>
                     <button
                       onClick={() => handleRugbyAction('drop_goal', side)}
-                      className="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 font-bold text-white text-xs cursor-pointer"
+                      className="py-3 rounded-xl bg-[#060a14] border border-slate-800 font-bold text-white text-xs cursor-pointer"
                     >
                       +3 Drop Goal
                     </button>
@@ -1022,6 +1195,80 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
             })}
           </div>
         )}
+
+        {/* ==================== INTERACTIVE KEYBOARD REFERENCE & LIVE CONSOLE FEED ==================== */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-7 bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono">
+                <Keyboard className="w-4 h-4" />
+                <span>Operator Keyboard Deck Shortcuts</span>
+              </div>
+              <span className="text-[11px] text-slate-400 font-mono">Zero-Latency Tactile Input</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+              <div className="p-2.5 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-between">
+                <span className="text-slate-300">Home +1 Pt / Goal</span>
+                <kbd className="px-2 py-0.5 rounded bg-[#0c1424] border border-cyan-500/40 text-cyan-300 font-mono font-bold">
+                  A / ←
+                </kbd>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-between">
+                <span className="text-slate-300">Away +1 Pt / Goal</span>
+                <kbd className="px-2 py-0.5 rounded bg-[#0c1424] border border-cyan-500/40 text-cyan-300 font-mono font-bold">
+                  L / →
+                </kbd>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-between">
+                <span className="text-slate-300">Swap Server / Poss</span>
+                <kbd className="px-2 py-0.5 rounded bg-[#0c1424] border border-slate-700 text-amber-300 font-mono font-bold">
+                  S
+                </kbd>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-between">
+                <span className="text-slate-300">Home -1 Pt Fix</span>
+                <kbd className="px-2 py-0.5 rounded bg-[#0c1424] border border-slate-700 text-slate-300 font-mono font-bold">
+                  Z
+                </kbd>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-between">
+                <span className="text-slate-300">Away -1 Pt Fix</span>
+                <kbd className="px-2 py-0.5 rounded bg-[#0c1424] border border-slate-700 text-slate-300 font-mono font-bold">
+                  M
+                </kbd>
+              </div>
+              <div className="p-2.5 rounded-xl bg-[#060a14] border border-slate-800 flex items-center justify-between">
+                <span className="text-slate-300">Basketball +1/+2/+3</span>
+                <kbd className="px-2 py-0.5 rounded bg-[#0c1424] border border-cyan-500/40 text-cyan-300 font-mono font-bold">
+                  1/2/3 • 8/9/0
+                </kbd>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-5 bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5">
+            <div className="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono mb-3">
+              Live Operator Action Feed
+            </div>
+            <div className="bg-[#060a14] border border-slate-800 rounded-xl p-3 font-mono text-xs space-y-1.5 min-h-[104px]">
+              {activityLog.length === 0 ? (
+                <div className="text-slate-500">
+                  Press any scoring button or keyboard shortcut ([A], [L], [S]) to log broadcast events...
+                </div>
+              ) : (
+                activityLog.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className={idx === 0 ? 'text-emerald-400 font-bold' : 'text-slate-400'}
+                  >
+                    {item}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

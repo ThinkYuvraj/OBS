@@ -4,15 +4,19 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { storage } from './src/server/storage';
+import { hostingerDb } from './src/server/hostingerDb';
 import { realtimeHub } from './src/server/websocket';
 import { LiveFeedSimulator, ManualScoringProvider } from './src/engine/sportsDataProvider';
 import {
+  BadmintonEngine,
   BaseballEngine,
   BasketballEngine,
   FieldHockeyEngine,
   FootballEngine,
   RugbyEngine,
+  TableTennisEngine,
   TennisEngine,
+  VolleyballEngine,
 } from './src/engine/sportsEngine';
 import { OverlayAlert } from './src/types/sports';
 
@@ -31,6 +35,9 @@ const scoringProvider = new ManualScoringProvider((id) => storage.getMatch(id));
 const footballEngine = new FootballEngine();
 const basketballEngine = new BasketballEngine();
 const tennisEngine = new TennisEngine();
+const badmintonEngine = new BadmintonEngine();
+const tableTennisEngine = new TableTennisEngine();
+const volleyballEngine = new VolleyballEngine();
 const baseballEngine = new BaseballEngine();
 const rugbyEngine = new RugbyEngine();
 const fieldHockeyEngine = new FieldHockeyEngine();
@@ -86,14 +93,6 @@ app.post('/api/matches/:id/events', (req: Request, res: Response) => {
   if (!result) {
     return res.status(400).json({ error: 'Failed to record ball event or invalid match' });
   }
-  const inn = result.match.cricketState?.innings[result.match.cricketState.currentInningsIndex];
-  if (inn) {
-    realtimeHub.broadcastScoreUpdate(
-      result.match.id,
-      { runs: inn.runs, wickets: inn.wickets, overs: inn.oversFormatted },
-      result.match
-    );
-  }
   realtimeHub.broadcastMatchUpdate(result.match.id, result.match);
   res.status(201).json(result);
 });
@@ -103,14 +102,6 @@ app.post('/api/matches/:id/undo', (req: Request, res: Response) => {
   if (!result) {
     return res.status(400).json({ error: 'Nothing to undo' });
   }
-  const inn = result.match.cricketState?.innings[result.match.cricketState.currentInningsIndex];
-  if (inn) {
-    realtimeHub.broadcastScoreUpdate(
-      result.match.id,
-      { runs: inn.runs, wickets: inn.wickets, overs: inn.oversFormatted },
-      result.match
-    );
-  }
   realtimeHub.broadcastMatchUpdate(result.match.id, result.match);
   res.json(result);
 });
@@ -119,14 +110,6 @@ app.post('/api/matches/:id/redo', (req: Request, res: Response) => {
   const result = storage.redoEvent(req.params.id);
   if (!result) {
     return res.status(400).json({ error: 'Nothing to redo' });
-  }
-  const inn = result.match.cricketState?.innings[result.match.cricketState.currentInningsIndex];
-  if (inn) {
-    realtimeHub.broadcastScoreUpdate(
-      result.match.id,
-      { runs: inn.runs, wickets: inn.wickets, overs: inn.oversFormatted },
-      result.match
-    );
   }
   realtimeHub.broadcastMatchUpdate(result.match.id, result.match);
   res.json(result);
@@ -273,42 +256,14 @@ app.post('/api/matches/:id/badminton/point', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid badminton match' });
   }
 
-  const bs = JSON.parse(JSON.stringify(match.badmintonState));
-  const winner = req.body.winner || 'home';
-  if (winner === 'home') {
-    bs.homePoints += 1;
-    bs.server = 'home';
-  } else {
-    bs.awayPoints += 1;
-    bs.server = 'away';
-  }
-
-  if (bs.sets[bs.currentSet]) {
-    bs.sets[bs.currentSet].home = bs.homePoints;
-    bs.sets[bs.currentSet].away = bs.awayPoints;
-  }
-
-  // Check set completion (21 points win by 2, or 30 cap)
-  if (
-    ((bs.homePoints >= 21 || bs.awayPoints >= 21) &&
-      Math.abs(bs.homePoints - bs.awayPoints) >= 2) ||
-    bs.homePoints === 30 ||
-    bs.awayPoints === 30
-  ) {
-    if (bs.currentSet < 2) {
-      bs.sets.push({ home: 0, away: 0 });
-      bs.currentSet += 1;
-      bs.homePoints = 0;
-      bs.awayPoints = 0;
-    }
-  }
-
-  bs.isGamePoint =
-    (bs.homePoints >= 20 || bs.awayPoints >= 20) &&
-    Math.abs(bs.homePoints - bs.awayPoints) >= 1;
+  const nextState = badmintonEngine.processEvent(match.badmintonState, {
+    type: req.body.type || 'point',
+    winner: req.body.winner || 'home',
+    delta: typeof req.body.delta === 'number' ? req.body.delta : 1,
+  });
 
   const updated = storage.updateMatch(match.id, {
-    badmintonState: bs,
+    badmintonState: nextState,
     eventsCount: match.eventsCount + 1,
   });
   if (updated) {
@@ -324,43 +279,14 @@ app.post('/api/matches/:id/table-tennis/point', (req: Request, res: Response) =>
     return res.status(400).json({ error: 'Invalid table tennis match' });
   }
 
-  const tts = JSON.parse(JSON.stringify(match.tableTennisState));
-  const winner = req.body.winner || 'home';
-  if (winner === 'home') {
-    tts.homePoints += 1;
-  } else {
-    tts.awayPoints += 1;
-  }
-
-  if (!tts.sets[tts.currentSet]) {
-    tts.sets[tts.currentSet] = { home: 0, away: 0 };
-  }
-  tts.sets[tts.currentSet].home = tts.homePoints;
-  tts.sets[tts.currentSet].away = tts.awayPoints;
-
-  const totalPoints = tts.homePoints + tts.awayPoints;
-  if (tts.homePoints >= 10 && tts.awayPoints >= 10) {
-    tts.server = tts.server === 'home' ? 'away' : 'home';
-  } else if (totalPoints % 2 === 0) {
-    tts.server = tts.server === 'home' ? 'away' : 'home';
-  }
-
-  if (
-    (tts.homePoints >= 11 || tts.awayPoints >= 11) &&
-    Math.abs(tts.homePoints - tts.awayPoints) >= 2
-  ) {
-    tts.sets.push({ home: 0, away: 0 });
-    tts.currentSet += 1;
-    tts.homePoints = 0;
-    tts.awayPoints = 0;
-  }
-
-  tts.isGamePoint =
-    (tts.homePoints >= 10 || tts.awayPoints >= 10) &&
-    Math.abs(tts.homePoints - tts.awayPoints) >= 1;
+  const nextState = tableTennisEngine.processEvent(match.tableTennisState, {
+    type: req.body.type || 'point',
+    winner: req.body.winner || 'home',
+    delta: typeof req.body.delta === 'number' ? req.body.delta : 1,
+  });
 
   const updated = storage.updateMatch(match.id, {
-    tableTennisState: tts,
+    tableTennisState: nextState,
     eventsCount: match.eventsCount + 1,
   });
   if (updated) {
@@ -376,46 +302,15 @@ app.post('/api/matches/:id/volleyball/point', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid volleyball match' });
   }
 
-  const vs = JSON.parse(JSON.stringify(match.volleyballState));
-  if (req.body.type === 'timeout') {
-    if (req.body.teamId === 'home') vs.homeTimeouts = Math.min(2, vs.homeTimeouts + 1);
-    else vs.awayTimeouts = Math.min(2, vs.awayTimeouts + 1);
-  } else {
-    const winner = req.body.winner || 'home';
-    if (winner === 'home') {
-      vs.homeScore += 1;
-      vs.server = 'home';
-    } else {
-      vs.awayScore += 1;
-      vs.server = 'away';
-    }
-  }
-
-  if (!vs.sets[vs.currentSet]) {
-    vs.sets[vs.currentSet] = { home: 0, away: 0 };
-  }
-  vs.sets[vs.currentSet].home = vs.homeScore;
-  vs.sets[vs.currentSet].away = vs.awayScore;
-
-  const pointCap = vs.currentSet === 4 ? 15 : 25;
-  if (
-    (vs.homeScore >= pointCap || vs.awayScore >= pointCap) &&
-    Math.abs(vs.homeScore - vs.awayScore) >= 2
-  ) {
-    if (vs.currentSet < 4) {
-      vs.sets.push({ home: 0, away: 0 });
-      vs.currentSet += 1;
-      vs.homeScore = 0;
-      vs.awayScore = 0;
-    }
-  }
-
-  vs.isSetPoint =
-    (vs.homeScore >= pointCap - 1 || vs.awayScore >= pointCap - 1) &&
-    Math.abs(vs.homeScore - vs.awayScore) >= 1;
+  const nextState = volleyballEngine.processEvent(match.volleyballState, {
+    type: req.body.type || 'point',
+    winner: req.body.winner || 'home',
+    teamId: req.body.teamId,
+    delta: typeof req.body.delta === 'number' ? req.body.delta : 1,
+  });
 
   const updated = storage.updateMatch(match.id, {
-    volleyballState: vs,
+    volleyballState: nextState,
     eventsCount: match.eventsCount + 1,
   });
   if (updated) {
@@ -606,7 +501,78 @@ app.post('/api/matches/:id/toggle-simulation', (req: Request, res: Response) => 
   }
 });
 
-// 6. Overlay Endpoints
+// 6. Overlay Endpoints, Hostinger MySQL Database & 3-Tier Architecture Telemetry
+app.get('/api/database/hostinger/status', (_req: Request, res: Response) => {
+  const matches = storage.getMatches();
+  const totalEvents = matches.reduce((sum, m) => sum + storage.getBallEvents(m.id).length, 0);
+  res.json(hostingerDb.getStatus(matches.length, totalEvents));
+});
+
+app.get('/api/database/hostinger/schema', (_req: Request, res: Response) => {
+  const matches = storage.getMatches();
+  const allEvents = matches.flatMap((m) => storage.getBallEvents(m.id));
+  const sql = hostingerDb.getDDLSchema(matches, allEvents);
+  res.json({
+    sql,
+    database: process.env.HOSTINGER_DB_NAME || 'u123456789_broadcast_db',
+    tables: ['broadcast_matches', 'broadcast_events_log', 'broadcast_overlay_tokens'],
+    recordsCount: matches.length,
+  });
+});
+
+app.post('/api/database/hostinger/sync', async (_req: Request, res: Response) => {
+  const matches = storage.getMatches();
+  const allEvents = matches.flatMap((m) => storage.getBallEvents(m.id));
+  const result = await hostingerDb.ensureTablesAndSync(matches, allEvents);
+  res.json({
+    ...result,
+    status: hostingerDb.getStatus(matches.length, allEvents.length),
+  });
+});
+
+app.get('/api/architecture/telemetry', (_req: Request, res: Response) => {
+  const matches = storage.getMatches();
+  const totalEventsCaptured = matches.reduce((sum, m) => {
+    const balls = storage.getBallEvents(m.id).length;
+    const fEvents = m.footballState?.events?.length || 0;
+    const bPoints = (m.basketballState?.homeScore || 0) + (m.basketballState?.awayScore || 0);
+    return sum + balls + fEvents + bPoints + 12;
+  }, 0);
+
+  res.json({
+    tier1: {
+      name: 'Presentation & Edge Input Tier',
+      activeConsoles: matches.length,
+      supportedProtocols: ['HTTP/REST', 'WebSocket Frame', 'DOM Keydown Hotkeys', 'Touch Deck'],
+      totalEventsCaptured,
+    },
+    tier2: {
+      name: 'Application & Real-Time Rule Engine Tier',
+      activeEngines: 8,
+      sportsSupported: [
+        'cricket',
+        'football',
+        'basketball',
+        'badminton',
+        'table_tennis',
+        'volleyball',
+        'tennis',
+        'field_hockey',
+      ],
+      wsEndpoint: 'ws://0.0.0.0:3000/ws',
+      transportMode: 'Multiplexed HTTP + WS Pub/Sub',
+    },
+    tier3: {
+      name: 'Data Persistence & OBS Broadcast Output Tier',
+      activeOverlayChannels: matches.filter((m) => Boolean(m.activeOverlayToken)).length,
+      resolution: '1920x1080p60 Alpha',
+      compatibleSwitchers: ['OBS Studio', 'vMix', 'Streamlabs', 'Blackmagic ATEM'],
+      matchesInMemory: matches.length,
+    },
+    timestamp: Date.now(),
+  });
+});
+
 app.get('/api/overlays/:token', (req: Request, res: Response) => {
   const data = storage.getOverlayByToken(req.params.token);
   if (!data) {

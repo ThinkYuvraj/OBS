@@ -296,21 +296,32 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 py-10 px-6">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 py-10 px-6">
       <div className="max-w-4xl mx-auto">
         {/* Back and Title */}
-        <div className="flex items-center gap-4 mb-8">
-          <button
-            onClick={onCancel}
-            className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 transition-colors cursor-pointer"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">Create New Match</h1>
-            <p className="text-sm text-slate-400 mt-0.5">
-              Configure teams, tournament details, and broadcast graphics for any of the 8 main sports.
-            </p>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={onCancel}
+              className="p-2 rounded-xl bg-[#0c1424] border border-slate-800 hover:border-cyan-500/40 text-slate-300 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <div>
+              <div className="text-[11px] font-mono font-bold text-cyan-400 uppercase tracking-wider">
+                MARKETINGLU CYAN-SKY • BRAND DEFAULT THEME
+              </div>
+              <h1 className="text-2xl font-black tracking-tight text-white font-['Space_Grotesk',sans-serif]">
+                Create New Broadcast Match
+              </h1>
+              <p className="text-sm text-slate-400 mt-0.5">
+                Configure teams, tournament details, and MarketinGlu Cyan-Sky broadcast graphics for any of the 8 main sports.
+              </p>
+            </div>
+          </div>
+
+          <div className="px-3 py-1.5 rounded-xl bg-cyan-500/15 border border-cyan-400 text-xs font-mono font-bold text-cyan-300">
+            MarketinGlu Cyan-Sky • DEFAULT
           </div>
         </div>
 
@@ -322,8 +333,8 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Section 1: Sport & Tournament */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-blue-400 uppercase tracking-wider">
+          <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
+            <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-cyan-400 uppercase tracking-wider">
               <Trophy className="w-4 h-4" />
               <span>Select Broadcast Sport (8 Main Sports)</span>
             </div>
@@ -344,10 +355,10 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                   key={item.id}
                   type="button"
                   onClick={() => handleSportChange(item.id as SportType)}
-                  className={`py-2.5 px-3 rounded-lg border text-xs font-bold transition-all cursor-pointer ${
+                  className={`py-2.5 px-3 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
                     sport === item.id
-                      ? 'bg-blue-600 border-blue-500 text-white shadow-sm'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                      ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 border-cyan-400 text-white shadow-md shadow-cyan-500/20'
+                      : 'bg-[#060a14] border-slate-800 text-slate-400 hover:text-white hover:border-cyan-500/40'
                   }`}
                 >
                   {item.label}
@@ -366,7 +377,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                   value={tournament}
                   onChange={(e) => setTournament(e.target.value)}
                   required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#060a14] border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
@@ -380,7 +391,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                   value={venue}
                   onChange={(e) => setVenue(e.target.value)}
                   required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#060a14] border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
@@ -394,7 +405,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                   value={matchName}
                   onChange={(e) => setMatchName(e.target.value)}
                   required
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-[#060a14] border border-slate-800 rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
@@ -409,7 +420,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-[#060a14] border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
                 <div>
@@ -421,7 +432,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                     value={startTime}
                     onChange={(e) => setStartTime(e.target.value)}
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-[#060a14] border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
               </div>
@@ -430,8 +441,8 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
 
           {/* Section 2: Cricket Format (Only when cricket is chosen) */}
           {sport === 'cricket' && (
-            <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-blue-400 uppercase tracking-wider">
+            <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
+              <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-cyan-400 uppercase tracking-wider">
                 <Shield className="w-4 h-4" />
                 <span>Cricket Format & Overs</span>
               </div>
@@ -450,10 +461,10 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                       setCricketFormat(fmt.id as CricketFormat);
                       if (fmt.id !== 'CUSTOM') setCustomOvers(fmt.overs);
                     }}
-                    className={`p-3 rounded-lg border text-center transition-all cursor-pointer ${
+                    className={`p-3 rounded-xl border text-center transition-all cursor-pointer ${
                       cricketFormat === fmt.id
-                        ? 'bg-blue-600/20 border-blue-500 text-white font-bold'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-cyan-500/15 border-cyan-400 text-white font-bold'
+                        : 'bg-[#060a14] border-slate-800 text-slate-400 hover:text-white'
                     }`}
                   >
                     <div className="text-sm font-semibold">{fmt.label}</div>
@@ -472,7 +483,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                     max={100}
                     value={customOvers}
                     onChange={(e) => setCustomOvers(Number(e.target.value))}
-                    className="w-48 bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono"
+                    className="w-48 bg-[#060a14] border border-slate-800 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 font-mono"
                   />
                 </div>
               )}
@@ -480,16 +491,16 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
           )}
 
           {/* Section 3: Teams & Squads */}
-          <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-6">
-            <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-blue-400 uppercase tracking-wider">
+          <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-6 shadow-xl">
+            <div className="flex items-center gap-2 mb-4 text-sm font-semibold text-cyan-400 uppercase tracking-wider">
               <Users className="w-4 h-4" />
               <span>Teams / Players Configuration</span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Team A */}
-              <div className="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+              <div className="bg-[#060a14]/90 p-4 rounded-xl border border-slate-800">
+                <div className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-3">
                   {sport === 'cricket' ? 'Team A (Batting First)' : 'Home Team / Player A'}
                 </div>
                 <div className="space-y-3">
@@ -500,7 +511,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                       value={teamAName}
                       onChange={(e) => setTeamAName(e.target.value)}
                       required
-                      className="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-sm text-white"
+                      className="w-full bg-[#090f1f] border border-slate-800 focus:border-cyan-400 outline-none rounded-lg px-3 py-1.5 text-sm text-white"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -512,11 +523,11 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                         value={teamAShort}
                         onChange={(e) => setTeamAShort(e.target.value.toUpperCase())}
                         required
-                        className="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-sm font-mono uppercase text-white"
+                        className="w-full bg-[#090f1f] border border-slate-800 focus:border-cyan-400 outline-none rounded-lg px-3 py-1.5 text-sm font-mono uppercase text-white"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1">Theme Color</label>
+                      <label className="block text-xs text-slate-400 mb-1">Team Accent Color</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -537,7 +548,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                         rows={3}
                         value={teamABatters}
                         onChange={(e) => setTeamABatters(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 font-mono"
+                        className="w-full bg-[#090f1f] border border-slate-800 focus:border-cyan-400 outline-none rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono"
                       />
                     </div>
                   )}
@@ -545,8 +556,8 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
               </div>
 
               {/* Team B */}
-              <div className="bg-slate-950/70 p-4 rounded-xl border border-slate-800">
-                <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+              <div className="bg-[#060a14]/90 p-4 rounded-xl border border-slate-800">
+                <div className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-3">
                   {sport === 'cricket' ? 'Team B (Bowling First)' : 'Away Team / Player B'}
                 </div>
                 <div className="space-y-3">
@@ -557,7 +568,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                       value={teamBName}
                       onChange={(e) => setTeamBName(e.target.value)}
                       required
-                      className="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-sm text-white"
+                      className="w-full bg-[#090f1f] border border-slate-800 focus:border-cyan-400 outline-none rounded-lg px-3 py-1.5 text-sm text-white"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -569,11 +580,11 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                         value={teamBShort}
                         onChange={(e) => setTeamBShort(e.target.value.toUpperCase())}
                         required
-                        className="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-sm font-mono uppercase text-white"
+                        className="w-full bg-[#090f1f] border border-slate-800 focus:border-cyan-400 outline-none rounded-lg px-3 py-1.5 text-sm font-mono uppercase text-white"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-slate-400 mb-1">Theme Color</label>
+                      <label className="block text-xs text-slate-400 mb-1">Team Accent Color</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -594,7 +605,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                         rows={3}
                         value={teamBBowlers}
                         onChange={(e) => setTeamBBowlers(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-800 rounded px-3 py-1.5 text-xs text-slate-300 font-mono"
+                        className="w-full bg-[#090f1f] border border-slate-800 focus:border-cyan-400 outline-none rounded-lg px-3 py-1.5 text-xs text-slate-300 font-mono"
                       />
                     </div>
                   )}
@@ -608,14 +619,14 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
             <button
               type="button"
               onClick={onCancel}
-              className="px-5 py-2.5 text-sm font-semibold text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors cursor-pointer"
+              className="px-5 py-2.5 text-sm font-semibold text-slate-400 hover:text-white bg-[#0c1424] hover:bg-[#0d1a33] border border-slate-800 rounded-xl transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="px-6 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors shadow-lg shadow-blue-500/20 cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              className="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 rounded-xl transition-all shadow-lg shadow-cyan-500/20 cursor-pointer flex items-center gap-2 disabled:opacity-50"
             >
               <Check className="w-4 h-4" />
               <span>{submitting ? 'Creating Match...' : 'Initialize & Open Scoring Console'}</span>

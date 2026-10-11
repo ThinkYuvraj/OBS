@@ -134,23 +134,73 @@ export async function triggerOverlayTest(
   return res.json();
 }
 
-export async function generateNewOverlayToken(matchId: string): Promise<string> {
-  const res = await fetch(`${API_BASE}/overlays/generate`, {
+export async function postTennisEvent(
+  matchId: string,
+  eventData: { winner: 'home' | 'away'; isAce?: boolean }
+): Promise<Match> {
+  const res = await fetch(`${API_BASE}/matches/${matchId}/tennis/point`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ matchId }),
+    body: JSON.stringify(eventData),
   });
-  if (!res.ok) throw new Error('Failed to generate overlay token');
+  if (!res.ok) throw new Error('Failed to record tennis point');
   const data = await res.json();
-  return data.token;
+  return data.match;
 }
 
-export async function revokeOverlayToken(token: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE}/overlays/${token}`, {
-    method: 'DELETE',
+export async function postBadmintonEvent(
+  matchId: string,
+  eventData: {
+    type?: 'point' | 'swap_server' | 'reset_set';
+    winner?: 'home' | 'away';
+    delta?: number;
+  }
+): Promise<Match> {
+  const res = await fetch(`${API_BASE}/matches/${matchId}/badminton/point`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eventData),
   });
-  if (!res.ok) throw new Error('Failed to revoke overlay token');
-  return true;
+  if (!res.ok) throw new Error('Failed to record badminton event');
+  const data = await res.json();
+  return data.match;
+}
+
+export async function postTableTennisEvent(
+  matchId: string,
+  eventData: {
+    type?: 'point' | 'swap_server' | 'reset_set';
+    winner?: 'home' | 'away';
+    delta?: number;
+  }
+): Promise<Match> {
+  const res = await fetch(`${API_BASE}/matches/${matchId}/table-tennis/point`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eventData),
+  });
+  if (!res.ok) throw new Error('Failed to record table tennis event');
+  const data = await res.json();
+  return data.match;
+}
+
+export async function postVolleyballEvent(
+  matchId: string,
+  eventData: {
+    type?: 'point' | 'timeout' | 'swap_server' | 'reset_set';
+    winner?: 'home' | 'away';
+    teamId?: 'home' | 'away';
+    delta?: number;
+  }
+): Promise<Match> {
+  const res = await fetch(`${API_BASE}/matches/${matchId}/volleyball/point`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(eventData),
+  });
+  if (!res.ok) throw new Error('Failed to record volleyball event');
+  const data = await res.json();
+  return data.match;
 }
 
 export async function postFootballEvent(
@@ -258,3 +308,50 @@ export async function postRugbyEvent(
   const data = await res.json();
   return data.match;
 }
+
+export interface HostingerDatabaseStatus {
+  configured: boolean;
+  connected: boolean;
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  lastSyncAt: number | null;
+  syncedMatchesCount: number;
+  syncedEventsCount: number;
+  mode: 'hostinger_mysql_live' | 'hybrid_memory_staging';
+  errorMessage?: string;
+}
+
+export async function fetchHostingerDbStatus(): Promise<HostingerDatabaseStatus> {
+  const res = await fetch(`${API_BASE}/database/hostinger/status`);
+  if (!res.ok) throw new Error('Failed to fetch Hostinger DB status');
+  return res.json();
+}
+
+export async function syncHostingerDatabase(): Promise<{
+  success: boolean;
+  mode: string;
+  syncedMatches: number;
+  syncedEvents: number;
+  message: string;
+  status: HostingerDatabaseStatus;
+}> {
+  const res = await fetch(`${API_BASE}/database/hostinger/sync`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to sync with Hostinger MySQL');
+  return res.json();
+}
+
+export async function fetchHostingerSqlExport(): Promise<{
+  sql: string;
+  database: string;
+  tables: string[];
+  recordsCount: number;
+}> {
+  const res = await fetch(`${API_BASE}/database/hostinger/schema`);
+  if (!res.ok) throw new Error('Failed to generate Hostinger SQL dump');
+  return res.json();
+}
+

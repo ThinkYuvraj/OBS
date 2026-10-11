@@ -17,11 +17,17 @@ export function useRealtimeSocket({
   onAlertTrigger,
 }: UseRealtimeSocketProps) {
   const [isConnected, setIsConnected] = useState(false);
-  const [lastPing, setLastPing] = useState<number>(Date.now());
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastDigestRef = useRef<string>('');
 
-  // Keep callback refs fresh
+  // Keep latest subscription targets in refs so socket doesn't tear down on switch
+  const matchIdRef = useRef(matchId);
+  matchIdRef.current = matchId;
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+
+  // Keep callback refs fresh without re-binding WebSocket listeners
   const onMatchUpdateRef = useRef(onMatchUpdate);
   onMatchUpdateRef.current = onMatchUpdate;
   const onOverlayUpdateRef = useRef(onOverlayUpdate);
@@ -29,8 +35,25 @@ export function useRealtimeSocket({
   const onAlertTriggerRef = useRef(onAlertTrigger);
   onAlertTriggerRef.current = onAlertTrigger;
 
+  const sendSubscription = useCallback((ws: WebSocket, mId?: string, tok?: string) => {
+    if (ws.readyState === WebSocket.OPEN && (mId || tok)) {
+      ws.send(
+        JSON.stringify({
+          type: 'subscribe',
+          matchId: mId,
+          token: tok,
+          timestamp: Date.now(),
+        })
+      );
+    }
+  }, []);
+
   const connect = useCallback(() => {
-    if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+    if (
+      wsRef.current &&
+      (wsRef.current.readyState === WebSocket.OPEN ||
+        wsRef.current.readyState === WebSocket.CONNECTING)
+    ) {
       return;
     }
 
@@ -43,28 +66,28 @@ export function useRealtimeSocket({
 
       ws.onopen = () => {
         setIsConnected(true);
-        // Subscribe to relevant rooms
-        ws.send(
-          JSON.stringify({
-            type: 'subscribe',
-            matchId,
-            token,
-            timestamp: Date.now(),
-          })
-        );
+        sendSubscription(ws, matchIdRef.current, tokenRef.current);
       };
 
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data) as WebSocketMessage;
           if ((msg.type === 'match:update' || msg.type === 'score:update') && msg.payload) {
-            onMatchUpdateRef.current?.(msg.payload);
+            const incoming = msg.payload as Match;
+            const digest = `${incoming.id}:${incoming.lastUpdated}:${incoming.eventsCount}:${incoming.overlayConfig?.activeAlert?.id || ''}`;
+            if (digest !== lastDigestRef.current) {
+              lastDigestRef.current = digest;
+              onMatchUpdateRef.current?.(incoming);
+            }
           } else if (msg.type === 'overlay:update' && msg.payload) {
-            onOverlayUpdateRef.current?.(msg.payload);
+            const incomingMatch = msg.payload.match as Match;
+            const digest = `ov:${incomingMatch?.id}:${incomingMatch?.lastUpdated}:${msg.payload.config?.scale}:${msg.payload.config?.opacity}:${msg.payload.config?.tickerText}:${msg.payload.config?.activeAlert?.id || ''}:${msg.payload.config?.streamFeed?.activeSource || ''}:${msg.payload.config?.streamFeed?.youtubeUrl || ''}`;
+            if (digest !== lastDigestRef.current) {
+              lastDigestRef.current = digest;
+              onOverlayUpdateRef.current?.(msg.payload);
+            }
           } else if (msg.type === 'alert:trigger' && msg.payload) {
             onAlertTriggerRef.current?.(msg.payload);
-          } else if (msg.type === 'pong') {
-            setLastPing(Date.now());
           }
         } catch (err) {
           console.error('Error handling socket message:', err);
@@ -74,28 +97,25 @@ export function useRealtimeSocket({
       ws.onclose = () => {
         setIsConnected(false);
         wsRef.current = null;
-        // Auto-reconnect after 2 seconds
         reconnectTimeoutRef.current = setTimeout(() => {
           connect();
         }, 2000);
       };
 
-      ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
+      ws.onerror = () => {
         ws.close();
       };
-    } catch (err) {
-      console.error('WebSocket connection failed:', err);
+    } catch {
       reconnectTimeoutRef.current = setTimeout(() => {
         connect();
       }, 3000);
     }
-  }, [matchId, token]);
+  }, [sendSubscription]);
 
+  // Establish persistent connection once per mount
   useEffect(() => {
     connect();
 
-    // Heartbeat ping every 25s
     const pingInterval = setInterval(() => {
       if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
@@ -113,5 +133,13 @@ export function useRealtimeSocket({
     };
   }, [connect]);
 
-  return { isConnected, lastPing };
+  // Dynamically re-subscribe when matchId or token changes without closing socket
+  useEffect(() => {
+    lastDigestRef.current = '';
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      sendSubscription(wsRef.current, matchId, token);
+    }
+  }, [matchId, token, sendSubscription]);
+
+  return { isConnected };
 }

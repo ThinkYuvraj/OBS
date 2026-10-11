@@ -211,11 +211,11 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
   if (!isBasketball && !isFootball) return null;
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
+    <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5 shadow-xl">
       {/* Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400">
+          <div className="w-8 h-8 rounded-lg bg-cyan-500/15 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
             <Timer className="w-4 h-4" />
           </div>
           <div>
@@ -229,7 +229,7 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                 className={`text-[10px] font-mono font-extrabold px-2 py-0.5 rounded ${
                   isRunning
                     ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-slate-800 text-slate-400'
+                    : 'bg-[#060a14] border border-slate-800 text-slate-400'
                 }`}
               >
                 {isRunning ? 'CLOCK RUNNING' : 'CLOCK PAUSED'}
@@ -244,15 +244,15 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
         {/* Speed & Direction Controls */}
         <div className="flex items-center gap-2">
           {isFootball && (
-            <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+            <div className="flex items-center bg-[#060a14] p-1 rounded-xl border border-slate-800 text-xs">
               <button
                 type="button"
                 onClick={() => {
                   setFbDirection('countup');
                 }}
-                className={`px-2.5 py-1 rounded font-semibold cursor-pointer transition-colors ${
+                className={`px-2.5 py-1 rounded-lg font-semibold cursor-pointer transition-colors ${
                   fbDirection === 'countup'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -266,9 +266,9 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                     syncFootballImmediate(45 * 60, fbExtraTime, fbHalf, false);
                   }
                 }}
-                className={`px-2.5 py-1 rounded font-semibold cursor-pointer transition-colors ${
+                className={`px-2.5 py-1 rounded-lg font-semibold cursor-pointer transition-colors ${
                   fbDirection === 'countdown'
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -278,12 +278,12 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
           )}
 
           {/* Speed Multiplier */}
-          <div className="flex items-center bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+          <div className="flex items-center bg-[#060a14] p-1 rounded-xl border border-slate-800 text-xs">
             <button
               type="button"
               onClick={() => setSpeedMultiplier(1)}
-              className={`px-2.5 py-1 rounded font-mono font-bold cursor-pointer ${
-                speedMultiplier === 1 ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white'
+              className={`px-2.5 py-1 rounded-lg font-mono font-bold cursor-pointer ${
+                speedMultiplier === 1 ? 'bg-cyan-500 text-white' : 'text-slate-400 hover:text-white'
               }`}
             >
               1x Real
@@ -291,7 +291,7 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
             <button
               type="button"
               onClick={() => setSpeedMultiplier(5)}
-              className={`px-2.5 py-1 rounded font-mono font-bold cursor-pointer flex items-center gap-1 ${
+              className={`px-2.5 py-1 rounded-lg font-mono font-bold cursor-pointer flex items-center gap-1 ${
                 speedMultiplier === 5
                   ? 'bg-amber-500 text-slate-950'
                   : 'text-slate-400 hover:text-white'
@@ -309,9 +309,9 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
       {isBasketball && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-5 items-center">
           {/* Digital Readout Box (Cols 1-5) */}
-          <div className="lg:col-span-5 bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+          <div className="lg:col-span-5 bg-[#060a14] border border-slate-800 rounded-xl p-4 flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-widest text-slate-400">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-400">
                 Q{match.basketballState?.quarter || 1} GAME CLOCK
               </div>
               <div className="text-4xl font-black font-mono tabular-nums text-white tracking-tight mt-0.5">
@@ -378,7 +378,7 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                   setIsRunning(false);
                   syncBasketballImmediate(bbPeriodDurationMin * 60, 24, false);
                 }}
-                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 font-semibold text-xs cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset ({bbPeriodDurationMin}:00)</span>
@@ -399,10 +399,10 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                     key={p.min}
                     type="button"
                     onClick={() => handleBasketballPreset(p.min)}
-                    className={`px-2.5 py-1 rounded text-xs font-mono font-bold cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer ${
                       bbPeriodDurationMin === p.min
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
+                        : 'bg-[#060a14] border border-slate-800 text-slate-400 hover:text-white'
                     }`}
                   >
                     {p.label}
@@ -424,7 +424,7 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                     onClick={() =>
                       syncBasketballImmediate(Math.max(0, bbSeconds + adj.delta), shotClock, isRunning)
                     }
-                    className="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-slate-300 hover:text-white font-mono text-xs cursor-pointer"
+                    className="px-2 py-1 rounded-lg bg-[#060a14] border border-slate-800 text-slate-300 hover:text-white font-mono text-xs cursor-pointer"
                   >
                     {adj.label}
                   </button>
@@ -452,10 +452,10 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                         isTimerRunning: false,
                       });
                     }}
-                    className={`px-2.5 py-1 rounded text-xs font-mono font-bold cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer ${
                       match.basketballState?.quarter === q
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
+                        : 'bg-[#060a14] border border-slate-800 text-slate-400 hover:text-white'
                     }`}
                   >
                     {q === 'OT' ? 'OT' : `Q${q}`}
@@ -464,14 +464,14 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <Clock className="w-3.5 h-3.5 text-cyan-400" />
                 <input
                   type="number"
                   min={0}
                   max={99}
                   value={customMinInput}
                   onChange={(e) => setCustomMinInput(e.target.value)}
-                  className="w-12 bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-xs font-mono text-center text-white"
+                  className="w-12 bg-[#060a14] border border-slate-800 rounded-lg px-1.5 py-1 text-xs font-mono text-center text-white"
                   aria-label="Custom Minutes"
                 />
                 <span className="text-slate-400 font-mono">:</span>
@@ -481,13 +481,13 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                   max={59}
                   value={customSecInput}
                   onChange={(e) => setCustomSecInput(e.target.value)}
-                  className="w-12 bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-xs font-mono text-center text-white"
+                  className="w-12 bg-[#060a14] border border-slate-800 rounded-lg px-1.5 py-1 text-xs font-mono text-center text-white"
                   aria-label="Custom Seconds"
                 />
                 <button
                   type="button"
                   onClick={handleApplyCustomTime}
-                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-[#0c1424] border border-slate-700 hover:border-cyan-400 text-white text-xs font-semibold cursor-pointer"
                 >
                   Set MM:SS
                 </button>
@@ -501,9 +501,9 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
       {isFootball && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 mt-5 items-center">
           {/* Digital Readout Box (Cols 1-5) */}
-          <div className="lg:col-span-5 bg-slate-950 border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+          <div className="lg:col-span-5 bg-[#060a14] border border-slate-800 rounded-xl p-4 flex items-center justify-between">
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-widest text-blue-400">
+              <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-400">
                 {fbHalf.replace('_', ' ').toUpperCase()} HALF •{' '}
                 {fbDirection === 'countup' ? 'ELAPSED' : 'REMAINING'}
               </div>
@@ -562,7 +562,7 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                       isRunning
                     )
                   }
-                  className="px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-300 hover:text-white font-mono text-xs font-bold cursor-pointer"
+                  className="px-2.5 py-2 rounded-lg bg-[#060a14] border border-slate-800 text-slate-300 hover:text-white font-mono text-xs font-bold cursor-pointer"
                 >
                   {nudge.label}
                 </button>
@@ -574,7 +574,7 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                   setIsRunning(false);
                   syncFootballImmediate(fbHalf === '2nd' ? 45 * 60 : 0, 0, fbHalf, false);
                 }}
-                className="flex items-center gap-1 px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                className="flex items-center gap-1 px-3 py-2 rounded-lg bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 text-xs font-semibold cursor-pointer"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Reset Half</span>
@@ -596,10 +596,10 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                     key={p.id}
                     type="button"
                     onClick={() => handleFootballPeriodPreset(p.id, p.start, p.end)}
-                    className={`px-2.5 py-1 rounded text-xs font-mono font-bold cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold cursor-pointer ${
                       fbHalf === p.id
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white'
+                        : 'bg-[#060a14] border border-slate-800 text-slate-400 hover:text-white'
                     }`}
                   >
                     {p.label}
@@ -617,10 +617,10 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                     key={et}
                     type="button"
                     onClick={() => syncFootballImmediate(fbSeconds, et, fbHalf, isRunning)}
-                    className={`px-2 py-0.5 rounded text-xs font-mono font-bold cursor-pointer ${
+                    className={`px-2 py-0.5 rounded-lg text-xs font-mono font-bold cursor-pointer ${
                       fbExtraTime === et
                         ? 'bg-amber-500 text-slate-950'
-                        : 'bg-slate-950 border border-slate-800 text-slate-400 hover:text-white'
+                        : 'bg-[#060a14] border border-slate-800 text-slate-400 hover:text-white'
                     }`}
                   >
                     +{et}
@@ -629,14 +629,14 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
               </div>
 
               <div className="flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                <Clock className="w-3.5 h-3.5 text-cyan-400" />
                 <input
                   type="number"
                   min={0}
                   max={130}
                   value={customMinInput}
                   onChange={(e) => setCustomMinInput(e.target.value)}
-                  className="w-12 bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-xs font-mono text-center text-white"
+                  className="w-12 bg-[#060a14] border border-slate-800 rounded-lg px-1.5 py-1 text-xs font-mono text-center text-white"
                   aria-label="Custom Football Minutes"
                 />
                 <span className="text-slate-400 font-mono">:</span>
@@ -646,13 +646,13 @@ export const BroadcastGameTimer: React.FC<BroadcastGameTimerProps> = ({
                   max={59}
                   value={customSecInput}
                   onChange={(e) => setCustomSecInput(e.target.value)}
-                  className="w-12 bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-xs font-mono text-center text-white"
+                  className="w-12 bg-[#060a14] border border-slate-800 rounded-lg px-1.5 py-1 text-xs font-mono text-center text-white"
                   aria-label="Custom Football Seconds"
                 />
                 <button
                   type="button"
                   onClick={handleApplyCustomTime}
-                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer"
+                  className="px-2.5 py-1 rounded-lg bg-[#0c1424] border border-slate-700 hover:border-cyan-400 text-white text-xs font-semibold cursor-pointer"
                 >
                   Set Clock
                 </button>
