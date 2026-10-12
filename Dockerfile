@@ -1,65 +1,75 @@
 # ==============================================================================
-# Multi-Stage Production Dockerfile for MarketinGlu OBS Broadcast Suite
+# Multi-Stage Production Dockerfile for MarketinGlu Broadcast Engine
+# Target: High-Performance, Sub-Second Latency OBS Overlay & Web Server
+# Base OS: Alpine Linux (Minimal Attack Surface & Lightweight Footprint)
 # ==============================================================================
 
+# ------------------------------------------------------------------------------
 # Stage 1: Build & Compilation Environment
-FROM node:22-alpine AS builder
+# ------------------------------------------------------------------------------
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install system utilities needed for building native modules
+# Install build prerequisites for native dependencies (if any)
 RUN apk add --no-cache libc6-compat python3 make g++
 
-# Cache layer: Copy package manifests
-COPY package*.json ./
+# Copy dependency manifests first for maximum Docker layer caching
+COPY package.json package-lock.json* ./
 
-# Install all dependencies including devDependencies for build
-RUN npm ci
+# Install all dependencies (including devDependencies needed for build)
+RUN npm install
 
-# Copy full application source code
-COPY . .
+# Copy application configuration files
+COPY tsconfig.json vite.config.ts index.html server.ts ./
+COPY public ./public
+COPY src ./src
 
-# Run production build (compiles client assets to dist/ and bundles server.ts to dist/server.js)
+# Build client SPA (Vite + TailwindCSS) and server bundle (esbuild)
 RUN npm run build
-
-# Prune development dependencies to keep final image lean
-RUN npm prune --omit=dev
 
 # ------------------------------------------------------------------------------
 # Stage 2: Minimal Production Runtime
 # ------------------------------------------------------------------------------
-FROM node:22-alpine AS runner
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Establish non-root user and group for security
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 broadcast
+# Set production environment variables
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOST=0.0.0.0
 
-# Install curl for production Docker health checks
-RUN apk add --no-cache curl
+# Install curl for healthcheck probes
+RUN apk add --no-cache curl tzdata
 
-# Set environment
-ENV NODE_ENV=production
-ENV PORT=3000
-ENV HOST=0.0.0.0
+# Set Indian Standard Time (IST) default timezone
+ENV TZ=Asia/Kolkata
 
-# Copy node_modules, compiled dist directory, and necessary configs
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
+# Copy package manifest
+COPY package.json ./
+
+# Install only production dependencies
+RUN npm install --omit=dev --ignore-scripts && npm cache clean --force
+
+# Copy pre-compiled bundles and public assets from builder
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/public ./public
 
-# Set file ownership to non-root broadcast user
-RUN chown -R broadcast:nodejs /app
+# Create isolated, non-root system user and group for security hardening
+RUN addgroup -S -g 1001 broadcastgroup && \
+    adduser -S -u 1001 -G broadcastgroup broadcastuser && \
+    chown -R broadcastuser:broadcastgroup /app
 
-USER broadcast
+# Switch to unprivileged user
+USER broadcastuser
 
-# Expose HTTP & WebSocket port
+# Expose HTTP & WebSocket Port
 EXPOSE 3000
 
-# Docker Healthcheck targeting the high-availability /health endpoint
+# Docker Healthcheck: Query local Express health endpoint every 30 seconds
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-# Start production server bundle with native Node.js
+# Start MarketinGlu Broadcast Server
 CMD ["node", "dist/server.js"]
