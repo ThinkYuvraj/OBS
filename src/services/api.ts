@@ -6,6 +6,8 @@ import {
   PassPlan,
   UserProfile,
   SupportTicket,
+  AppReview,
+  ReviewStats,
 } from '../types/sports';
 
 const API_BASE = '/api';
@@ -504,6 +506,50 @@ export async function fetchSupportTickets(): Promise<{
 }> {
   const res = await fetch(`${API_BASE}/support/tickets`);
   if (!res.ok) throw new Error('Failed to fetch support tickets');
+  return res.json();
+}
+
+// User Reviews & Google Play Store Rating APIs
+export async function fetchReviews(sport?: string): Promise<{
+  reviews: AppReview[];
+  stats: ReviewStats;
+  googlePlayPackage: string;
+  googlePlayDirectRateUrl: string;
+}> {
+  const query = sport && sport !== 'all' ? `?sport=${encodeURIComponent(sport)}` : '';
+  const res = await fetch(`${API_BASE}/reviews${query}`);
+  if (!res.ok) throw new Error('Failed to fetch app reviews');
+  return res.json();
+}
+
+export async function submitReview(reviewData: {
+  authorName: string;
+  organization?: string;
+  role: string;
+  sport: string;
+  rating: number;
+  title: string;
+  reviewText: string;
+  easeOfUseRating?: number;
+  overlayPerformanceRating?: number;
+  featuresLiked?: string[];
+  isVerifiedBroadcaster?: boolean;
+  playStoreSubmitted?: boolean;
+}): Promise<{
+  success: boolean;
+  review: AppReview;
+  stats: ReviewStats;
+  message: string;
+}> {
+  const res = await fetch(`${API_BASE}/reviews`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(reviewData),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to submit review');
+  }
   return res.json();
 }
 

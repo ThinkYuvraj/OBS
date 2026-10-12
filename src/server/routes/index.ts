@@ -7,6 +7,7 @@ import paymentRouter from './payment';
 import hostingerRouter from './hostinger';
 import healthRouter from './health';
 import supportRouter from './support';
+import reviewsRouter from './reviews';
 import { storage } from '../storage';
 
 const apiRouter = Router();
@@ -16,6 +17,9 @@ apiRouter.use('/health', healthRouter);
 
 // 2. Client Help Desk & Issue Reporting
 apiRouter.use('/support', supportRouter);
+
+// 3. User Reviews & Google Play Store Rating Desk
+apiRouter.use('/reviews', reviewsRouter);
 
 // 3. Matches & Scoring (matches router handles CRUD, events, simulation; sports router handles multi-sports)
 apiRouter.use('/matches', sportsRouter);

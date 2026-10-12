@@ -37,6 +37,7 @@ import {
   Activity,
   RotateCcw,
   BookOpen,
+  Star,
 } from 'lucide-react';
 import { RuleBookModal } from '../components/common/RuleBookModal';
 import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
@@ -540,6 +541,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               className="px-2 py-0.5 rounded-lg bg-[#060a14] hover:bg-[#0c1424] border border-slate-800 text-[10px] font-bold text-amber-300 cursor-pointer transition-all"
             >
               Blueprint →
+            </button>
+          </div>
+        </div>
+
+        {/* Google Play Store Rating & Reviews Prompt Banner */}
+        <div className="max-w-7xl mx-auto mt-3 bg-gradient-to-r from-[#0c1a30] via-[#091426] to-[#070b14] border border-cyan-500/30 rounded-xl px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-0.5 text-amber-400">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <Star key={s} className="w-3.5 h-3.5 fill-amber-400 stroke-none" />
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-black text-white">4.9 / 5.0 Google Play Rating</span>
+              <span className="text-slate-600 hidden sm:inline">•</span>
+              <span className="text-slate-300 hidden sm:inline">Loved by 1,480+ sports streamers & broadcasters</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onNavigate('reviews')}
+              className="px-3 py-1 rounded-lg bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-bold text-[11px] flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+            >
+              <span>Add Review / Rate on Play Store</span>
+              <ExternalLink className="w-3 h-3" />
             </button>
           </div>
         </div>

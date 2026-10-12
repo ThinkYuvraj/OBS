@@ -574,3 +574,44 @@ export interface SupportTicket {
   createdAt: number;
 }
 
+export type ReviewerRole =
+  | 'Streamer'
+  | 'Tournament Organizer'
+  | 'Broadcast Director'
+  | 'Official Scorer'
+  | 'Academy Coach'
+  | 'Esports Caster';
+
+export interface AppReview {
+  id: string;
+  authorName: string;
+  organization?: string;
+  role: ReviewerRole;
+  sport: SportType | 'all';
+  rating: number; // 1 to 5
+  title: string;
+  reviewText: string;
+  easeOfUseRating?: number; // 1 to 5
+  overlayPerformanceRating?: number; // 1 to 5
+  featuresLiked?: string[];
+  isVerifiedBroadcaster?: boolean;
+  avatarUrl?: string;
+  playStoreSubmitted?: boolean;
+  createdAt: number;
+}
+
+export interface ReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  breakdown: {
+    5: number;
+    4: number;
+    3: number;
+    2: number;
+    1: number;
+  };
+  playStoreRating: number;
+  playStoreReviewCount: number;
+  playStoreUrl: string;
+}
+

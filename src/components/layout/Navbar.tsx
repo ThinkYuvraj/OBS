@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, BookOpen, CreditCard, User, Sparkles, ShieldCheck, Compass, LifeBuoy } from 'lucide-react';
+import { Plus, BookOpen, CreditCard, User, Sparkles, ShieldCheck, Compass, LifeBuoy, Star } from 'lucide-react';
 import { UserProfile } from '../../types/sports';
 import { fetchActiveUser, fetchLicenseStatus } from '../../services/api';
 import { PricingModal } from '../payment/PricingModal';
@@ -131,6 +131,16 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
             }`}
           >
             3-Tier Architecture
+          </button>
+          <button
+            onClick={() => onNavigate('reviews')}
+            className={`flex items-center gap-1.5 transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
+              currentTab === 'reviews' ? 'text-cyan-400 font-bold' : 'text-slate-300'
+            }`}
+            title="Rate Us on Google Play Store & Read Community Reviews"
+          >
+            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+            <span>Rate Us</span>
           </button>
           {onOpenPolicies && (
             <button

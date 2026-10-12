@@ -9,6 +9,7 @@ import { ObsSetupGuide } from './pages/ObsSetupGuide';
 import { OverlayView } from './pages/OverlayView';
 import { ArchitectureView } from './pages/ArchitectureView';
 import { RuleBooks } from './pages/RuleBooks';
+import { ReviewsPage } from './pages/ReviewsPage';
 import { useRealtimeSocket } from './hooks/useRealtimeSocket';
 import { PolicyAgreementModal, isPolicyAccepted } from './components/common/PolicyAgreementModal';
 import { HelpDeskModal } from './components/common/HelpDeskModal';
@@ -110,6 +111,15 @@ export default function App() {
           <ArchitectureView
             onBack={() => handleNavigate('dashboard')}
             onNavigate={handleNavigate}
+          />
+        )}
+
+        {currentTab === 'reviews' && (
+          <ReviewsPage
+            onBack={() => handleNavigate('dashboard')}
+            onNavigateToConsole={(sport) =>
+              handleNavigate(sport === 'cricket' ? 'scoring' : 'multi-scoring')
+            }
           />
         )}
       </main>
