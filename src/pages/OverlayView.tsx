@@ -10,6 +10,7 @@ import { OutdoorSportsScoreBug } from '../components/overlay/OutdoorSportsScoreB
 import { KabaddiScoreBug } from '../components/overlay/KabaddiScoreBug';
 import { BroadcastAlertOverlay } from '../components/overlay/BroadcastAlertOverlay';
 import { Copy, Check, Move } from 'lucide-react';
+import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
 
 interface OverlayViewProps {
   token: string;
@@ -169,8 +170,14 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
   if (!match || !config) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-transparent">
-        <div className="bg-[#070b14]/80 text-cyan-400 px-4 py-2 rounded text-xs font-mono backdrop-blur">
-          Connecting to live broadcast stream...
+        <div className="bg-[#070b14]/95 border border-cyan-500/30 rounded-2xl p-6 shadow-2xl backdrop-blur-md">
+          <MarketingluLoadingScreen
+            message="Connecting OBS Browser Source..."
+            subMessage="Sub-second socket handshake & overlay layer initialization"
+            fullScreen={false}
+            size="sm"
+            showProgress={true}
+          />
         </div>
       </div>
     );

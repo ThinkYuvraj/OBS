@@ -39,6 +39,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { RuleBookModal } from '../components/common/RuleBookModal';
+import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
 
 interface DashboardProps {
   onNavigate: (tab: string, matchId?: string) => void;
@@ -723,8 +724,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         {/* Matches Grid or List */}
         {loading ? (
-          <div className="py-20 text-center text-cyan-300/80 font-mono text-sm">
-            Loading MarketinGlu Cyan-Sky broadcast studio channels...
+          <div className="py-8">
+            <MarketingluLoadingScreen
+              message="Loading Broadcast Studio Channels..."
+              subMessage="Connecting to active sports telemetry feeds & real-time score pipelines"
+              fullScreen={false}
+              size="md"
+              showProgress={true}
+            />
           </div>
         ) : filteredMatches.length === 0 ? (
           <div className="py-20 text-center bg-gradient-to-b from-[#0c1424]/90 to-[#060a14]/90 border border-slate-800/80 rounded-2xl mt-6">

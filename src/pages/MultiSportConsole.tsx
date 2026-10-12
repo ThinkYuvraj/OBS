@@ -37,6 +37,7 @@ import { KabaddiScoreBug } from '../components/overlay/KabaddiScoreBug';
 import { BroadcastGameTimer } from '../components/console/BroadcastGameTimer';
 import { RuleBookModal } from '../components/common/RuleBookModal';
 import { HelpDeskModal } from '../components/common/HelpDeskModal';
+import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
 
 interface MultiSportConsoleProps {
   matchId: string;
@@ -347,9 +348,12 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
 
   if (loading || !match) {
     return (
-      <div className="min-h-screen bg-[#070b14] flex items-center justify-center text-cyan-400 font-mono text-sm">
-        Loading MarketinGlu Cyan-Sky broadcast scorer console...
-      </div>
+      <MarketingluLoadingScreen
+        message="Loading Multi-Sport Broadcast Console..."
+        subMessage="Syncing scoreboard clocks, shot timers, live telemetry & OBS score bug layer"
+        fullScreen={true}
+        onCancel={onBack}
+      />
     );
   }
 

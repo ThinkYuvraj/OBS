@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { RuleBookModal } from '../components/common/RuleBookModal';
 import { HelpDeskModal } from '../components/common/HelpDeskModal';
+import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
 
 interface ScoringConsoleProps {
   matchId: string;
@@ -196,9 +197,12 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#070b14] flex items-center justify-center text-cyan-400 font-mono text-sm">
-        Loading MarketinGlu Cyan-Sky scoring console...
-      </div>
+      <MarketingluLoadingScreen
+        message="Loading ICC Cricket Broadcast Console..."
+        subMessage="Calibrating ball-by-ball engine, DLS calculators, bowler spells & OBS graphics pipeline"
+        fullScreen={true}
+        onCancel={onBack}
+      />
     );
   }
 

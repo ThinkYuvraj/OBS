@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { IssueCategory, IssueUrgency, ScreenshotAttachment, SportType, SupportTicket } from '../../types/sports';
 import { submitSupportTicket, fetchSupportTickets } from '../../services/api';
+import { MarketingluLoadingScreen } from './MarketingluLoadingScreen';
 
 interface HelpDeskModalProps {
   isOpen: boolean;
@@ -673,8 +674,14 @@ export const HelpDeskModal: React.FC<HelpDeskModalProps> = ({
               </div>
 
               {loadingTickets ? (
-                <div className="py-12 text-center text-cyan-400 font-mono text-xs">
-                  Loading support tickets...
+                <div className="py-6">
+                  <MarketingluLoadingScreen
+                    message="Syncing Client Support Tickets..."
+                    subMessage="Querying support@marketinglu.com ticket registry"
+                    fullScreen={false}
+                    size="sm"
+                    showProgress={true}
+                  />
                 </div>
               ) : existingTickets.length === 0 ? (
                 <div className="py-12 text-center rounded-2xl bg-[#060a14] border border-slate-800 space-y-2">

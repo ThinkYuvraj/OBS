@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Tv, BookOpen, CreditCard, User, Sparkles, ShieldCheck, Compass, LifeBuoy } from 'lucide-react';
+import { Plus, BookOpen, CreditCard, User, Sparkles, ShieldCheck, Compass, LifeBuoy } from 'lucide-react';
 import { UserProfile } from '../../types/sports';
 import { fetchActiveUser, fetchLicenseStatus } from '../../services/api';
 import { PricingModal } from '../payment/PricingModal';
 import { UserRoleModal } from './UserRoleModal';
+import emblemDarkImg from '../../assets/images/marketinglu-emblem-dark.png';
+import wordmarkImg from '../../assets/images/marketinglu-wordmark.png';
 
 interface NavbarProps {
   currentTab: string;
@@ -41,15 +43,21 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
           className="flex items-center gap-3 cursor-pointer whitespace-nowrap shrink-0"
           onClick={() => onNavigate('dashboard')}
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-400 via-sky-500 to-blue-600 border border-cyan-400/40 flex items-center justify-center text-slate-950 font-black text-sm tracking-wider shadow-lg shadow-cyan-500/25">
-            <Tv className="w-4 h-4 stroke-[2.5]" />
+          <div className="w-10 h-10 rounded-xl bg-[#090f1f] border border-cyan-500/40 flex items-center justify-center p-1 shadow-lg shadow-cyan-500/20 group hover:border-cyan-400 transition-colors">
+            <img
+              src={emblemDarkImg}
+              alt="MarketinGlu Emblem"
+              className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] group-hover:scale-105 transition-transform"
+            />
           </div>
           <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-base font-black tracking-tight bg-gradient-to-r from-white via-cyan-200 to-sky-400 bg-clip-text text-transparent select-none font-['Space_Grotesk',sans-serif]">
-                MarketinGlu
-              </span>
-              <span className="text-xs font-extrabold text-cyan-400 font-mono tracking-wider">
+            <div className="flex items-center gap-2">
+              <img
+                src={wordmarkImg}
+                alt="MARKETINGLU"
+                className="h-4.5 w-auto object-contain brightness-110 drop-shadow-[0_1px_4px_rgba(6,182,212,0.3)]"
+              />
+              <span className="text-[10px] font-black text-cyan-300 font-mono tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30">
                 OBS
               </span>
               <span className="hidden lg:inline-block px-1.5 py-0.2 rounded bg-cyan-500/10 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 font-bold">

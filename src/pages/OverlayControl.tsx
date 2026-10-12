@@ -30,6 +30,7 @@ import { OutdoorSportsScoreBug } from '../components/overlay/OutdoorSportsScoreB
 import { BroadcastAlertOverlay } from '../components/overlay/BroadcastAlertOverlay';
 import { extractYouTubeVideoId } from './OverlayView';
 import { useRealtimeSocket } from '../hooks/useRealtimeSocket';
+import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
 
 interface OverlayControlProps {
   matchId: string;
@@ -181,9 +182,12 @@ export const OverlayControl: React.FC<OverlayControlProps> = ({ matchId, onBack 
 
   if (!match || !config) {
     return (
-      <div className="min-h-screen bg-[#070b14] flex items-center justify-center text-cyan-400 font-mono text-sm">
-        Loading MarketinGlu Cyan-Sky overlay controls...
-      </div>
+      <MarketingluLoadingScreen
+        message="Loading Broadcast Overlay Studio..."
+        subMessage="Syncing lower-third positioning, Chroma key transparency, OBS browser source & CSS themes"
+        fullScreen={true}
+        onCancel={onBack}
+      />
     );
   }
 
