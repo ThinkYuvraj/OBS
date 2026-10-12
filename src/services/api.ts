@@ -8,6 +8,11 @@ import {
   SupportTicket,
   AppReview,
   ReviewStats,
+  PaymentGateway,
+  GstInvoiceDetails,
+  GrievanceRedressalTicket,
+  DpdpDataRequest,
+  TakedownNotice,
 } from '../types/sports';
 
 const API_BASE = '/api';
@@ -434,13 +439,18 @@ export async function fetchLicenses(): Promise<{ licenses: BroadcastLicense[] }>
 
 export async function createPaymentOrder(
   plan: PassPlan,
-  customerInfo?: { name?: string; email?: string }
+  customerInfo?: { name?: string; email?: string },
+  gateway: PaymentGateway = 'razorpay'
 ): Promise<{
   orderId: string;
   amount: number;
   amountINR: number;
   currency: 'INR';
   keyId: string;
+  gateway: PaymentGateway;
+  paytmMid?: string;
+  paytmTxnToken?: string;
+  upiQrString?: string;
   plan: PassPlan;
   customerName: string;
   customerEmail: string;
@@ -448,19 +458,35 @@ export async function createPaymentOrder(
   const res = await fetch(`${API_BASE}/payment/create-order`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ plan, customerName: customerInfo?.name, customerEmail: customerInfo?.email }),
+    body: JSON.stringify({
+      plan,
+      customerName: customerInfo?.name,
+      customerEmail: customerInfo?.email,
+      gateway,
+    }),
   });
   if (!res.ok) throw new Error('Failed to create payment order');
   return res.json();
 }
 
 export async function verifyPayment(paymentDetails: {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
+  gateway?: PaymentGateway;
+  razorpay_order_id?: string;
+  razorpay_payment_id?: string;
   razorpay_signature?: string;
+  paytm_order_id?: string;
+  paytm_txn_id?: string;
   plan: PassPlan;
   customerName?: string;
   customerEmail?: string;
+  gstDetails?: {
+    buyerLegalName?: string;
+    buyerGstin?: string;
+    buyerPan?: string;
+    buyerAddress?: string;
+    buyerState?: string;
+    buyerStateCode?: string;
+  };
 }): Promise<{ success: boolean; license: BroadcastLicense; status: any }> {
   const res = await fetch(`${API_BASE}/payment/verify`, {
     method: 'POST',
@@ -468,6 +494,90 @@ export async function verifyPayment(paymentDetails: {
     body: JSON.stringify(paymentDetails),
   });
   if (!res.ok) throw new Error('Failed to verify payment');
+  return res.json();
+}
+
+export async function fetchGstInvoice(
+  orderId: string
+): Promise<{ invoice: GstInvoiceDetails; license: BroadcastLicense }> {
+  const res = await fetch(`${API_BASE}/payment/invoice/${orderId}`);
+  if (!res.ok) throw new Error('Failed to fetch GST Tax invoice');
+  return res.json();
+}
+
+// Indian Legal Compliance & Statutory Redressal APIs
+export async function fetchCompanyLegalInfo(): Promise<{ success: boolean; company: any }> {
+  const res = await fetch(`${API_BASE}/legal/company-info`);
+  if (!res.ok) throw new Error('Failed to fetch company legal disclosures');
+  return res.json();
+}
+
+export async function submitGrievanceTicket(data: {
+  category: string;
+  complainantName: string;
+  complainantEmail: string;
+  complainantPhone?: string;
+  complainantState?: string;
+  subject: string;
+  statementOfFacts: string;
+  reliefSought?: string;
+  referenceUrl?: string;
+}): Promise<{ success: boolean; ticket: GrievanceRedressalTicket; message: string }> {
+  const res = await fetch(`${API_BASE}/legal/grievance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to submit grievance');
+  }
+  return res.json();
+}
+
+export async function fetchGrievanceTickets(): Promise<{ success: boolean; grievances: GrievanceRedressalTicket[] }> {
+  const res = await fetch(`${API_BASE}/legal/grievances`);
+  if (!res.ok) throw new Error('Failed to fetch grievances');
+  return res.json();
+}
+
+export async function submitDpdpRequest(data: {
+  requestType: string;
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone?: string;
+  identityProofType?: string;
+  requestDetails: string;
+}): Promise<{ success: boolean; request: DpdpDataRequest; message: string }> {
+  const res = await fetch(`${API_BASE}/legal/dpdp-request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to submit DPDP request');
+  }
+  return res.json();
+}
+
+export async function submitTakedownNotice(data: {
+  copyrightOwner: string;
+  authorizedAgent?: string;
+  contactEmail: string;
+  workDescription: string;
+  infringingUrl: string;
+  goodFaithDeclaration: boolean;
+}): Promise<{ success: boolean; notice: TakedownNotice; message: string }> {
+  const res = await fetch(`${API_BASE}/legal/takedown-notice`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || 'Failed to submit takedown notice');
+  }
   return res.json();
 }
 

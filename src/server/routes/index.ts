@@ -8,6 +8,7 @@ import hostingerRouter from './hostinger';
 import healthRouter from './health';
 import supportRouter from './support';
 import reviewsRouter from './reviews';
+import legalRouter from './legal';
 import { storage } from '../storage';
 
 const apiRouter = Router();
@@ -20,6 +21,9 @@ apiRouter.use('/support', supportRouter);
 
 // 3. User Reviews & Google Play Store Rating Desk
 apiRouter.use('/reviews', reviewsRouter);
+
+// 4. Indian Legal Compliance, Grievance Redressal & Disclosures
+apiRouter.use('/legal', legalRouter);
 
 // 3. Matches & Scoring (matches router handles CRUD, events, simulation; sports router handles multi-sports)
 apiRouter.use('/matches', sportsRouter);

@@ -490,6 +490,32 @@ export interface UserProfile {
 
 export type PassPlan = 'hourly' | 'daily' | 'pro';
 
+export type PaymentGateway = 'razorpay' | 'paytm';
+
+export interface GstInvoiceDetails {
+  invoiceNumber: string;
+  invoiceDate: number;
+  buyerLegalName: string;
+  buyerGstin?: string;
+  buyerPan?: string;
+  buyerAddress: string;
+  buyerState: string;
+  buyerStateCode: string;
+  supplierLegalName: string;
+  supplierGstin: string;
+  supplierCin: string;
+  supplierPan: string;
+  sacCode: string;
+  taxableAmount: number;
+  cgstRate: number;
+  cgstAmount: number;
+  sgstRate: number;
+  sgstAmount: number;
+  igstRate: number;
+  igstAmount: number;
+  totalAmount: number;
+}
+
 export interface BroadcastLicense {
   id: string;
   plan: PassPlan;
@@ -502,6 +528,56 @@ export interface BroadcastLicense {
   paymentId: string;
   customerName: string;
   customerEmail: string;
+  gateway?: PaymentGateway;
+  gstInvoice?: GstInvoiceDetails;
+}
+
+export interface GrievanceRedressalTicket {
+  id: string;
+  category:
+    | 'content_violation'
+    | 'privacy_dpdp'
+    | 'payment_dispute'
+    | 'copyright_infringement'
+    | 'intermediary_compliance'
+    | 'other';
+  complainantName: string;
+  complainantEmail: string;
+  complainantPhone: string;
+  complainantState: string;
+  subject: string;
+  statementOfFacts: string;
+  reliefSought: string;
+  referenceUrl?: string;
+  acknowledgedAt: number; // Within 24 hours under IT Rules 2021
+  resolutionDueBy: number; // Within 15 days under IT Rules 2021
+  status: 'acknowledged' | 'under_review' | 'resolved' | 'escalated';
+  assignedOfficer: string;
+  createdAt: number;
+}
+
+export interface DpdpDataRequest {
+  id: string;
+  requestType: 'access' | 'correction' | 'erasure' | 'consent_withdrawal' | 'nomination';
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone: string;
+  identityProofType: 'aadhaar_masked' | 'pan' | 'voter_id' | 'passport';
+  requestDetails: string;
+  createdAt: number;
+  status: 'received' | 'processing' | 'completed';
+}
+
+export interface TakedownNotice {
+  id: string;
+  copyrightOwner: string;
+  authorizedAgent: string;
+  contactEmail: string;
+  workDescription: string;
+  infringingUrl: string;
+  goodFaithDeclaration: boolean;
+  createdAt: number;
+  status: 'submitted' | 'acted_upon';
 }
 
 export interface OverlayTokenRecord {

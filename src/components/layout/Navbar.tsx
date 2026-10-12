@@ -16,6 +16,7 @@ import {
   SlidersHorizontal,
   Layers,
   Tv,
+  Scale,
 } from 'lucide-react';
 import { UserProfile } from '../../types/sports';
 import { fetchActiveUser, fetchLicenseStatus } from '../../services/api';
@@ -160,6 +161,26 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
             <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
             <span>Rate Us</span>
           </button>
+          <button
+            onClick={() => onNavigate('pricing')}
+            className={`flex items-center gap-1.5 transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
+              currentTab === 'pricing' ? 'text-cyan-400 font-bold' : 'text-slate-300'
+            }`}
+            title="Passes & Razorpay/Paytm Invoicing (₹499/hr • ₹1,699/day)"
+          >
+            <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Pricing</span>
+          </button>
+          <button
+            onClick={() => onNavigate('legal')}
+            className={`flex items-center gap-1.5 transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
+              currentTab === 'legal' ? 'text-cyan-400 font-bold' : 'text-slate-300'
+            }`}
+            title="Indian Legal Compliance, IT Rules & Grievance Redressal"
+          >
+            <Scale className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Legal Hub</span>
+          </button>
           {onOpenPolicies && (
             <button
               onClick={onOpenPolicies}
@@ -298,6 +319,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
                 { id: 'scoring', label: 'ICC Cricket Console', icon: Tv },
                 { id: 'multi-scoring', label: 'Multi-Sport Engine', icon: SlidersHorizontal },
                 { id: 'rule-books', label: 'Sports Rule Books', icon: BookOpen },
+                { id: 'pricing', label: 'Pass Pricing (₹499/hr • Razorpay/Paytm)', icon: CreditCard },
+                { id: 'legal', label: 'Indian Legal Compliance & Forms', icon: Scale },
                 { id: 'overlay-control', label: 'OBS Overlay Studio', icon: Sliders },
                 { id: 'obs-guide', label: 'OBS Setup Guide', icon: Compass },
                 { id: 'architecture', label: '3-Tier Architecture', icon: Layers },

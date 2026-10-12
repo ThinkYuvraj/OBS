@@ -10,6 +10,8 @@ import { OverlayView } from './pages/OverlayView';
 import { ArchitectureView } from './pages/ArchitectureView';
 import { RuleBooks } from './pages/RuleBooks';
 import { ReviewsPage } from './pages/ReviewsPage';
+import { PricingPage } from './pages/PricingPage';
+import { LegalCompliancePage } from './pages/LegalCompliancePage';
 import { useRealtimeSocket } from './hooks/useRealtimeSocket';
 import { PolicyAgreementModal, isPolicyAccepted } from './components/common/PolicyAgreementModal';
 import { HelpDeskModal } from './components/common/HelpDeskModal';
@@ -120,6 +122,20 @@ export default function App() {
             onNavigateToConsole={(sport) =>
               handleNavigate(sport === 'cricket' ? 'scoring' : 'multi-scoring')
             }
+          />
+        )}
+
+        {currentTab === 'pricing' && (
+          <PricingPage
+            onBack={() => handleNavigate('dashboard')}
+            onNavigate={handleNavigate}
+          />
+        )}
+
+        {currentTab === 'legal' && (
+          <LegalCompliancePage
+            onBack={() => handleNavigate('dashboard')}
+            onNavigate={handleNavigate}
           />
         )}
       </main>

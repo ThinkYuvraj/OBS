@@ -13,6 +13,11 @@ import {
   SupportTicket,
   AppReview,
   ReviewStats,
+  PaymentGateway,
+  GstInvoiceDetails,
+  GrievanceRedressalTicket,
+  DpdpDataRequest,
+  TakedownNotice,
 } from '../types/sports';
 import {
   calculateRRR,
@@ -29,6 +34,9 @@ class StorageManager {
   private licenses: Map<string, BroadcastLicense> = new Map();
   private supportTickets: Map<string, SupportTicket> = new Map();
   private reviews: Map<string, AppReview> = new Map();
+  private grievances: Map<string, GrievanceRedressalTicket> = new Map();
+  private dpdpRequests: Map<string, DpdpDataRequest> = new Map();
+  private takedownNotices: Map<string, TakedownNotice> = new Map();
 
   constructor() {
     this.seedInitialData();
@@ -1597,11 +1605,21 @@ class StorageManager {
     };
   }
 
-  createPaymentOrder(plan: PassPlan, customerInfo: { name?: string; email?: string } = {}) {
+  createPaymentOrder(
+    plan: PassPlan,
+    customerInfo: { name?: string; email?: string } = {},
+    gateway: PaymentGateway = 'razorpay'
+  ) {
     const amountInINR = plan === 'hourly' ? 499 : plan === 'daily' ? 1699 : 4999;
     const amountInPaise = amountInINR * 100;
-    const orderId = `order_rzp_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const orderId =
+      gateway === 'paytm'
+        ? `PTM_${timestamp}_${randomSuffix}`
+        : `order_rzp_${timestamp}_${randomSuffix}`;
     const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_MarketinGluLiveKey';
+    const paytmMid = process.env.PAYTM_MID || 'MKTGLU_LIVE_9842';
 
     return {
       orderId,
@@ -1609,6 +1627,10 @@ class StorageManager {
       amountINR: amountInINR,
       currency: 'INR' as const,
       keyId,
+      gateway,
+      paytmMid,
+      paytmTxnToken: `txntoken_${timestamp}_${randomSuffix}`,
+      upiQrString: `upi://pay?pa=marketin.glu@paytm&pn=MarketinGlu+Broadcast&am=${amountInINR}.00&cu=INR&tn=OBS+${plan.toUpperCase()}+Pass`,
       plan,
       customerName: customerInfo.name || 'Broadcaster',
       customerEmail: customerInfo.email || 'broadcast@marketinglu.com',
@@ -1616,15 +1638,64 @@ class StorageManager {
   }
 
   verifyPayment(details: {
-    razorpay_order_id: string;
-    razorpay_payment_id: string;
+    gateway?: PaymentGateway;
+    razorpay_order_id?: string;
+    razorpay_payment_id?: string;
     razorpay_signature?: string;
+    paytm_order_id?: string;
+    paytm_txn_id?: string;
     plan: PassPlan;
     customerName?: string;
     customerEmail?: string;
+    gstDetails?: {
+      buyerLegalName?: string;
+      buyerGstin?: string;
+      buyerPan?: string;
+      buyerAddress?: string;
+      buyerState?: string;
+      buyerStateCode?: string;
+    };
   }): BroadcastLicense {
     const durationHours = details.plan === 'hourly' ? 1 : details.plan === 'daily' ? 24 : 720;
     const amountINR = details.plan === 'hourly' ? 499 : details.plan === 'daily' ? 1699 : 4999;
+    const gateway = details.gateway || (details.paytm_order_id ? 'paytm' : 'razorpay');
+    const orderId = details.razorpay_order_id || details.paytm_order_id || `ORD_${Date.now()}`;
+    const paymentId = details.razorpay_payment_id || details.paytm_txn_id || `PAY_${Date.now()}`;
+
+    // 18% GST Calculation (SAC 998434 - Cloud Broadcast Streaming Software)
+    const taxableBase = Math.round((amountINR / 1.18) * 100) / 100;
+    const totalGst = Math.round((amountINR - taxableBase) * 100) / 100;
+    const stateCode = details.gstDetails?.buyerStateCode || '07'; // 07 = Delhi default
+    const isIntraState = stateCode === '07';
+    const cgst = isIntraState ? Math.round((totalGst / 2) * 100) / 100 : 0;
+    const sgst = isIntraState ? Math.round((totalGst / 2) * 100) / 100 : 0;
+    const igst = !isIntraState ? totalGst : 0;
+
+    const invoiceNumber = `MKT-GST-2026-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    const gstInvoice: GstInvoiceDetails = {
+      invoiceNumber,
+      invoiceDate: Date.now(),
+      buyerLegalName: details.gstDetails?.buyerLegalName || details.customerName || 'Broadcast Client',
+      buyerGstin: details.gstDetails?.buyerGstin,
+      buyerPan: details.gstDetails?.buyerPan,
+      buyerAddress: details.gstDetails?.buyerAddress || 'India',
+      buyerState: details.gstDetails?.buyerState || (isIntraState ? 'Delhi' : 'Outstation'),
+      buyerStateCode: stateCode,
+      supplierLegalName: 'MarketinGlu Technologies Private Limited',
+      supplierGstin: '07AAECM4920M1Z8',
+      supplierCin: 'U72900DL2024PTC123456',
+      supplierPan: 'AAECM4920M',
+      sacCode: '998434',
+      taxableAmount: taxableBase,
+      cgstRate: isIntraState ? 9 : 0,
+      cgstAmount: cgst,
+      sgstRate: isIntraState ? 9 : 0,
+      sgstAmount: sgst,
+      igstRate: !isIntraState ? 18 : 0,
+      igstAmount: igst,
+      totalAmount: amountINR,
+    };
 
     const license: BroadcastLicense = {
       id: `lic_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -1634,14 +1705,82 @@ class StorageManager {
       createdAt: Date.now(),
       validUntil: Date.now() + durationHours * 3600000,
       isActive: true,
-      orderId: details.razorpay_order_id,
-      paymentId: details.razorpay_payment_id,
+      orderId,
+      paymentId,
       customerName: details.customerName || 'Broadcast Director',
       customerEmail: details.customerEmail || 'director@marketinglu.com',
+      gateway,
+      gstInvoice,
     };
 
     this.licenses.set(license.id, license);
     return license;
+  }
+
+  getLicenseByOrderId(orderId: string): BroadcastLicense | undefined {
+    return Array.from(this.licenses.values()).find((l) => l.orderId === orderId);
+  }
+
+  // Statutory Grievance Redressal (IT Rules 2021 & Consumer Protection Act)
+  createGrievanceTicket(data: Omit<GrievanceRedressalTicket, 'id' | 'acknowledgedAt' | 'resolutionDueBy' | 'status' | 'assignedOfficer' | 'createdAt'>): GrievanceRedressalTicket {
+    const randomHex = Math.floor(1000 + Math.random() * 9000);
+    const id = `IN-GRV-2026-${randomHex}`;
+    const now = Date.now();
+    const ticket: GrievanceRedressalTicket = {
+      ...data,
+      id,
+      acknowledgedAt: now,
+      resolutionDueBy: now + 15 * 86400000, // Mandated 15 days resolution window
+      status: 'acknowledged',
+      assignedOfficer: 'Advait Sharma (Advocate & Statutory Grievance Redressal Officer)',
+      createdAt: now,
+    };
+    this.grievances.set(ticket.id, ticket);
+    return ticket;
+  }
+
+  getGrievanceTickets(): GrievanceRedressalTicket[] {
+    return Array.from(this.grievances.values()).sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  getGrievanceTicket(id: string): GrievanceRedressalTicket | undefined {
+    return this.grievances.get(id);
+  }
+
+  // Digital Personal Data Protection Act 2023 (DPDP Act)
+  createDpdpRequest(data: Omit<DpdpDataRequest, 'id' | 'createdAt' | 'status'>): DpdpDataRequest {
+    const randomHex = Math.floor(1000 + Math.random() * 9000);
+    const id = `DPDP-2026-${randomHex}`;
+    const req: DpdpDataRequest = {
+      ...data,
+      id,
+      createdAt: Date.now(),
+      status: 'received',
+    };
+    this.dpdpRequests.set(req.id, req);
+    return req;
+  }
+
+  getDpdpRequests(): DpdpDataRequest[] {
+    return Array.from(this.dpdpRequests.values()).sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  // Indian Copyright Act 1957 Section 37 / Intermediary Takedown Notice
+  createTakedownNotice(data: Omit<TakedownNotice, 'id' | 'createdAt' | 'status'>): TakedownNotice {
+    const randomHex = Math.floor(1000 + Math.random() * 9000);
+    const id = `IPR-TAKEDOWN-${new Date().getFullYear()}-${randomHex}`;
+    const notice: TakedownNotice = {
+      ...data,
+      id,
+      createdAt: Date.now(),
+      status: 'submitted',
+    };
+    this.takedownNotices.set(notice.id, notice);
+    return notice;
+  }
+
+  getTakedownNotices(): TakedownNotice[] {
+    return Array.from(this.takedownNotices.values()).sort((a, b) => b.createdAt - a.createdAt);
   }
 
   createSupportTicket(ticketData: Omit<SupportTicket, 'id' | 'createdAt' | 'status'>): SupportTicket {
