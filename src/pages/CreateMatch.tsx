@@ -821,7 +821,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 w-full overflow-hidden">
         {/* Quick Notification Toast */}
         {saveSuccessMsg && (
           <div className="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center gap-2 animate-bounce">

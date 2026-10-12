@@ -50,8 +50,8 @@ export default function App() {
         isConnected={isConnected}
       />
 
-      {/* Main View Router */}
-      <main className="flex-1">
+      {/* Main View Router with Safe Bottom Padding for Mobile Bottom Bar */}
+      <main className="flex-1 pb-20 xl:pb-0 w-full overflow-x-hidden">
         {currentTab === 'dashboard' && <Dashboard onNavigate={handleNavigate} />}
 
         {currentTab === 'create' && (

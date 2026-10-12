@@ -1,0 +1,54 @@
+{
+  "name": "MarketinGlu OBS - Live Sports ScoreBug",
+  "short_name": "MarketinGlu",
+  "description": "Sub-second live sports broadcast overlays for OBS, vMix, and mobile scoring with 60 FPS graphics across cricket, football, basketball, kabaddi, and 11 sports.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
+  "prefer_related_applications": false,
+  "categories": ["sports", "utilities", "productivity", "video"],
+  "icons": [
+    {
+      "src": "/marketinglu-emblem-dark.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/marketinglu-emblem-dark.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/marketinglu-wordmark.png",
+      "sizes": "155x52",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cricket Console",
+      "short_name": "Cricket",
+      "description": "Ball-by-ball ICC Cricket scoring console",
+      "url": "/?tab=scoring",
+      "icons": [{ "src": "/marketinglu-emblem-dark.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Multi-Sport Console",
+      "short_name": "Sports",
+      "description": "Football, Basketball, Kabaddi scoring",
+      "url": "/?tab=multi-scoring",
+      "icons": [{ "src": "/marketinglu-emblem-dark.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Overlay Studio",
+      "short_name": "OBS Studio",
+      "description": "OBS Browser source overlay customization",
+      "url": "/?tab=overlay-control",
+      "icons": [{ "src": "/marketinglu-emblem-dark.png", "sizes": "96x96" }]
+    }
+  ]
+}

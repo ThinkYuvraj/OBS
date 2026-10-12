@@ -82,7 +82,7 @@ export const ObsSetupGuide: React.FC<ObsSetupGuideProps> = ({ onBack, onNavigate
   };
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-20">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-20 w-full overflow-x-hidden">
       {/* Top Studio Header */}
       <div className="bg-gradient-to-r from-[#0c1424] via-[#090f1f] to-[#0c1424] border-b border-slate-800/80 px-4 sm:px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">

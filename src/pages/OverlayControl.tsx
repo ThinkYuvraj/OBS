@@ -281,7 +281,7 @@ export const OverlayControl: React.FC<OverlayControlProps> = ({ matchId, onBack 
   const activeLiveOutputsCount = destinations.filter((d) => d.status === 'live').length;
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-16">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-16 w-full overflow-x-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#0c1424] via-[#090f1f] to-[#0c1424] border-b border-slate-800/80 px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">

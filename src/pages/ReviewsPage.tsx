@@ -204,9 +204,9 @@ export const ReviewsPage: React.FC<ReviewsPageProps> = ({ onBack, onNavigateToCo
   }
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-24">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-28 sm:pb-24 w-full overflow-x-hidden">
       {/* Hero Section: Google Play Store Showcase */}
-      <section className="relative overflow-hidden border-b border-slate-800/80 bg-gradient-to-b from-[#0c1424] via-[#090f1f] to-[#070b14] pt-10 pb-12 px-4 sm:px-6">
+      <section className="relative overflow-hidden border-b border-slate-800/80 bg-gradient-to-b from-[#0c1424] via-[#090f1f] to-[#070b14] pt-8 sm:pt-10 pb-8 sm:pb-12 px-3 sm:px-6">
         {/* Ambient Neon Backlights */}
         <div className="absolute top-0 left-1/4 w-[480px] h-[320px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute top-1/2 right-1/4 w-[420px] h-[280px] bg-blue-600/10 rounded-full blur-[90px] pointer-events-none" />

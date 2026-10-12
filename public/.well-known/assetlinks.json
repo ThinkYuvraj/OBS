@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.marketinglu.obs.scorebug",
+      "sha256_cert_fingerprints": [
+        "14:6D:E9:7D:0F:52:CC:71:85:E0:4E:22:9E:BE:E2:BB:88:80:FF:E3:64:1F:B4:B9:38:A2:AE:34:6E:9A:8B:F2"
+      ]
+    }
+  }
+]

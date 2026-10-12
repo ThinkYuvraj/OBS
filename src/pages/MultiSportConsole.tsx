@@ -418,21 +418,21 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
       : [];
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-16">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-24 sm:pb-16 w-full overflow-x-hidden">
       {/* Top Studio Header */}
-      <div className="bg-gradient-to-r from-[#0c1424] via-[#090f1f] to-[#0c1424] border-b border-slate-800/80 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="bg-gradient-to-r from-[#0c1424] via-[#090f1f] to-[#0c1424] border-b border-slate-800/80 px-3 sm:px-6 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex items-center gap-2.5 sm:gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 transition-colors cursor-pointer"
+            className="p-2 rounded-xl bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 transition-colors cursor-pointer shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div>
-            <div className="text-[11px] font-extrabold text-cyan-400 uppercase tracking-wider font-mono">
+          <div className="min-w-0">
+            <div className="text-[10px] sm:text-[11px] font-extrabold text-cyan-400 uppercase tracking-wider font-mono truncate">
               {match.sport.replace('_', ' ').toUpperCase()} • MARKETINGLU CYAN-SKY DEFAULT
             </div>
-            <h1 className="text-lg font-black text-white font-['Space_Grotesk',sans-serif]">{match.name}</h1>
+            <h1 className="text-base sm:text-lg font-black text-white font-['Space_Grotesk',sans-serif] truncate">{match.name}</h1>
           </div>
         </div>
 
@@ -544,7 +544,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 mt-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 mt-4 sm:mt-6 space-y-4 sm:space-y-6 w-full overflow-hidden">
         {/* Fast Sport Channel Pills (Instant 1-Click Switch between Table Tennis, Volleyball, Badminton, Basketball, Football, Tennis, Field Hockey) */}
         <div className="flex flex-wrap items-center justify-between gap-3 bg-[#090f1f] border border-slate-800/80 rounded-xl p-2.5">
           <div className="flex flex-wrap items-center gap-1.5">

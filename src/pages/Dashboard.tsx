@@ -341,17 +341,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   ).length;
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-20">
+    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-24 sm:pb-20 w-full overflow-x-hidden">
       {/* Live Feedback Toast */}
       {actionFeedback && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-gradient-to-r from-[#0c1424] via-[#0d1a33] to-[#090f1f] border border-cyan-500/40 text-white text-xs font-bold shadow-2xl shadow-cyan-950/80 animate-bounce">
+        <div className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-gradient-to-r from-[#0c1424] via-[#0d1a33] to-[#090f1f] border border-cyan-500/40 text-white text-xs font-bold shadow-2xl shadow-cyan-950/80 animate-bounce">
           <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
           <span>{actionFeedback}</span>
         </div>
       )}
 
       {/* Hero / MarketinGlu Studio Header */}
-      <div className="relative border-b border-slate-800/80 bg-gradient-to-b from-[#0c1424] via-[#090f1f] to-[#070b14] px-6 py-6">
+      <div className="relative border-b border-slate-800/80 bg-gradient-to-b from-[#0c1424] via-[#090f1f] to-[#070b14] px-3 sm:px-6 py-4 sm:py-6">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[11px] font-bold uppercase tracking-wider text-cyan-300">

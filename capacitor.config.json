@@ -1,0 +1,32 @@
+{
+  "appId": "com.marketinglu.obs.scorebug",
+  "appName": "MarketinGlu OBS",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "backgroundColor": "#070b14",
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1800,
+      "launchAutoHide": true,
+      "backgroundColor": "#070b14",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": true,
+      "spinnerColor": "#06b6d4"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#070b14",
+      "overlaysWebView": false
+    }
+  }
+}
