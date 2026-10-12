@@ -19,7 +19,9 @@ import {
   Activity,
   CheckCircle2,
   Layers,
+  BookOpen,
 } from 'lucide-react';
+import { RuleBookModal } from '../components/common/RuleBookModal';
 
 interface ScoringConsoleProps {
   matchId: string;
@@ -36,6 +38,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
   const [selectedDismissedBatter, setSelectedDismissedBatter] = useState<string>('striker');
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [commentaryText, setCommentaryText] = useState('');
+  const [showRuleBook, setShowRuleBook] = useState(false);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadMatch = useCallback(async () => {
@@ -265,6 +268,14 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
           >
             <RotateCw className="w-3.5 h-3.5" />
             <span>Redo</span>
+          </button>
+          <button
+            onClick={() => setShowRuleBook(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#060a14] hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 hover:text-cyan-200 rounded-xl cursor-pointer transition-all shadow-sm"
+            title="Open ICC Cricket Official Rule Book & Umpire Signals"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Rule Book</span>
           </button>
         </div>
       </div>
@@ -763,6 +774,13 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
           </div>
         </div>
       )}
+
+      {/* ICC Cricket Official Rule Book Modal */}
+      <RuleBookModal
+        isOpen={showRuleBook}
+        onClose={() => setShowRuleBook(false)}
+        initialSport="cricket"
+      />
     </div>
   );
 };

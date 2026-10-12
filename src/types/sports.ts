@@ -8,7 +8,8 @@ export type SportType =
   | 'field_hockey'
   | 'volleyball'
   | 'badminton'
-  | 'table_tennis';
+  | 'table_tennis'
+  | 'kabaddi';
 
 export type MatchStatus = 'upcoming' | 'live' | 'break' | 'completed' | 'abandoned';
 
@@ -113,6 +114,29 @@ export interface VolleyballMatchState {
   isMatchPoint: boolean;
 }
 
+export interface KabaddiMatchState {
+  half: '1st' | '2nd' | 'full_time';
+  minute: number;
+  raidClock: number; // 30s countdown
+  isTimerRunning: boolean;
+  homeScore: number;
+  awayScore: number;
+  homeTouchPoints: number;
+  awayTouchPoints: number;
+  homeBonusPoints: number;
+  awayBonusPoints: number;
+  homeTacklePoints: number;
+  awayTacklePoints: number;
+  homeAllOutPoints: number;
+  awayAllOutPoints: number;
+  homeActivePlayers: number; // 0 to 7
+  awayActivePlayers: number; // 0 to 7
+  raidingTeam: 'home' | 'away';
+  isDoOrDie: boolean;
+  isSuperTackleOn: boolean;
+  lastPlay?: string;
+}
+
 export interface Team {
   id: string;
   name: string;
@@ -123,12 +147,28 @@ export interface Team {
   squad: Player[];
 }
 
+export type PlayerRole =
+  | 'batter'
+  | 'bowler'
+  | 'all-rounder'
+  | 'wicketkeeper'
+  | 'player'
+  | 'raider'
+  | 'defender'
+  | 'forward'
+  | 'midfielder'
+  | 'goalkeeper'
+  | 'guard'
+  | 'center';
+
 export interface Player {
   id: string;
   name: string;
   shortName?: string;
-  role: 'batter' | 'bowler' | 'all-rounder' | 'wicketkeeper' | 'player';
+  role: PlayerRole;
   number?: number;
+  isCaptain?: boolean;
+  isViceCaptain?: boolean;
 }
 
 export interface BatterStats {
@@ -298,7 +338,18 @@ export interface TennisMatchState {
 
 export type OverlayTemplate = 'bottom_bar' | 'compact_bug' | 'full_panel' | 'ticker';
 
-export type OverlayTheme = 'sky_broadcast';
+export type OverlayTheme = 'marketinglu' | 'sky_broadcast' | 'neon_cyan' | 'minimal_dark';
+
+export type OverlayPosition =
+  | 'bottom'
+  | 'bottom-center'
+  | 'top-left'
+  | 'top-right'
+  | 'top-center'
+  | 'bottom-left'
+  | 'bottom-right'
+  | 'center'
+  | 'custom';
 
 export interface OverlayAlert {
   id: string;
@@ -313,6 +364,9 @@ export interface OverlayAlert {
     | 'home_run'
     | 'try'
     | 'ace'
+    | 'super_raid'
+    | 'super_tackle'
+    | 'all_out'
     | 'custom';
   title: string;
   subtitle: string;
@@ -376,7 +430,9 @@ export interface OverlayConfig {
   tickerText: string;
   sponsorName: string;
   sponsorTagline: string;
-  position: 'bottom' | 'top-left' | 'top-right' | 'bottom-left';
+  position: OverlayPosition;
+  posX?: number; // Custom X in px
+  posY?: number; // Custom Y in px
   scale: number;
   opacity: number;
   animationsEnabled: boolean;
@@ -410,11 +466,42 @@ export interface Match {
   volleyballState?: VolleyballMatchState;
   badmintonState?: BadmintonMatchState;
   tableTennisState?: TableTennisMatchState;
+  kabaddiState?: KabaddiMatchState;
   activeOverlayToken: string;
   overlayTokens: string[];
   overlayConfig: OverlayConfig;
   eventsCount: number;
   lastUpdated: number;
+}
+
+export type OperatorRole = 'producer' | 'scorer' | 'graphics' | 'viewer';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  role: OperatorRole;
+  title: string;
+  email: string;
+  avatar: string;
+  assignedSports: SportType[];
+  preferredSetup: string;
+  lastActive: number;
+}
+
+export type PassPlan = 'hourly' | 'daily' | 'pro';
+
+export interface BroadcastLicense {
+  id: string;
+  plan: PassPlan;
+  amount: number; // 499 or 1699 or 4999 INR
+  currency: 'INR';
+  createdAt: number;
+  validUntil: number;
+  isActive: boolean;
+  orderId: string;
+  paymentId: string;
+  customerName: string;
+  customerEmail: string;
 }
 
 export interface OverlayTokenRecord {

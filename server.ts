@@ -17,6 +17,7 @@ import {
   TableTennisEngine,
   TennisEngine,
   VolleyballEngine,
+  KabaddiEngine,
 } from './src/engine/sportsEngine';
 import { OverlayAlert } from './src/types/sports';
 
@@ -41,6 +42,7 @@ const volleyballEngine = new VolleyballEngine();
 const baseballEngine = new BaseballEngine();
 const rugbyEngine = new RugbyEngine();
 const fieldHockeyEngine = new FieldHockeyEngine();
+const kabaddiEngine = new KabaddiEngine();
 
 // --- REST APIs ---
 
@@ -436,6 +438,119 @@ app.post('/api/matches/:id/rugby/event', (req: Request, res: Response) => {
   }
   res.json({ match: updated });
 });
+
+// Kabaddi
+app.post('/api/matches/:id/kabaddi/event', (req: Request, res: Response) => {
+  const match = storage.getMatch(req.params.id);
+  if (!match || match.sport !== 'kabaddi' || !match.kabaddiState) {
+    return res.status(400).json({ error: 'Invalid kabaddi match' });
+  }
+
+  const nextState = kabaddiEngine.processEvent(match.kabaddiState, req.body);
+
+  let activeAlert = match.overlayConfig.activeAlert;
+  if (req.body.type === 'super_raid') {
+    activeAlert = {
+      id: `alert_sr_${Date.now()}`,
+      type: 'super_raid',
+      title: 'SUPER RAID! 🔥',
+      subtitle: `${req.body.touchCount || 3}+ Points by ${req.body.player || 'Raider'}!`,
+      player: req.body.player || 'Raider',
+      timestamp: Date.now(),
+      durationMs: 4500,
+    };
+  } else if (req.body.type === 'super_tackle') {
+    activeAlert = {
+      id: `alert_st_${Date.now()}`,
+      type: 'super_tackle',
+      title: 'SUPER TACKLE! 🛡️',
+      subtitle: `2 Defense Points! Defender brilliance!`,
+      player: req.body.player || 'Defense',
+      timestamp: Date.now(),
+      durationMs: 4000,
+    };
+  } else if (req.body.type === 'all_out') {
+    activeAlert = {
+      id: `alert_ao_${Date.now()}`,
+      type: 'all_out',
+      title: 'ALL OUT! 💥',
+      subtitle: `2 Bonus Points awarded & Court Revived!`,
+      player: 'All Out',
+      timestamp: Date.now(),
+      durationMs: 5000,
+    };
+  }
+
+  const updated = storage.updateMatch(match.id, {
+    kabaddiState: nextState,
+    eventsCount: match.eventsCount + 1,
+    overlayConfig: { ...match.overlayConfig, activeAlert },
+  });
+  if (updated) {
+    realtimeHub.broadcastMatchUpdate(updated.id, updated);
+  }
+  res.json({ match: updated });
+});
+
+// User & Setup Operator Profiles API
+app.get('/api/users', (_req: Request, res: Response) => {
+  const users = storage.getUsers();
+  const activeUser = storage.getActiveUser();
+  res.json({ users, activeUser });
+});
+
+app.get('/api/users/active', (_req: Request, res: Response) => {
+  res.json({ activeUser: storage.getActiveUser() });
+});
+
+app.post('/api/users/active', (req: Request, res: Response) => {
+  const user = storage.setActiveUser(req.body.userId);
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({ activeUser: user });
+});
+
+app.post('/api/users', (req: Request, res: Response) => {
+  const newUser = storage.createUser(req.body);
+  res.status(201).json({ user: newUser });
+});
+
+// Razorpay Payment Gateways & Broadcast Access Passes API
+// Charges ₹499 per hour, ₹1,699 for a day (24h), ₹4,999 for Pro Access
+app.get('/api/payment/status', (_req: Request, res: Response) => {
+  const status = storage.getLicenseStatus();
+  res.json(status);
+});
+
+app.get('/api/payment/licenses', (_req: Request, res: Response) => {
+  const licenses = storage.getLicenses();
+  res.json({ licenses });
+});
+
+app.post('/api/payment/create-order', (req: Request, res: Response) => {
+  const { plan, customerName, customerEmail } = req.body;
+  if (!plan || !['hourly', 'daily', 'pro'].includes(plan)) {
+    return res.status(400).json({ error: 'Invalid plan: must be hourly, daily, or pro' });
+  }
+  const order = storage.createPaymentOrder(plan, { name: customerName, email: customerEmail });
+  res.json(order);
+});
+
+app.post('/api/payment/verify', (req: Request, res: Response) => {
+  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan, customerName, customerEmail } = req.body;
+  if (!razorpay_order_id || !razorpay_payment_id || !plan) {
+    return res.status(400).json({ error: 'Missing payment verification credentials' });
+  }
+  const license = storage.verifyPayment({
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    plan,
+    customerName,
+    customerEmail,
+  });
+  res.json({ success: true, license, status: storage.getLicenseStatus() });
+});
+
 
 // 4. Live score summary provider
 app.get('/api/matches/:id/live', async (req: Request, res: Response) => {

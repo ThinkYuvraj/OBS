@@ -9,6 +9,7 @@ import {
   TableTennisMatchState,
   TennisMatchState,
   VolleyballMatchState,
+  KabaddiMatchState,
 } from '../types/sports';
 
 export interface ValidationResult {
@@ -939,3 +940,216 @@ export class VolleyballEngine implements SportEngine<VolleyballMatchState, Volle
     return vs;
   }
 }
+
+// 11. Kabaddi scoring engine implementation
+export interface KabaddiEvent {
+  id?: string;
+  type:
+    | 'touch_point'
+    | 'bonus_point'
+    | 'empty_raid'
+    | 'super_raid'
+    | 'tackle'
+    | 'super_tackle'
+    | 'all_out'
+    | 'clock'
+    | 'switch_raider'
+    | 'raid_clock_reset';
+  teamId?: 'home' | 'away';
+  touchCount?: number;
+  bonus?: boolean;
+  player?: string;
+  minute?: number;
+  raidClock?: number;
+  isTimerRunning?: boolean;
+  half?: '1st' | '2nd' | 'full_time';
+}
+
+export class KabaddiEngine implements SportEngine<KabaddiMatchState, KabaddiEvent> {
+  sport: SportType = 'kabaddi';
+
+  initializeMatch(): KabaddiMatchState {
+    return {
+      half: '1st',
+      minute: 1,
+      raidClock: 30,
+      isTimerRunning: true,
+      homeScore: 0,
+      awayScore: 0,
+      homeTouchPoints: 0,
+      awayTouchPoints: 0,
+      homeBonusPoints: 0,
+      awayBonusPoints: 0,
+      homeTacklePoints: 0,
+      awayTacklePoints: 0,
+      homeAllOutPoints: 0,
+      awayAllOutPoints: 0,
+      homeActivePlayers: 7,
+      awayActivePlayers: 7,
+      raidingTeam: 'home',
+      isDoOrDie: false,
+      isSuperTackleOn: false,
+      lastPlay: 'Match started • Raid on',
+    };
+  }
+
+  validateEvent(): ValidationResult {
+    return { valid: true };
+  }
+
+  processEvent(state: KabaddiMatchState, event: KabaddiEvent): KabaddiMatchState {
+    const ks: KabaddiMatchState = JSON.parse(JSON.stringify(state));
+
+    if (typeof event.minute === 'number') ks.minute = event.minute;
+    if (typeof event.raidClock === 'number') ks.raidClock = event.raidClock;
+    if (typeof event.isTimerRunning === 'boolean') ks.isTimerRunning = event.isTimerRunning;
+    if (event.half) ks.half = event.half;
+
+    const raiding = ks.raidingTeam;
+    const defending = raiding === 'home' ? 'away' : 'home';
+
+    switch (event.type) {
+      case 'touch_point': {
+        const count = event.touchCount || 1;
+        if (raiding === 'home') {
+          ks.homeScore += count;
+          ks.homeTouchPoints += count;
+          ks.awayActivePlayers = Math.max(0, ks.awayActivePlayers - count);
+          ks.homeActivePlayers = Math.min(7, ks.homeActivePlayers + Math.min(count, 7 - ks.homeActivePlayers));
+        } else {
+          ks.awayScore += count;
+          ks.awayTouchPoints += count;
+          ks.homeActivePlayers = Math.max(0, ks.homeActivePlayers - count);
+          ks.awayActivePlayers = Math.min(7, ks.awayActivePlayers + Math.min(count, 7 - ks.awayActivePlayers));
+        }
+        ks.raidClock = 30;
+        ks.raidingTeam = defending;
+        ks.lastPlay = `${event.player || raiding.toUpperCase()} scored ${count} Touch Point${count > 1 ? 's' : ''}`;
+        break;
+      }
+
+      case 'bonus_point': {
+        if (raiding === 'home') {
+          ks.homeScore += 1;
+          ks.homeBonusPoints += 1;
+        } else {
+          ks.awayScore += 1;
+          ks.awayBonusPoints += 1;
+        }
+        ks.lastPlay = `${event.player || raiding.toUpperCase()} earned Bonus Point (+1)`;
+        break;
+      }
+
+      case 'super_raid': {
+        const touches = event.touchCount || 3;
+        const bonus = event.bonus ? 1 : 0;
+        const total = touches + bonus;
+        if (raiding === 'home') {
+          ks.homeScore += total;
+          ks.homeTouchPoints += touches;
+          if (bonus) ks.homeBonusPoints += 1;
+          ks.awayActivePlayers = Math.max(0, ks.awayActivePlayers - touches);
+          ks.homeActivePlayers = Math.min(7, ks.homeActivePlayers + Math.min(touches, 7 - ks.homeActivePlayers));
+        } else {
+          ks.awayScore += total;
+          ks.awayTouchPoints += touches;
+          if (bonus) ks.awayBonusPoints += 1;
+          ks.homeActivePlayers = Math.max(0, ks.homeActivePlayers - touches);
+          ks.awayActivePlayers = Math.min(7, ks.awayActivePlayers + Math.min(touches, 7 - ks.awayActivePlayers));
+        }
+        ks.raidClock = 30;
+        ks.raidingTeam = defending;
+        ks.lastPlay = `🔥 SUPER RAID! ${total} Points by ${event.player || raiding.toUpperCase()}`;
+        break;
+      }
+
+      case 'empty_raid': {
+        ks.raidClock = 30;
+        ks.raidingTeam = defending;
+        ks.lastPlay = `Empty Raid by ${event.player || raiding.toUpperCase()}`;
+        break;
+      }
+
+      case 'tackle': {
+        if (defending === 'home') {
+          ks.homeScore += 1;
+          ks.homeTacklePoints += 1;
+          ks.awayActivePlayers = Math.max(0, ks.awayActivePlayers - 1);
+          ks.homeActivePlayers = Math.min(7, ks.homeActivePlayers + 1);
+        } else {
+          ks.awayScore += 1;
+          ks.awayTacklePoints += 1;
+          ks.homeActivePlayers = Math.max(0, ks.homeActivePlayers - 1);
+          ks.awayActivePlayers = Math.min(7, ks.awayActivePlayers + 1);
+        }
+        ks.raidClock = 30;
+        ks.raidingTeam = defending;
+        ks.lastPlay = `Successful Tackle (+1) by ${defending.toUpperCase()} Defense`;
+        break;
+      }
+
+      case 'super_tackle': {
+        if (defending === 'home') {
+          ks.homeScore += 2;
+          ks.homeTacklePoints += 2;
+          ks.awayActivePlayers = Math.max(0, ks.awayActivePlayers - 1);
+          ks.homeActivePlayers = Math.min(7, ks.homeActivePlayers + 1);
+        } else {
+          ks.awayScore += 2;
+          ks.awayTacklePoints += 2;
+          ks.homeActivePlayers = Math.max(0, ks.homeActivePlayers - 1);
+          ks.awayActivePlayers = Math.min(7, ks.awayActivePlayers + 1);
+        }
+        ks.raidClock = 30;
+        ks.raidingTeam = defending;
+        ks.lastPlay = `🛡️ SUPER TACKLE! +2 Points for ${defending.toUpperCase()}`;
+        break;
+      }
+
+      case 'all_out': {
+        const teamGettingAllOut = event.teamId || (ks.homeActivePlayers === 0 ? 'home' : 'away');
+        const teamAwarded = teamGettingAllOut === 'home' ? 'away' : 'home';
+        if (teamAwarded === 'home') {
+          ks.homeScore += 2;
+          ks.homeAllOutPoints += 2;
+        } else {
+          ks.awayScore += 2;
+          ks.awayAllOutPoints += 2;
+        }
+        ks.homeActivePlayers = 7;
+        ks.awayActivePlayers = 7;
+        ks.lastPlay = `💥 ALL OUT! 2 Bonus Points for ${teamAwarded.toUpperCase()} (Squads Revived)`;
+        break;
+      }
+
+      case 'raid_clock_reset':
+        ks.raidClock = 30;
+        break;
+
+      case 'switch_raider':
+        ks.raidingTeam = ks.raidingTeam === 'home' ? 'away' : 'home';
+        ks.raidClock = 30;
+        break;
+    }
+
+    const currentDefenders = ks.raidingTeam === 'home' ? ks.awayActivePlayers : ks.homeActivePlayers;
+    ks.isSuperTackleOn = currentDefenders <= 3 && currentDefenders > 0;
+
+    if (ks.homeActivePlayers <= 0 || ks.awayActivePlayers <= 0) {
+      const allOutTeam = ks.homeActivePlayers <= 0 ? 'home' : 'away';
+      const awarding = allOutTeam === 'home' ? 'away' : 'home';
+      if (awarding === 'home') {
+        ks.homeScore += 2;
+        ks.homeAllOutPoints += 2;
+      } else {
+        ks.awayScore += 2;
+        ks.awayAllOutPoints += 2;
+      }
+      ks.homeActivePlayers = 7;
+      ks.awayActivePlayers = 7;
+    }
+
+    return ks;
+  }
+}
+

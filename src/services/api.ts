@@ -1,4 +1,11 @@
-import { BallEvent, Match, OverlayConfig } from '../types/sports';
+import {
+  BallEvent,
+  BroadcastLicense,
+  Match,
+  OverlayConfig,
+  PassPlan,
+  UserProfile,
+} from '../types/sports';
 
 const API_BASE = '/api';
 
@@ -354,4 +361,111 @@ export async function fetchHostingerSqlExport(): Promise<{
   if (!res.ok) throw new Error('Failed to generate Hostinger SQL dump');
   return res.json();
 }
+
+// Kabaddi
+export async function postKabaddiEvent(
+  matchId: string,
+  event: any
+): Promise<{ match: Match }> {
+  const res = await fetch(`${API_BASE}/matches/${matchId}/kabaddi/event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(event),
+  });
+  if (!res.ok) throw new Error('Failed to record kabaddi event');
+  return res.json();
+}
+
+// Operator & Setup Profiles
+export async function fetchUsers(): Promise<{ users: UserProfile[]; activeUser: UserProfile }> {
+  const res = await fetch(`${API_BASE}/users`);
+  if (!res.ok) throw new Error('Failed to fetch operator users');
+  return res.json();
+}
+
+export async function fetchActiveUser(): Promise<{ activeUser: UserProfile }> {
+  const res = await fetch(`${API_BASE}/users/active`);
+  if (!res.ok) throw new Error('Failed to fetch active operator');
+  return res.json();
+}
+
+export async function switchActiveUser(userId: string): Promise<{ activeUser: UserProfile }> {
+  const res = await fetch(`${API_BASE}/users/active`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId }),
+  });
+  if (!res.ok) throw new Error('Failed to switch operator profile');
+  return res.json();
+}
+
+export async function createOperatorUser(user: Partial<UserProfile>): Promise<{ user: UserProfile }> {
+  const res = await fetch(`${API_BASE}/users`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(user),
+  });
+  if (!res.ok) throw new Error('Failed to create operator user');
+  return res.json();
+}
+
+// Payment Gateway & License Passes (Razorpay)
+export async function fetchLicenseStatus(): Promise<{
+  isActive: boolean;
+  validUntil: number;
+  plan: PassPlan | 'none';
+  remainingHours: number;
+  remainingMinutes: number;
+  license?: BroadcastLicense;
+}> {
+  const res = await fetch(`${API_BASE}/payment/status`);
+  if (!res.ok) throw new Error('Failed to fetch license status');
+  return res.json();
+}
+
+export async function fetchLicenses(): Promise<{ licenses: BroadcastLicense[] }> {
+  const res = await fetch(`${API_BASE}/payment/licenses`);
+  if (!res.ok) throw new Error('Failed to fetch broadcast licenses');
+  return res.json();
+}
+
+export async function createPaymentOrder(
+  plan: PassPlan,
+  customerInfo?: { name?: string; email?: string }
+): Promise<{
+  orderId: string;
+  amount: number;
+  amountINR: number;
+  currency: 'INR';
+  keyId: string;
+  plan: PassPlan;
+  customerName: string;
+  customerEmail: string;
+}> {
+  const res = await fetch(`${API_BASE}/payment/create-order`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan, customerName: customerInfo?.name, customerEmail: customerInfo?.email }),
+  });
+  if (!res.ok) throw new Error('Failed to create payment order');
+  return res.json();
+}
+
+export async function verifyPayment(paymentDetails: {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature?: string;
+  plan: PassPlan;
+  customerName?: string;
+  customerEmail?: string;
+}): Promise<{ success: boolean; license: BroadcastLicense; status: any }> {
+  const res = await fetch(`${API_BASE}/payment/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(paymentDetails),
+  });
+  if (!res.ok) throw new Error('Failed to verify payment');
+  return res.json();
+}
+
 

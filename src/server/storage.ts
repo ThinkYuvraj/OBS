@@ -1,11 +1,15 @@
 import {
   BallEvent,
+  BroadcastLicense,
   CricketInnings,
   CricketMatchState,
+  KabaddiMatchState,
   Match,
   OverlayAlert,
   OverlayConfig,
   OverlayTokenRecord,
+  PassPlan,
+  UserProfile,
 } from '../types/sports';
 import {
   calculateRRR,
@@ -17,6 +21,9 @@ class StorageManager {
   private events: Map<string, BallEvent[]> = new Map(); // matchId -> events
   private undoneEvents: Map<string, BallEvent[]> = new Map(); // matchId -> undone
   private overlayTokens: Map<string, OverlayTokenRecord> = new Map(); // token -> record
+  private users: Map<string, UserProfile> = new Map();
+  private activeUserId: string = 'user_producer_1';
+  private licenses: Map<string, BroadcastLicense> = new Map();
 
   constructor() {
     this.seedInitialData();
@@ -783,6 +790,159 @@ class StorageManager {
       lastAccessedAt: Date.now(),
       isActive: true,
     });
+
+    // 10. Kabaddi: Puneri Paltan vs Patna Pirates (Pro Kabaddi League Final)
+    const kabaddiToken = 'overlay_live_kabaddi_pkl';
+    const kabaddiMatch: Match = {
+      id: 'match_kabaddi_pkl_final',
+      name: 'Puneri Paltan vs Patna Pirates',
+      sport: 'kabaddi',
+      tournament: 'Pro Kabaddi League 2026 - Final',
+      venue: 'Gachibowli Indoor Stadium, Hyderabad',
+      date: '2026-10-02',
+      startTime: '20:30',
+      status: 'live',
+      teamA: {
+        id: 'team_puneri',
+        name: 'Puneri Paltan',
+        shortName: 'PUN',
+        color: '#F97316',
+        secondaryColor: '#EA580C',
+        squad: [
+          { id: 'kp_aslam', name: 'Aslam Inamdar', role: 'all-rounder', number: 7 },
+          { id: 'kp_mohit', name: 'Mohit Goyat', role: 'batter', number: 11 },
+          { id: 'kp_pankaj', name: 'Pankaj Mohite', role: 'batter', number: 9 },
+          { id: 'kp_shadloui', name: 'Mohammadreza Shadloui', role: 'bowler', number: 1 },
+          { id: 'kp_gaurav', name: 'Gaurav Khatri', role: 'bowler', number: 5 },
+          { id: 'kp_abhinesh', name: 'Abhinesh Nadarajan', role: 'bowler', number: 3 },
+          { id: 'kp_sanket', name: 'Sanket Sawant', role: 'bowler', number: 4 },
+        ],
+      },
+      teamB: {
+        id: 'team_patna',
+        name: 'Patna Pirates',
+        shortName: 'PAT',
+        color: '#15803D',
+        secondaryColor: '#FACC15',
+        squad: [
+          { id: 'pat_sachin', name: 'Sachin Tanwar', role: 'batter', number: 10 },
+          { id: 'pat_manjeet', name: 'Manjeet Dahiya', role: 'batter', number: 8 },
+          { id: 'pat_sudhakar', name: 'M. Sudhakar', role: 'batter', number: 14 },
+          { id: 'pat_krishan', name: 'Krishan Dhull', role: 'bowler', number: 2 },
+          { id: 'pat_ankit', name: 'Ankit Jaglan', role: 'bowler', number: 6 },
+          { id: 'pat_manish', name: 'Manish Dhull', role: 'bowler', number: 12 },
+          { id: 'pat_babu', name: 'Babu M', role: 'bowler', number: 15 },
+        ],
+      },
+      kabaddiState: {
+        half: '2nd',
+        minute: 34,
+        raidClock: 21,
+        isTimerRunning: true,
+        homeScore: 36,
+        awayScore: 32,
+        homeTouchPoints: 18,
+        awayTouchPoints: 16,
+        homeBonusPoints: 4,
+        awayBonusPoints: 5,
+        homeTacklePoints: 10,
+        awayTacklePoints: 9,
+        homeAllOutPoints: 4,
+        awayAllOutPoints: 2,
+        homeActivePlayers: 6,
+        awayActivePlayers: 4,
+        raidingTeam: 'home',
+        isDoOrDie: false,
+        isSuperTackleOn: false,
+        lastPlay: 'Aslam Inamdar Running Hand Touch (+1)',
+      },
+      activeOverlayToken: kabaddiToken,
+      overlayTokens: [kabaddiToken],
+      overlayConfig: {
+        ...defaultOverlayConfig,
+        template: 'compact_bug',
+        theme: 'marketinglu',
+        position: 'top-left',
+        tickerText: 'PRO KABADDI LEAGUE 2026 FINAL • HYDERABAD • LIVE HD',
+      },
+      eventsCount: 48,
+      lastUpdated: Date.now() + 50,
+    };
+    this.matches.set(kabaddiMatch.id, kabaddiMatch);
+    this.overlayTokens.set(kabaddiToken, {
+      token: kabaddiToken,
+      matchId: kabaddiMatch.id,
+      createdAt: Date.now(),
+      lastAccessedAt: Date.now(),
+      isActive: true,
+    });
+
+    // Seed Operator User Profiles for All Setups
+    const initialUsers: UserProfile[] = [
+      {
+        id: 'user_producer_1',
+        name: 'Yuvraj Thinker',
+        role: 'producer',
+        title: 'Executive Broadcast Producer & Director',
+        email: 'yuvraj@marketinglu.com',
+        avatar: '🎬',
+        assignedSports: ['cricket', 'football', 'basketball', 'kabaddi', 'tennis', 'badminton'],
+        preferredSetup: 'Production Master Control Desk',
+        lastActive: Date.now(),
+      },
+      {
+        id: 'user_scorer_1',
+        name: 'Rahul Dravid',
+        role: 'scorer',
+        title: 'Lead Match Scorer & Technical Official',
+        email: 'scorer@marketinglu.com',
+        avatar: '⚡',
+        assignedSports: ['cricket', 'football', 'badminton', 'table_tennis'],
+        preferredSetup: 'Rapid Live Scoring Console',
+        lastActive: Date.now() - 3600000,
+      },
+      {
+        id: 'user_graphics_1',
+        name: 'Sarah Jenkins',
+        role: 'graphics',
+        title: 'Broadcast Graphics & OBS TD',
+        email: 'graphics@marketinglu.com',
+        avatar: '🎨',
+        assignedSports: ['basketball', 'volleyball', 'kabaddi', 'field_hockey'],
+        preferredSetup: 'Overlay Studio & OBS Mover',
+        lastActive: Date.now() - 7200000,
+      },
+      {
+        id: 'user_viewer_1',
+        name: 'VIP Client Monitor',
+        role: 'viewer',
+        title: 'Clean Feed & Multi-View Monitor',
+        email: 'viewer@marketinglu.com',
+        avatar: '👁️',
+        assignedSports: ['cricket', 'football'],
+        preferredSetup: 'Clean Telemetry Monitor',
+        lastActive: Date.now() - 14400000,
+      },
+    ];
+    for (const u of initialUsers) {
+      this.users.set(u.id, u);
+    }
+
+    // Seed Active Broadcast License (24h Day Pass active for testing)
+    const initialLicense: BroadcastLicense = {
+      id: 'lic_mktglu_day_pass',
+      plan: 'daily',
+      amount: 1699,
+      currency: 'INR',
+      createdAt: Date.now() - 7200000,
+      validUntil: Date.now() + 22 * 3600000, // 22 hours remaining
+      isActive: true,
+      orderId: 'order_rzp_day_broadcast_882',
+      paymentId: 'pay_rzp_mock_live_day_1699',
+      customerName: 'Yuvraj Thinker',
+      customerEmail: 'yuvraj@marketinglu.com',
+    };
+    this.licenses.set(initialLicense.id, initialLicense);
   }
 
   // Matches CRUD
@@ -982,6 +1142,32 @@ class StorageManager {
               homeSinBin: 0,
               awaySinBin: 0,
               lastPlay: 'Kick-off',
+            }
+          : undefined),
+      kabaddiState:
+        matchData.kabaddiState ||
+        (sport === 'kabaddi'
+          ? {
+              half: '1st',
+              minute: 1,
+              raidClock: 30,
+              isTimerRunning: true,
+              homeScore: 0,
+              awayScore: 0,
+              homeTouchPoints: 0,
+              awayTouchPoints: 0,
+              homeBonusPoints: 0,
+              awayBonusPoints: 0,
+              homeTacklePoints: 0,
+              awayTacklePoints: 0,
+              homeAllOutPoints: 0,
+              awayAllOutPoints: 0,
+              homeActivePlayers: 7,
+              awayActivePlayers: 7,
+              raidingTeam: 'home',
+              isDoOrDie: false,
+              isSuperTackleOn: false,
+              lastPlay: 'Match started • Raid on',
             }
           : undefined),
       activeOverlayToken: token,
@@ -1310,6 +1496,148 @@ class StorageManager {
   clearOverlayAlert(tokenOrMatchId: string): Match | null {
     return this.updateOverlayConfig(tokenOrMatchId, { activeAlert: null });
   }
+
+  // --- Multi-User Setup & Operator Profiles ---
+  getUsers(): UserProfile[] {
+    return Array.from(this.users.values()).sort((a, b) => b.lastActive - a.lastActive);
+  }
+
+  getActiveUser(): UserProfile {
+    const user = this.users.get(this.activeUserId);
+    if (user) return user;
+    const first = Array.from(this.users.values())[0];
+    if (first) {
+      this.activeUserId = first.id;
+      return first;
+    }
+    const defaultUser: UserProfile = {
+      id: 'user_default',
+      name: 'Broadcast Operator',
+      role: 'producer',
+      title: 'Studio Director',
+      email: 'operator@marketinglu.com',
+      avatar: '🎬',
+      assignedSports: ['cricket', 'football', 'basketball', 'kabaddi'],
+      preferredSetup: 'Default Console',
+      lastActive: Date.now(),
+    };
+    this.users.set(defaultUser.id, defaultUser);
+    this.activeUserId = defaultUser.id;
+    return defaultUser;
+  }
+
+  setActiveUser(id: string): UserProfile | null {
+    const user = this.users.get(id);
+    if (!user) return null;
+    user.lastActive = Date.now();
+    this.activeUserId = id;
+    return user;
+  }
+
+  createUser(userData: Partial<UserProfile>): UserProfile {
+    const id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newUser: UserProfile = {
+      id,
+      name: userData.name || 'New Operator',
+      role: userData.role || 'scorer',
+      title: userData.title || 'Broadcast Setup Operator',
+      email: userData.email || 'scorer@broadcast.live',
+      avatar: userData.avatar || '🎧',
+      assignedSports: userData.assignedSports || ['cricket', 'football'],
+      preferredSetup: userData.preferredSetup || 'Standard Scoring Console',
+      lastActive: Date.now(),
+    };
+    this.users.set(id, newUser);
+    return newUser;
+  }
+
+  // --- Payment Gateway & License Passes (₹499/hr, ₹1699/day, ₹4999/pro) ---
+  getLicenses(): BroadcastLicense[] {
+    return Array.from(this.licenses.values()).sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  getActiveLicense(): BroadcastLicense | null {
+    const now = Date.now();
+    for (const lic of this.licenses.values()) {
+      if (lic.isActive && lic.validUntil > now) {
+        return lic;
+      }
+    }
+    return null;
+  }
+
+  getLicenseStatus() {
+    const active = this.getActiveLicense();
+    if (!active) {
+      return {
+        isActive: false,
+        validUntil: 0,
+        plan: 'none',
+        remainingHours: 0,
+        remainingMinutes: 0,
+        license: undefined,
+      };
+    }
+    const remainingMs = Math.max(0, active.validUntil - Date.now());
+    const remainingHours = Number((remainingMs / (1000 * 60 * 60)).toFixed(1));
+    const remainingMinutes = Math.floor(remainingMs / (1000 * 60));
+    return {
+      isActive: true,
+      validUntil: active.validUntil,
+      plan: active.plan,
+      remainingHours,
+      remainingMinutes,
+      license: active,
+    };
+  }
+
+  createPaymentOrder(plan: PassPlan, customerInfo: { name?: string; email?: string } = {}) {
+    const amountInINR = plan === 'hourly' ? 499 : plan === 'daily' ? 1699 : 4999;
+    const amountInPaise = amountInINR * 100;
+    const orderId = `order_rzp_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const keyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_MarketinGluLiveKey';
+
+    return {
+      orderId,
+      amount: amountInPaise,
+      amountINR: amountInINR,
+      currency: 'INR' as const,
+      keyId,
+      plan,
+      customerName: customerInfo.name || 'Broadcaster',
+      customerEmail: customerInfo.email || 'broadcast@marketinglu.com',
+    };
+  }
+
+  verifyPayment(details: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature?: string;
+    plan: PassPlan;
+    customerName?: string;
+    customerEmail?: string;
+  }): BroadcastLicense {
+    const durationHours = details.plan === 'hourly' ? 1 : details.plan === 'daily' ? 24 : 720;
+    const amountINR = details.plan === 'hourly' ? 499 : details.plan === 'daily' ? 1699 : 4999;
+
+    const license: BroadcastLicense = {
+      id: `lic_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      plan: details.plan,
+      amount: amountINR,
+      currency: 'INR',
+      createdAt: Date.now(),
+      validUntil: Date.now() + durationHours * 3600000,
+      isActive: true,
+      orderId: details.razorpay_order_id,
+      paymentId: details.razorpay_payment_id,
+      customerName: details.customerName || 'Broadcast Director',
+      customerEmail: details.customerEmail || 'director@marketinglu.com',
+    };
+
+    this.licenses.set(license.id, license);
+    return license;
+  }
 }
 
 export const storage = new StorageManager();
+

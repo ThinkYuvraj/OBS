@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Match, OverlayConfig } from '../types/sports';
+import { Match, OverlayConfig, OverlayPosition } from '../types/sports';
 import { useRealtimeSocket } from '../hooks/useRealtimeSocket';
 import { fetchMatch, fetchOverlay } from '../services/api';
 import { CricketBottomBar } from '../components/overlay/CricketBottomBar';
@@ -7,7 +7,9 @@ import { FootballScoreBug } from '../components/overlay/FootballScoreBug';
 import { BasketballScoreBug } from '../components/overlay/BasketballScoreBug';
 import { RacquetVolleyScoreBug } from '../components/overlay/RacquetVolleyScoreBug';
 import { OutdoorSportsScoreBug } from '../components/overlay/OutdoorSportsScoreBug';
+import { KabaddiScoreBug } from '../components/overlay/KabaddiScoreBug';
 import { BroadcastAlertOverlay } from '../components/overlay/BroadcastAlertOverlay';
+import { Copy, Check, Move } from 'lucide-react';
 
 interface OverlayViewProps {
   token: string;
@@ -42,6 +44,25 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
   const [config, setConfig] = useState<OverlayConfig | null>(null);
   const [error, setError] = useState<string | null>(null);
   const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // Drag-and-drop state for interactive positioning calibration
+  const [customCoords, setCustomCoords] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(null);
+  const [copiedUrl, setCopiedUrl] = useState(false);
+
+  // Parse URL search parameters (e.g. ?pos=top-right&x=120&y=40&scale=0.9&movable=1)
+  const searchParams = new URLSearchParams(window.location.search);
+  const urlPos = (searchParams.get('pos') as OverlayPosition) || null;
+  const urlX = searchParams.get('x');
+  const urlY = searchParams.get('y');
+  const urlScale = searchParams.get('scale');
+  const urlOpacity = searchParams.get('opacity');
+  const urlTheme = searchParams.get('theme');
+  const isMovableParam =
+    searchParams.get('movable') === '1' ||
+    searchParams.get('movable') === 'true' ||
+    searchParams.get('move') === 'true';
 
   useEffect(() => {
     fetchOverlay(token)
@@ -106,6 +127,35 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
     };
   }, [shouldRenderCameraLayer, streamFeed?.activeSource]);
 
+  // Handle Dragging
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isMovableParam && !e.altKey) return;
+    e.preventDefault();
+    const currentX = customCoords?.x ?? (urlX ? parseInt(urlX, 10) : 32);
+    const currentY = customCoords?.y ?? (urlY ? parseInt(urlY, 10) : 32);
+    dragStartRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      initX: currentX,
+      initY: currentY,
+    };
+    setIsDragging(true);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !dragStartRef.current) return;
+    const deltaX = e.clientX - dragStartRef.current.startX;
+    const deltaY = e.clientY - dragStartRef.current.startY;
+    setCustomCoords({
+      x: Math.max(0, Math.min(1820, dragStartRef.current.initX + deltaX)),
+      y: Math.max(0, Math.min(1000, dragStartRef.current.initY + deltaY)),
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
   if (error) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-transparent">
@@ -128,6 +178,97 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
 
   const ytVideoId = streamFeed?.youtubeUrl ? extractYouTubeVideoId(streamFeed.youtubeUrl) : null;
 
+  // Determine effective position, scale and opacity
+  const defaultPosition = match.sport === 'cricket' ? 'bottom-center' : 'top-left';
+  const effectivePos = urlPos || config.position || defaultPosition;
+  const effectiveScale = urlScale ? parseFloat(urlScale) : config.scale || 1;
+  const effectiveOpacity = urlOpacity ? parseFloat(urlOpacity) : config.opacity || 1;
+
+  // Compute CSS placement based on position presets or coordinates
+  let placementStyles: React.CSSProperties = {
+    position: 'absolute',
+    zIndex: 20,
+    opacity: effectiveOpacity,
+    transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+  };
+
+  if (customCoords) {
+    placementStyles.top = `${customCoords.y}px`;
+    placementStyles.left = `${customCoords.x}px`;
+    placementStyles.transform = `scale(${effectiveScale})`;
+    placementStyles.transformOrigin = 'top left';
+  } else if (urlX !== null && urlY !== null) {
+    placementStyles.top = urlY.includes('%') ? urlY : `${parseInt(urlY, 10)}px`;
+    placementStyles.left = urlX.includes('%') ? urlX : `${parseInt(urlX, 10)}px`;
+    placementStyles.transform = `scale(${effectiveScale})`;
+    placementStyles.transformOrigin = 'top left';
+  } else if (config.posX !== undefined && config.posY !== undefined) {
+    placementStyles.top = `${config.posY}px`;
+    placementStyles.left = `${config.posX}px`;
+    placementStyles.transform = `scale(${effectiveScale})`;
+    placementStyles.transformOrigin = 'top left';
+  } else {
+    // Preset Position Mapping
+    switch (effectivePos) {
+      case 'top-left':
+        placementStyles.top = '32px';
+        placementStyles.left = '32px';
+        placementStyles.transform = `scale(${effectiveScale})`;
+        placementStyles.transformOrigin = 'top left';
+        break;
+      case 'top-center':
+        placementStyles.top = '32px';
+        placementStyles.left = '50%';
+        placementStyles.transform = `translateX(-50%) scale(${effectiveScale})`;
+        placementStyles.transformOrigin = 'top center';
+        break;
+      case 'top-right':
+        placementStyles.top = '32px';
+        placementStyles.right = '32px';
+        placementStyles.transform = `scale(${effectiveScale})`;
+        placementStyles.transformOrigin = 'top right';
+        break;
+      case 'bottom-left':
+        placementStyles.bottom = '32px';
+        placementStyles.left = '32px';
+        placementStyles.transform = `scale(${effectiveScale})`;
+        placementStyles.transformOrigin = 'bottom left';
+        break;
+      case 'bottom-right':
+        placementStyles.bottom = '32px';
+        placementStyles.right = '32px';
+        placementStyles.transform = `scale(${effectiveScale})`;
+        placementStyles.transformOrigin = 'bottom right';
+        break;
+      case 'center':
+        placementStyles.top = '50%';
+        placementStyles.left = '50%';
+        placementStyles.transform = `translate(-50%, -50%) scale(${effectiveScale})`;
+        placementStyles.transformOrigin = 'center center';
+        break;
+      case 'bottom-center':
+      case 'bottom':
+      default:
+        placementStyles.bottom = '32px';
+        placementStyles.left = '50%';
+        placementStyles.transform = `translateX(-50%) scale(${effectiveScale})`;
+        placementStyles.transformOrigin = 'bottom center';
+        break;
+    }
+  }
+
+  // Generate URL for copy
+  const currentPosParam = customCoords
+    ? `?x=${customCoords.x}&y=${customCoords.y}&scale=${effectiveScale}`
+    : `?pos=${effectivePos}&scale=${effectiveScale}`;
+  const calibratedObsUrl = `${window.location.origin}/overlay/${token}${currentPosParam}`;
+
+  const copyCalibratedUrl = () => {
+    navigator.clipboard.writeText(calibratedObsUrl);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2000);
+  };
+
   return (
     <div
       className="w-screen h-screen overflow-hidden bg-transparent select-none relative font-sans"
@@ -137,8 +278,10 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
         maxWidth: '100vw',
         maxHeight: '100vh',
       }}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
     >
-      {/* Optional Hosted Live Camera Layer (YouTube Live, Twitch, Webcam, or Custom HLS/MP4) */}
+      {/* Optional Camera Layer */}
       {shouldRenderCameraLayer && streamFeed && (
         <div className="absolute inset-0 z-0 overflow-hidden bg-black pointer-events-none">
           {streamFeed.activeSource === 'youtube_live' && ytVideoId && (
@@ -189,34 +332,33 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
         }}
       />
 
-      {/* Bottom Centered Overlays (Cricket & Basketball) */}
-      {(match.sport === 'cricket' || match.sport === 'basketball') && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 items-center flex flex-col pointer-events-none transition-all duration-200 z-10">
-          {match.sport === 'cricket' && match.cricketState && (
-            <CricketBottomBar
-              teamA={match.teamA}
-              teamB={match.teamB}
-              state={match.cricketState}
-              config={config}
-              tournamentName={match.tournament}
-            />
-          )}
+      {/* Interactive Scoreboard Container with Dynamic URL Positioning & Drag Mover */}
+      <div
+        style={placementStyles}
+        onMouseDown={handleMouseDown}
+        className={`${isMovableParam ? 'cursor-move ring-2 ring-cyan-400/50 rounded-lg p-1' : 'pointer-events-none'}`}
+      >
+        {match.sport === 'cricket' && match.cricketState && (
+          <CricketBottomBar
+            teamA={match.teamA}
+            teamB={match.teamB}
+            state={match.cricketState}
+            config={config}
+            tournamentName={match.tournament}
+          />
+        )}
 
-          {match.sport === 'basketball' && match.basketballState && (
-            <BasketballScoreBug
-              teamA={match.teamA}
-              teamB={match.teamB}
-              state={match.basketballState}
-              config={config}
-              tournamentName={match.tournament}
-            />
-          )}
-        </div>
-      )}
+        {match.sport === 'basketball' && match.basketballState && (
+          <BasketballScoreBug
+            teamA={match.teamA}
+            teamB={match.teamB}
+            state={match.basketballState}
+            config={config}
+            tournamentName={match.tournament}
+          />
+        )}
 
-      {/* Top-Left Broadcast ScoreBugs (Football, Tennis, Badminton, Table Tennis, Volleyball, Field Hockey, Baseball, Rugby) */}
-      {match.sport === 'football' && match.footballState && (
-        <div className="absolute top-8 left-8 pointer-events-none z-10">
+        {match.sport === 'football' && match.footballState && (
           <FootballScoreBug
             teamA={match.teamA}
             teamB={match.teamB}
@@ -224,23 +366,52 @@ export const OverlayView: React.FC<OverlayViewProps> = ({ token }) => {
             config={config}
             tournamentName={match.tournament}
           />
-        </div>
-      )}
+        )}
 
-      {(match.sport === 'tennis' ||
-        match.sport === 'badminton' ||
-        match.sport === 'table_tennis' ||
-        match.sport === 'volleyball') && (
-        <div className="absolute top-8 left-8 pointer-events-none z-10">
+        {(match.sport === 'tennis' ||
+          match.sport === 'badminton' ||
+          match.sport === 'table_tennis' ||
+          match.sport === 'volleyball') && (
           <RacquetVolleyScoreBug match={match} config={config} />
-        </div>
-      )}
+        )}
 
-      {(match.sport === 'field_hockey' ||
-        match.sport === 'baseball' ||
-        match.sport === 'rugby') && (
-        <div className="absolute top-8 left-8 pointer-events-none z-10">
+        {(match.sport === 'field_hockey' ||
+          match.sport === 'baseball' ||
+          match.sport === 'rugby') && (
           <OutdoorSportsScoreBug match={match} config={config} />
+        )}
+
+        {match.sport === 'kabaddi' && match.kabaddiState && (
+          <KabaddiScoreBug
+            teamA={match.teamA}
+            teamB={match.teamB}
+            state={match.kabaddiState}
+            config={config}
+            tournamentName={match.tournament}
+          />
+        )}
+      </div>
+
+      {/* Calibration HUD (Visible when movable=1 query parameter is passed for OBS Source Setup) */}
+      {isMovableParam && (
+        <div className="absolute top-4 right-4 z-50 flex items-center gap-2.5 bg-[#070b14]/90 backdrop-blur-md border border-cyan-500/40 text-white px-3 py-2 rounded-lg text-xs font-mono shadow-2xl">
+          <div className="flex items-center gap-1.5 text-cyan-400 font-bold">
+            <Move className="w-3.5 h-3.5" />
+            <span>OBS Position Mode</span>
+          </div>
+          <span className="text-slate-400">|</span>
+          <span className="text-slate-300 font-medium">
+            {customCoords
+              ? `X: ${customCoords.x}px • Y: ${customCoords.y}px`
+              : `Preset: ${effectivePos}`}
+          </span>
+          <button
+            onClick={copyCalibratedUrl}
+            className="flex items-center gap-1 px-2.5 py-1 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded text-[11px] transition-colors cursor-pointer"
+          >
+            {copiedUrl ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+            <span>{copiedUrl ? 'Copied!' : 'Copy OBS URL'}</span>
+          </button>
         </div>
       )}
     </div>

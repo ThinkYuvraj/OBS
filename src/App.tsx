@@ -8,6 +8,7 @@ import { OverlayControl } from './pages/OverlayControl';
 import { ObsSetupGuide } from './pages/ObsSetupGuide';
 import { OverlayView } from './pages/OverlayView';
 import { ArchitectureView } from './pages/ArchitectureView';
+import { RuleBooks } from './pages/RuleBooks';
 import { useRealtimeSocket } from './hooks/useRealtimeSocket';
 
 export default function App() {
@@ -86,6 +87,15 @@ export default function App() {
           <ObsSetupGuide
             onBack={() => handleNavigate('dashboard')}
             onNavigate={handleNavigate}
+          />
+        )}
+
+        {currentTab === 'rule-books' && (
+          <RuleBooks
+            onBack={() => handleNavigate('dashboard')}
+            onNavigateToConsole={(sport) =>
+              handleNavigate(sport === 'cricket' ? 'scoring' : 'multi-scoring')
+            }
           />
         )}
 

@@ -36,7 +36,9 @@ import {
   List,
   Activity,
   RotateCcw,
+  BookOpen,
 } from 'lucide-react';
+import { RuleBookModal } from '../components/common/RuleBookModal';
 
 interface DashboardProps {
   onNavigate: (tab: string, matchId?: string) => void;
@@ -46,12 +48,15 @@ const MAIN_SPORTS = [
   { id: 'cricket', label: 'Cricket', icon: '🏏' },
   { id: 'football', label: 'Football', icon: '⚽' },
   { id: 'basketball', label: 'Basketball', icon: '🏀' },
+  { id: 'kabaddi', label: 'Kabaddi', icon: '🤼' },
   { id: 'badminton', label: 'Badminton', icon: '🏸' },
   { id: 'table_tennis', label: 'Table Tennis', icon: '🏓' },
   { id: 'volleyball', label: 'Volleyball', icon: '🏐' },
   { id: 'tennis', label: 'Lawn Tennis', icon: '🎾' },
   { id: 'field_hockey', label: 'Field Hockey', icon: '🏑' },
-  { id: 'all', label: 'All 8 Sports', icon: '🏆' },
+  { id: 'baseball', label: 'Baseball', icon: '⚾' },
+  { id: 'rugby', label: 'Rugby Union', icon: '🏉' },
+  { id: 'all', label: 'All 11 Sports', icon: '🏆' },
 ];
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
@@ -71,6 +76,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     database: string;
     recordsCount: number;
   } | null>(null);
+  const [ruleBookModalSport, setRuleBookModalSport] = useState<any>(null);
 
   const showToast = (msg: string) => {
     setActionFeedback(msg);
@@ -131,6 +137,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       return {
         scoreText: `${m.rugbyState.homeScore} - ${m.rugbyState.awayScore}`,
         metaText: `${m.rugbyState.minute}'`,
+      };
+    } else if (m.sport === 'kabaddi' && m.kabaddiState) {
+      return {
+        scoreText: `${m.kabaddiState.homeScore} - ${m.kabaddiState.awayScore}`,
+        metaText: `Half ${m.kabaddiState.half} • Raid ${m.kabaddiState.raidClock}s • ${m.kabaddiState.homeActivePlayers}v${m.kabaddiState.awayActivePlayers}`,
       };
     }
     return { scoreText: '0 - 0', metaText: 'Live' };
@@ -966,6 +977,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                     <div className="flex items-center gap-1">
                       <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRuleBookModalSport(m.sport);
+                        }}
+                        className="p-1 text-slate-400 hover:text-cyan-300 rounded-lg transition-colors cursor-pointer"
+                        title="View Official Rules & Referee Signals"
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
                         onClick={(e) => handleCopyObsUrl(m.activeOverlayToken, e)}
                         className="px-2 py-1 text-[11px] font-mono font-bold bg-[#090f1f] hover:bg-cyan-500/20 border border-slate-800 hover:border-cyan-400 text-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
                         title="Copy OBS URL"
@@ -995,6 +1017,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
         )}
       </div>
+
+      {/* Official In-Game Rule Book Modal */}
+      <RuleBookModal
+        isOpen={ruleBookModalSport !== null}
+        onClose={() => setRuleBookModalSport(null)}
+        initialSport={ruleBookModalSport || 'cricket'}
+      />
     </div>
   );
 };

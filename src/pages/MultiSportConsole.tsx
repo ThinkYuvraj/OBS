@@ -12,6 +12,7 @@ import {
   postTableTennisEvent,
   postTennisEvent,
   postVolleyballEvent,
+  postKabaddiEvent,
 } from '../services/api';
 import { useRealtimeSocket } from '../hooks/useRealtimeSocket';
 import {
@@ -24,12 +25,16 @@ import {
   RotateCcw,
   ArrowLeftRight,
   Layers,
+  Move,
+  BookOpen,
 } from 'lucide-react';
 import { FootballScoreBug } from '../components/overlay/FootballScoreBug';
 import { BasketballScoreBug } from '../components/overlay/BasketballScoreBug';
 import { RacquetVolleyScoreBug } from '../components/overlay/RacquetVolleyScoreBug';
 import { OutdoorSportsScoreBug } from '../components/overlay/OutdoorSportsScoreBug';
+import { KabaddiScoreBug } from '../components/overlay/KabaddiScoreBug';
 import { BroadcastGameTimer } from '../components/console/BroadcastGameTimer';
+import { RuleBookModal } from '../components/common/RuleBookModal';
 
 interface MultiSportConsoleProps {
   matchId: string;
@@ -49,6 +54,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
   const [match, setMatch] = useState<Match | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [showRuleBook, setShowRuleBook] = useState(false);
 
   // Interactive Keyboard Hotkey Mode
   const [keyboardEnabled, setKeyboardEnabled] = useState(true);
@@ -247,6 +253,35 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
     pushActivity(`Rugby: ${type.toUpperCase()}`);
   };
 
+  // --- Kabaddi Actions ---
+  const handleKabaddiAction = async (
+    type: string,
+    teamId?: 'home' | 'away',
+    touchCount?: number,
+    bonus?: boolean
+  ) => {
+    if (!match) return;
+    const defaultPlayer =
+      playerNameInput.trim() ||
+      (teamId === 'home'
+        ? match.teamA.squad[0]?.name || match.teamA.shortName
+        : match.teamB.squad[0]?.name || match.teamB.shortName);
+
+    try {
+      const res = await postKabaddiEvent(match.id, {
+        type,
+        teamId,
+        touchCount,
+        bonus,
+        player: defaultPlayer,
+      });
+      setMatch(res.match);
+      pushActivity(`Kabaddi: ${type.replace('_', ' ').toUpperCase()} by ${defaultPlayer}`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   // --- Global Keyboard Hotkey Listener ---
   useEffect(() => {
     if (!keyboardEnabled || !match) return;
@@ -358,6 +393,9 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
   } else if (match.sport === 'rugby' && match.rugbyState) {
     mainScoreDisplay = `${match.rugbyState.homeScore} - ${match.rugbyState.awayScore}`;
     subStatusDisplay = `${match.rugbyState.half.toUpperCase()} HALF • ${match.rugbyState.minute}' • TRIES: ${match.rugbyState.homeTries}-${match.rugbyState.awayTries}`;
+  } else if (match.sport === 'kabaddi' && match.kabaddiState) {
+    mainScoreDisplay = `${match.kabaddiState.homeScore} - ${match.kabaddiState.awayScore}`;
+    subStatusDisplay = `${match.kabaddiState.half.toUpperCase()} • RAID: ${match.kabaddiState.raidClock}s • RAIDING: ${match.kabaddiState.raidingTeam.toUpperCase()} • ON MAT: ${match.kabaddiState.homeActivePlayers}-${match.kabaddiState.awayActivePlayers}`;
   }
 
   // Extract Sets Array for Table Tennis, Volleyball, Badminton, Tennis
@@ -431,19 +469,59 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
           )}
 
           <button
+            onClick={() => setShowRuleBook(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#060a14] hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 hover:text-cyan-200 rounded-xl transition-colors cursor-pointer shadow-sm"
+            title={`Open Official ${match.sport.replace('_', ' ')} Rule Book`}
+          >
+            <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Rule Book</span>
+          </button>
+
+          {/* Move Scoreboard in OBS Dropdown */}
+          <div className="flex items-center gap-1.5 bg-[#060a14] border border-slate-800 rounded-xl px-2 py-1">
+            <Move className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <select
+              defaultValue="default"
+              onChange={(e) => {
+                const val = e.target.value;
+                let targetUrl = obsUrl;
+                if (val === 'top-left') targetUrl = `${obsUrl}?pos=top-left`;
+                else if (val === 'top-right') targetUrl = `${obsUrl}?pos=top-right`;
+                else if (val === 'top-center') targetUrl = `${obsUrl}?pos=top-center`;
+                else if (val === 'bottom-center') targetUrl = `${obsUrl}?pos=bottom-center`;
+                else if (val === 'bottom-right') targetUrl = `${obsUrl}?pos=bottom-right`;
+                else if (val === 'movable') targetUrl = `${obsUrl}?movable=1`;
+                navigator.clipboard.writeText(targetUrl);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2200);
+              }}
+              className="bg-transparent text-xs text-slate-300 font-mono focus:outline-none cursor-pointer"
+              title="Select OBS Position & Copy URL"
+            >
+              <option value="default" className="bg-[#060a14]">OBS Position: Auto</option>
+              <option value="top-left" className="bg-[#060a14]">Copy URL: Top-Left</option>
+              <option value="top-center" className="bg-[#060a14]">Copy URL: Top-Center</option>
+              <option value="top-right" className="bg-[#060a14]">Copy URL: Top-Right</option>
+              <option value="bottom-center" className="bg-[#060a14]">Copy URL: Bottom-Center</option>
+              <option value="bottom-right" className="bg-[#060a14]">Copy URL: Bottom-Right</option>
+              <option value="movable" className="bg-[#060a14]">Copy URL: Movable Drag Mode (?movable=1)</option>
+            </select>
+          </div>
+
+          <button
             onClick={handleCopyUrl}
             className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl transition-colors cursor-pointer shadow-md shadow-cyan-500/20"
           >
             {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            <span>{copied ? 'Copied OBS URL' : 'Copy OBS URL'}</span>
+            <span>{copied ? 'Copied Positioned URL!' : 'Copy OBS URL'}</span>
           </button>
 
           <a
-            href={obsUrl}
+            href={`${obsUrl}?movable=1`}
             target="_blank"
             rel="noreferrer"
             className="p-2 bg-[#0c1424] border border-slate-800 hover:border-cyan-500/40 text-cyan-300 rounded-xl"
-            title="Open Live Broadcast Overlay"
+            title="Open Live Broadcast Overlay with Movable Scoreboard Handle"
           >
             <ExternalLink className="w-4 h-4" />
           </a>
@@ -587,6 +665,15 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                 <OutdoorSportsScoreBug
                   match={match}
                   config={{ ...match.overlayConfig, scale: 0.85 }}
+                />
+              )}
+              {match.sport === 'kabaddi' && match.kabaddiState && (
+                <KabaddiScoreBug
+                  teamA={match.teamA}
+                  teamB={match.teamB}
+                  state={match.kabaddiState}
+                  config={{ ...match.overlayConfig, scale: 0.85 }}
+                  tournamentName={match.tournament}
                 />
               )}
             </div>
@@ -1196,6 +1283,128 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
           </div>
         )}
 
+        {match.sport === 'kabaddi' && match.kabaddiState && (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {(['home', 'away'] as const).map((side) => {
+                const team = side === 'home' ? match.teamA : match.teamB;
+                const isRaiding = match.kabaddiState?.raidingTeam === side;
+                const activeOnMat =
+                  side === 'home'
+                    ? match.kabaddiState?.homeActivePlayers
+                    : match.kabaddiState?.awayActivePlayers;
+
+                return (
+                  <div
+                    key={side}
+                    className={`bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border rounded-2xl p-5 space-y-4 shadow-xl transition-all ${
+                      isRaiding ? 'border-cyan-400 ring-2 ring-cyan-500/20' : 'border-slate-800/80'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-base text-white">{team.name}</span>
+                        <span className="text-xs font-mono text-cyan-400">({activeOnMat}/7 On Mat)</span>
+                      </div>
+                      {isRaiding && (
+                        <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px] font-mono font-bold border border-cyan-400 animate-pulse">
+                          RAIDING NOW
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-mono text-slate-400 uppercase font-bold">Raid Actions</div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <button
+                          onClick={() => handleKabaddiAction('touch_point', side, 1)}
+                          className="py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold text-slate-950 text-xs cursor-pointer shadow"
+                        >
+                          +1 Touch
+                        </button>
+                        <button
+                          onClick={() => handleKabaddiAction('touch_point', side, 2)}
+                          className="py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 font-bold text-slate-950 text-xs cursor-pointer shadow"
+                        >
+                          +2 Touch
+                        </button>
+                        <button
+                          onClick={() => handleKabaddiAction('bonus_point', side)}
+                          className="py-3 rounded-xl bg-amber-500 hover:bg-amber-400 font-bold text-slate-950 text-xs cursor-pointer"
+                        >
+                          +1 Bonus
+                        </button>
+                      </div>
+
+                      <button
+                        onClick={() => handleKabaddiAction('super_raid', side, 3, true)}
+                        className="w-full py-2.5 rounded-xl bg-gradient-to-r from-orange-500 via-amber-500 to-rose-500 font-black text-white text-xs tracking-wider cursor-pointer shadow-lg shadow-orange-500/20"
+                      >
+                        🔥 SUPER RAID (+3 &amp; Bonus)
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-slate-800">
+                      <div className="text-[11px] font-mono text-slate-400 uppercase font-bold">Defense Actions</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          onClick={() => handleKabaddiAction('tackle', side)}
+                          className="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs cursor-pointer"
+                        >
+                          +1 Tackle
+                        </button>
+                        <button
+                          onClick={() => handleKabaddiAction('super_tackle', side)}
+                          className="py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 font-bold text-white text-xs cursor-pointer"
+                        >
+                          🛡️ Super Tackle (+2)
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Raid Clock & Match Actions */}
+            <div className="p-4 rounded-2xl bg-[#090f1f] border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono text-slate-400 uppercase font-bold">30s Raid Clock:</span>
+                <span className="font-mono text-2xl font-black text-amber-400">
+                  {match.kabaddiState.raidClock}s
+                </span>
+                <button
+                  onClick={() => handleKabaddiAction('raid_clock_reset')}
+                  className="px-3 py-1.5 rounded-xl bg-[#060a14] border border-slate-700 hover:border-cyan-400 text-xs font-mono text-cyan-300 cursor-pointer"
+                >
+                  Reset Clock (30s)
+                </button>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => handleKabaddiAction('empty_raid')}
+                  className="px-3.5 py-2 rounded-xl bg-[#060a14] border border-slate-700 hover:border-slate-600 text-xs font-bold text-slate-300 cursor-pointer"
+                >
+                  Empty Raid
+                </button>
+                <button
+                  onClick={() => handleKabaddiAction('switch_raider')}
+                  className="px-3.5 py-2 rounded-xl bg-cyan-500/20 border border-cyan-400 text-xs font-bold text-cyan-300 cursor-pointer"
+                >
+                  Switch Raider Side
+                </button>
+                <button
+                  onClick={() => handleKabaddiAction('all_out')}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs cursor-pointer shadow"
+                >
+                  💥 All-Out (+2 Pts &amp; Revive)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ==================== INTERACTIVE KEYBOARD REFERENCE & LIVE CONSOLE FEED ==================== */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-7 bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-5">
@@ -1270,6 +1479,13 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Official In-Game Rule Book Modal */}
+      <RuleBookModal
+        isOpen={showRuleBook}
+        onClose={() => setShowRuleBook(false)}
+        initialSport={match.sport}
+      />
     </div>
   );
 };
