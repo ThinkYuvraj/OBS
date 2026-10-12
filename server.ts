@@ -83,6 +83,9 @@ async function startServer() {
     console.log(`🚀 MarketinGlu Sub-Second OBS Broadcast Engine Online`);
     console.log(`🌐 Environment:    ${config.env.toUpperCase()}`);
     console.log(`📡 Local Gateway:  http://${config.host}:${config.port}`);
+    if (!config.isProd) {
+      console.log(`💻 Vite Frontend:  http://localhost:5173 (Port 5173 Proxying to Engine :3000)`);
+    }
     console.log(`❤️  Health Monitor: http://${config.host}:${config.port}/health`);
     console.log(`⚡ WebSocket Hub:   ws://${config.host}:${config.port}/ws`);
     console.log('================================================================');
