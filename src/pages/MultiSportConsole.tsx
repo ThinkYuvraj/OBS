@@ -27,6 +27,7 @@ import {
   Layers,
   Move,
   BookOpen,
+  LifeBuoy,
 } from 'lucide-react';
 import { FootballScoreBug } from '../components/overlay/FootballScoreBug';
 import { BasketballScoreBug } from '../components/overlay/BasketballScoreBug';
@@ -35,6 +36,7 @@ import { OutdoorSportsScoreBug } from '../components/overlay/OutdoorSportsScoreB
 import { KabaddiScoreBug } from '../components/overlay/KabaddiScoreBug';
 import { BroadcastGameTimer } from '../components/console/BroadcastGameTimer';
 import { RuleBookModal } from '../components/common/RuleBookModal';
+import { HelpDeskModal } from '../components/common/HelpDeskModal';
 
 interface MultiSportConsoleProps {
   matchId: string;
@@ -55,6 +57,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [showRuleBook, setShowRuleBook] = useState(false);
+  const [showHelpDesk, setShowHelpDesk] = useState(false);
 
   // Interactive Keyboard Hotkey Mode
   const [keyboardEnabled, setKeyboardEnabled] = useState(true);
@@ -475,6 +478,15 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
           >
             <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
             <span>Rule Book</span>
+          </button>
+
+          <button
+            onClick={() => setShowHelpDesk(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#060a14] hover:bg-slate-800 border border-amber-500/40 text-amber-300 hover:text-amber-200 rounded-xl transition-colors cursor-pointer shadow-sm"
+            title="Report Match or Broadcast Issue to Help Desk (Email: support@marketinglu.com)"
+          >
+            <LifeBuoy className="w-3.5 h-3.5 text-amber-400" />
+            <span>Report Issue</span>
           </button>
 
           {/* Move Scoreboard in OBS Dropdown */}
@@ -1485,6 +1497,16 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
         isOpen={showRuleBook}
         onClose={() => setShowRuleBook(false)}
         initialSport={match.sport}
+      />
+
+      {/* In-Game Client Issue Reporting Help Desk */}
+      <HelpDeskModal
+        isOpen={showHelpDesk}
+        onClose={() => setShowHelpDesk(false)}
+        matchId={match.id}
+        matchName={match.name}
+        sport={match.sport}
+        overlayToken={match.activeOverlayToken}
       />
     </div>
   );

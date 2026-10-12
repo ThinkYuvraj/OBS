@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Tv, BookOpen, CreditCard, User, Sparkles, ShieldCheck, Compass } from 'lucide-react';
+import { Plus, Tv, BookOpen, CreditCard, User, Sparkles, ShieldCheck, Compass, LifeBuoy } from 'lucide-react';
 import { UserProfile } from '../../types/sports';
 import { fetchActiveUser, fetchLicenseStatus } from '../../services/api';
 import { PricingModal } from '../payment/PricingModal';
@@ -9,10 +9,11 @@ interface NavbarProps {
   currentTab: string;
   onNavigate: (tab: string) => void;
   onOpenPolicies?: () => void;
+  onOpenHelpDesk?: () => void;
   isConnected?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPolicies }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPolicies, onOpenHelpDesk }) => {
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
   const [licenseStatus, setLicenseStatus] = useState<any>(null);
   const [showPricingModal, setShowPricingModal] = useState(false);
@@ -166,6 +167,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
               {activeUser?.name || 'Operator'}
             </span>
           </button>
+
+          {/* Client Help Desk Button */}
+          {onOpenHelpDesk && (
+            <button
+              onClick={onOpenHelpDesk}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0d1527] hover:bg-[#111e38] border border-cyan-500/30 hover:border-cyan-400 text-xs font-bold text-cyan-300 transition-colors cursor-pointer shadow-sm"
+              title="Open Client Help Desk (Email: support@marketinglu.com)"
+            >
+              <LifeBuoy className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden md:inline">Help Desk</span>
+            </button>
+          )}
 
           {/* New Match Action */}
           <button

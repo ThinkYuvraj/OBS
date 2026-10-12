@@ -10,6 +10,7 @@ import {
   OverlayTokenRecord,
   PassPlan,
   UserProfile,
+  SupportTicket,
 } from '../types/sports';
 import {
   calculateRRR,
@@ -24,6 +25,7 @@ class StorageManager {
   private users: Map<string, UserProfile> = new Map();
   private activeUserId: string = 'user_producer_1';
   private licenses: Map<string, BroadcastLicense> = new Map();
+  private supportTickets: Map<string, SupportTicket> = new Map();
 
   constructor() {
     this.seedInitialData();
@@ -1636,6 +1638,27 @@ class StorageManager {
 
     this.licenses.set(license.id, license);
     return license;
+  }
+
+  createSupportTicket(ticketData: Omit<SupportTicket, 'id' | 'createdAt' | 'status'>): SupportTicket {
+    const randomHex = Math.floor(1000 + Math.random() * 9000);
+    const id = `TKT-${new Date().getFullYear()}-${randomHex}`;
+    const ticket: SupportTicket = {
+      ...ticketData,
+      id,
+      status: 'open',
+      createdAt: Date.now(),
+    };
+    this.supportTickets.set(ticket.id, ticket);
+    return ticket;
+  }
+
+  getSupportTickets(): SupportTicket[] {
+    return Array.from(this.supportTickets.values()).sort((a, b) => b.createdAt - a.createdAt);
+  }
+
+  getSupportTicket(id: string): SupportTicket | undefined {
+    return this.supportTickets.get(id);
   }
 }
 

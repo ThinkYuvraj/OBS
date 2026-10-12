@@ -6,6 +6,7 @@ import usersRouter from './users';
 import paymentRouter from './payment';
 import hostingerRouter from './hostinger';
 import healthRouter from './health';
+import supportRouter from './support';
 import { storage } from '../storage';
 
 const apiRouter = Router();
@@ -13,20 +14,23 @@ const apiRouter = Router();
 // 1. Healthcheck & Diagnostics
 apiRouter.use('/health', healthRouter);
 
-// 2. Matches & Scoring (matches router handles CRUD, events, simulation; sports router handles multi-sports)
+// 2. Client Help Desk & Issue Reporting
+apiRouter.use('/support', supportRouter);
+
+// 3. Matches & Scoring (matches router handles CRUD, events, simulation; sports router handles multi-sports)
 apiRouter.use('/matches', sportsRouter);
 apiRouter.use('/matches', matchesRouter);
 
-// 3. Overlays
+// 4. Overlays
 apiRouter.use('/overlays', overlaysRouter);
 
-// 4. Users & Operator Profiles
+// 5. Users & Operator Profiles
 apiRouter.use('/users', usersRouter);
 
-// 5. Payment Gateway & Licenses
+// 6. Payment Gateway & Licenses
 apiRouter.use('/payment', paymentRouter);
 
-// 6. Hostinger MySQL Database Tier
+// 7. Hostinger MySQL Database Tier
 apiRouter.use('/database', hostingerRouter);
 
 // 7. 3-Tier Architecture Telemetry

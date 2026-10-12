@@ -530,3 +530,47 @@ export interface WebSocketMessage {
   payload?: any;
   timestamp: number;
 }
+
+export type IssueCategory =
+  | 'obs_not_updating'
+  | 'score_discrepancy'
+  | 'graphic_glitch'
+  | 'timer_stalled'
+  | 'billing_license'
+  | 'database_sync'
+  | 'video_ingestion'
+  | 'other';
+
+export type IssueUrgency = 'low' | 'medium' | 'high' | 'critical';
+
+export interface ScreenshotAttachment {
+  id: string;
+  name: string;
+  dataUrl: string;
+  sizeBytes: number;
+}
+
+export interface SupportTicket {
+  id: string;
+  category: IssueCategory;
+  categoryLabel: string;
+  customCategoryTitle?: string;
+  description: string;
+  urgency: IssueUrgency;
+  userEmail: string;
+  userName?: string;
+  matchId?: string;
+  matchName?: string;
+  sport?: SportType;
+  overlayToken?: string;
+  systemMeta: {
+    userAgent: string;
+    screenResolution: string;
+    url: string;
+    timestamp: number;
+  };
+  screenshots: ScreenshotAttachment[];
+  status: 'open' | 'investigating' | 'resolved';
+  createdAt: number;
+}
+

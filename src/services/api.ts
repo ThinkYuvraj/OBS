@@ -5,6 +5,7 @@ import {
   OverlayConfig,
   PassPlan,
   UserProfile,
+  SupportTicket,
 } from '../types/sports';
 
 const API_BASE = '/api';
@@ -467,5 +468,44 @@ export async function verifyPayment(paymentDetails: {
   if (!res.ok) throw new Error('Failed to verify payment');
   return res.json();
 }
+
+// Client Help Desk & Issue Reporting
+export async function submitSupportTicket(ticketData: {
+  category: string;
+  categoryLabel?: string;
+  customCategoryTitle?: string;
+  description: string;
+  urgency?: string;
+  userEmail: string;
+  userName?: string;
+  matchId?: string;
+  matchName?: string;
+  sport?: string;
+  overlayToken?: string;
+  screenshots?: { id: string; name: string; dataUrl: string; sizeBytes: number }[];
+}): Promise<{ success: boolean; ticket: SupportTicket; supportEmail: string; mailtoLink: string; message: string }> {
+  const res = await fetch(`${API_BASE}/support/tickets`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(ticketData),
+  });
+  if (!res.ok) {
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || 'Failed to submit issue ticket');
+  }
+  return res.json();
+}
+
+export async function fetchSupportTickets(): Promise<{
+  tickets: SupportTicket[];
+  totalCount: number;
+  supportEmail: string;
+  escalationEmail: string;
+}> {
+  const res = await fetch(`${API_BASE}/support/tickets`);
+  if (!res.ok) throw new Error('Failed to fetch support tickets');
+  return res.json();
+}
+
 
 

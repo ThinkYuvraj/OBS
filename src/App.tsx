@@ -11,12 +11,14 @@ import { ArchitectureView } from './pages/ArchitectureView';
 import { RuleBooks } from './pages/RuleBooks';
 import { useRealtimeSocket } from './hooks/useRealtimeSocket';
 import { PolicyAgreementModal, isPolicyAccepted } from './components/common/PolicyAgreementModal';
+import { HelpDeskModal } from './components/common/HelpDeskModal';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [selectedMatchId, setSelectedMatchId] = useState<string>('match_t20_ind_aus');
   const [hasAcceptedPolicies, setHasAcceptedPolicies] = useState<boolean>(() => isPolicyAccepted());
   const [showPolicyModal, setShowPolicyModal] = useState<boolean>(() => !isPolicyAccepted());
+  const [showHelpDesk, setShowHelpDesk] = useState<boolean>(false);
   const { isConnected } = useRealtimeSocket({});
 
   // Check if current browser path is an overlay route (e.g. /overlay/:token)
@@ -43,6 +45,7 @@ export default function App() {
         currentTab={currentTab}
         onNavigate={handleNavigate}
         onOpenPolicies={() => setShowPolicyModal(true)}
+        onOpenHelpDesk={() => setShowHelpDesk(true)}
         isConnected={isConnected}
       />
 
@@ -124,6 +127,12 @@ export default function App() {
             setShowPolicyModal(false);
           }
         }}
+      />
+
+      {/* Client Facing Help Desk & Issue Resolution Modal */}
+      <HelpDeskModal
+        isOpen={showHelpDesk}
+        onClose={() => setShowHelpDesk(false)}
       />
     </div>
   );

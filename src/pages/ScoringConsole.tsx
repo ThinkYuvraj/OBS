@@ -20,8 +20,10 @@ import {
   CheckCircle2,
   Layers,
   BookOpen,
+  LifeBuoy,
 } from 'lucide-react';
 import { RuleBookModal } from '../components/common/RuleBookModal';
+import { HelpDeskModal } from '../components/common/HelpDeskModal';
 
 interface ScoringConsoleProps {
   matchId: string;
@@ -39,6 +41,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [commentaryText, setCommentaryText] = useState('');
   const [showRuleBook, setShowRuleBook] = useState(false);
+  const [showHelpDesk, setShowHelpDesk] = useState(false);
   const toastTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const loadMatch = useCallback(async () => {
@@ -276,6 +279,14 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
           >
             <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
             <span>Rule Book</span>
+          </button>
+          <button
+            onClick={() => setShowHelpDesk(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#060a14] hover:bg-slate-800 border border-amber-500/40 text-amber-300 hover:text-amber-200 rounded-xl cursor-pointer transition-all shadow-sm"
+            title="Report a Match Issue or Contact Client Help Desk (Email: support@marketinglu.com)"
+          >
+            <LifeBuoy className="w-3.5 h-3.5 text-amber-400" />
+            <span>Report Issue</span>
           </button>
         </div>
       </div>
@@ -780,6 +791,16 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
         isOpen={showRuleBook}
         onClose={() => setShowRuleBook(false)}
         initialSport="cricket"
+      />
+
+      {/* In-Game Client Issue Reporting Help Desk */}
+      <HelpDeskModal
+        isOpen={showHelpDesk}
+        onClose={() => setShowHelpDesk(false)}
+        matchId={match.id}
+        matchName={match.name}
+        sport="cricket"
+        overlayToken={match.activeOverlayToken}
       />
     </div>
   );
