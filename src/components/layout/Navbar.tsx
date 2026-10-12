@@ -8,10 +8,11 @@ import { UserRoleModal } from './UserRoleModal';
 interface NavbarProps {
   currentTab: string;
   onNavigate: (tab: string) => void;
+  onOpenPolicies?: () => void;
   isConnected?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate }) => {
+export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPolicies }) => {
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
   const [licenseStatus, setLicenseStatus] = useState<any>(null);
   const [showPricingModal, setShowPricingModal] = useState(false);
@@ -122,6 +123,16 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate }) => {
           >
             3-Tier Architecture
           </button>
+          {onOpenPolicies && (
+            <button
+              onClick={onOpenPolicies}
+              className="flex items-center gap-1 transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 text-slate-400"
+              title="Review MarketinGlu Broadcast Legal Policies & SLA"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Policies</span>
+            </button>
+          )}
         </nav>
 
         {/* Right Actions: License Badge, Operator Switcher, New Match */}

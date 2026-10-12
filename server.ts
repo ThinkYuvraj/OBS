@@ -2,765 +2,42 @@ import express, { Request, Response } from 'express';
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
-import { storage } from './src/server/storage';
-import { hostingerDb } from './src/server/hostingerDb';
+import { config } from './src/server/config/env';
+import { securityHeaders } from './src/server/middleware/security';
+import { requestLogger } from './src/server/middleware/logger';
+import { globalErrorHandler, notFoundHandler } from './src/server/middleware/errorHandler';
+import apiRouter from './src/server/routes/index';
+import healthRouter from './src/server/routes/health';
 import { realtimeHub } from './src/server/websocket';
-import { LiveFeedSimulator, ManualScoringProvider } from './src/engine/sportsDataProvider';
-import {
-  BadmintonEngine,
-  BaseballEngine,
-  BasketballEngine,
-  FieldHockeyEngine,
-  FootballEngine,
-  RugbyEngine,
-  TableTennisEngine,
-  TennisEngine,
-  VolleyballEngine,
-  KabaddiEngine,
-} from './src/engine/sportsEngine';
-import { OverlayAlert } from './src/types/sports';
-
-dotenv.config();
+import { hostingerDb } from './src/server/hostingerDb';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const isProd = process.env.NODE_ENV === 'production';
-const PORT = parseInt(process.env.PORT || '3000', 10);
 
 const app = express();
-app.use(express.json());
 
-const simulator = new LiveFeedSimulator();
-const scoringProvider = new ManualScoringProvider((id) => storage.getMatch(id));
-const footballEngine = new FootballEngine();
-const basketballEngine = new BasketballEngine();
-const tennisEngine = new TennisEngine();
-const badmintonEngine = new BadmintonEngine();
-const tableTennisEngine = new TableTennisEngine();
-const volleyballEngine = new VolleyballEngine();
-const baseballEngine = new BaseballEngine();
-const rugbyEngine = new RugbyEngine();
-const fieldHockeyEngine = new FieldHockeyEngine();
-const kabaddiEngine = new KabaddiEngine();
+// 1. Core Production Middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(securityHeaders);
+app.use(requestLogger);
 
-// --- REST APIs ---
+// 2. High-Availability Healthcheck Root Endpoint
+app.use('/health', healthRouter);
 
-// 1. Matches API
-app.get('/api/matches', (_req: Request, res: Response) => {
-  const matches = storage.getMatches();
-  res.json({ matches });
-});
+// 3. Central Modular REST APIs
+app.use('/api', apiRouter);
 
-app.post('/api/matches', (req: Request, res: Response) => {
-  const newMatch = storage.createMatch(req.body);
-  realtimeHub.broadcastMatchUpdate(newMatch.id, newMatch);
-  res.status(201).json({ match: newMatch });
-});
-
-app.get('/api/matches/:id', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match) {
-    return res.status(404).json({ error: 'Match not found' });
-  }
-  res.json({ match });
-});
-
-app.put('/api/matches/:id', (req: Request, res: Response) => {
-  const updated = storage.updateMatch(req.params.id, req.body);
-  if (!updated) {
-    return res.status(404).json({ error: 'Match not found' });
-  }
-  realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  res.json({ match: updated });
-});
-
-app.delete('/api/matches/:id', (req: Request, res: Response) => {
-  simulator.stopSimulation(req.params.id);
-  const success = storage.deleteMatch(req.params.id);
-  if (!success) {
-    return res.status(404).json({ error: 'Match not found' });
-  }
-  res.json({ success: true });
-});
-
-// 2. Ball-by-Ball Cricket Events API
-app.get('/api/matches/:id/events', (req: Request, res: Response) => {
-  const events = storage.getBallEvents(req.params.id);
-  res.json({ events });
-});
-
-app.post('/api/matches/:id/events', (req: Request, res: Response) => {
-  const result = storage.addBallEvent(req.params.id, req.body);
-  if (!result) {
-    return res.status(400).json({ error: 'Failed to record ball event or invalid match' });
-  }
-  realtimeHub.broadcastMatchUpdate(result.match.id, result.match);
-  res.status(201).json(result);
-});
-
-app.post('/api/matches/:id/undo', (req: Request, res: Response) => {
-  const result = storage.undoLastEvent(req.params.id);
-  if (!result) {
-    return res.status(400).json({ error: 'Nothing to undo' });
-  }
-  realtimeHub.broadcastMatchUpdate(result.match.id, result.match);
-  res.json(result);
-});
-
-app.post('/api/matches/:id/redo', (req: Request, res: Response) => {
-  const result = storage.redoEvent(req.params.id);
-  if (!result) {
-    return res.status(400).json({ error: 'Nothing to redo' });
-  }
-  realtimeHub.broadcastMatchUpdate(result.match.id, result.match);
-  res.json(result);
-});
-
-// 3. Multi-Sport Events APIs (Football, Basketball, Tennis, Badminton, Table Tennis, Volleyball, Field Hockey, Baseball, Rugby)
-
-// Football
-app.post('/api/matches/:id/football/event', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'football' || !match.footballState) {
-    return res.status(400).json({ error: 'Invalid football match' });
-  }
-
-  const nextState = footballEngine.processEvent(match.footballState, {
-    id: `fev_${Date.now()}`,
-    minute: req.body.minute ?? match.footballState.minute,
-    clock: req.body.clock,
-    extraTime: req.body.extraTime,
-    half: req.body.half,
-    isTimerRunning: req.body.isTimerRunning,
-    type: req.body.type,
-    teamId: req.body.teamId,
-    player: req.body.player || 'Player',
-    detail: req.body.detail,
-    timestamp: Date.now(),
-  });
-
-  let activeAlert = match.overlayConfig.activeAlert;
-  if (req.body.type === 'goal') {
-    activeAlert = {
-      id: `alert_goal_${Date.now()}`,
-      type: 'goal',
-      title: 'GOAL!',
-      subtitle: `${req.body.player || 'Goal'} scores for ${
-        req.body.teamId === 'home' ? match.teamA.name : match.teamB.name
-      }!`,
-      player: req.body.player || (req.body.teamId === 'home' ? match.teamA.name : match.teamB.name),
-      timestamp: Date.now(),
-      durationMs: 5000,
-    };
-  }
-
-  const updated = storage.updateMatch(match.id, {
-    footballState: nextState,
-    eventsCount: match.eventsCount + 1,
-    overlayConfig: { ...match.overlayConfig, activeAlert },
-  });
-
-  if (updated) {
-    realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  }
-
-  res.json({ match: updated });
-});
-
-// Basketball
-app.post('/api/matches/:id/basketball/event', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'basketball' || !match.basketballState) {
-    return res.status(400).json({ error: 'Invalid basketball match' });
-  }
-
-  const nextState = basketballEngine.processEvent(match.basketballState, {
-    id: `bb_${Date.now()}`,
-    type: req.body.type || 'score',
-    teamId: req.body.teamId,
-    points: req.body.points,
-    player: req.body.player,
-    quarter: req.body.quarter,
-    clock: req.body.clock,
-    shotClock: req.body.shotClock,
-    isTimerRunning: req.body.isTimerRunning,
-  });
-
-  let activeAlert = match.overlayConfig.activeAlert;
-  if (req.body.type === 'score' && req.body.points === 3) {
-    const teamName = req.body.teamId === 'home' ? match.teamA.name : match.teamB.name;
-    activeAlert = {
-      id: `alert_3pt_${Date.now()}`,
-      type: 'three_pointer',
-      title: 'THREE POINTER!',
-      subtitle: `Downtown splash for ${teamName}!`,
-      player: req.body.player || teamName,
-      timestamp: Date.now(),
-      durationMs: 4000,
-    };
-  }
-
-  const updated = storage.updateMatch(match.id, {
-    basketballState: nextState,
-    eventsCount: match.eventsCount + 1,
-    overlayConfig: { ...match.overlayConfig, activeAlert },
-  });
-
-  if (updated) {
-    realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  }
-  res.json({ match: updated });
-});
-
-// Tennis
-app.post('/api/matches/:id/tennis/point', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'tennis' || !match.tennisState) {
-    return res.status(400).json({ error: 'Invalid tennis match' });
-  }
-
-  const nextState = tennisEngine.processEvent(match.tennisState, {
-    id: `ten_${Date.now()}`,
-    winner: req.body.winner || 'home',
-    isAce: Boolean(req.body.isAce),
-  });
-
-  let activeAlert = match.overlayConfig.activeAlert;
-  if (req.body.isAce) {
-    const playerName = req.body.winner === 'home' ? match.teamA.name : match.teamB.name;
-    activeAlert = {
-      id: `alert_ace_${Date.now()}`,
-      type: 'ace',
-      title: 'SERVICE ACE!',
-      subtitle: `Unreturnable serve down the T!`,
-      player: playerName,
-      timestamp: Date.now(),
-      durationMs: 3500,
-    };
-  }
-
-  const updated = storage.updateMatch(match.id, {
-    tennisState: nextState,
-    eventsCount: match.eventsCount + 1,
-    overlayConfig: { ...match.overlayConfig, activeAlert },
-  });
-  if (updated) {
-    realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  }
-  res.json({ match: updated });
-});
-
-// Badminton
-app.post('/api/matches/:id/badminton/point', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'badminton' || !match.badmintonState) {
-    return res.status(400).json({ error: 'Invalid badminton match' });
-  }
-
-  const nextState = badmintonEngine.processEvent(match.badmintonState, {
-    type: req.body.type || 'point',
-    winner: req.body.winner || 'home',
-    delta: typeof req.body.delta === 'number' ? req.body.delta : 1,
-  });
-
-  const updated = storage.updateMatch(match.id, {
-    badmintonState: nextState,
-    eventsCount: match.eventsCount + 1,
-  });
-  if (updated) {
-    realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  }
-  res.json({ match: updated });
-});
-
-// Table Tennis
-app.post('/api/matches/:id/table-tennis/point', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'table_tennis' || !match.tableTennisState) {
-    return res.status(400).json({ error: 'Invalid table tennis match' });
-  }
-
-  const nextState = tableTennisEngine.processEvent(match.tableTennisState, {
-    type: req.body.type || 'point',
-    winner: req.body.winner || 'home',
-    delta: typeof req.body.delta === 'number' ? req.body.delta : 1,
-  });
-
-  const updated = storage.updateMatch(match.id, {
-    tableTennisState: nextState,
-    eventsCount: match.eventsCount + 1,
-  });
-  if (updated) {
-    realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  }
-  res.json({ match: updated });
-});
-
-// Volleyball
-app.post('/api/matches/:id/volleyball/point', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'volleyball' || !match.volleyballState) {
-    return res.status(400).json({ error: 'Invalid volleyball match' });
-  }
-
-  const nextState = volleyballEngine.processEvent(match.volleyballState, {
-    type: req.body.type || 'point',
-    winner: req.body.winner || 'home',
-    teamId: req.body.teamId,
-    delta: typeof req.body.delta === 'number' ? req.body.delta : 1,
-  });
-
-  const updated = storage.updateMatch(match.id, {
-    volleyballState: nextState,
-    eventsCount: match.eventsCount + 1,
-  });
-  if (updated) {
-    realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  }
-  res.json({ match: updated });
-});
-
-// Field Hockey
-app.post('/api/matches/:id/field-hockey/event', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'field_hockey' || !match.fieldHockeyState) {
-    return res.status(400).json({ error: 'Invalid field hockey match' });
-  }
-
-  const nextState = fieldHockeyEngine.processEvent(match.fieldHockeyState, {
-    type: req.body.type || 'goal',
-    teamId: req.body.teamId || 'home',
-    player: req.body.player,
-    quarter: req.body.quarter,
-    minute: req.body.minute,
-  });
-
-  let activeAlert: OverlayAlert | null | undefined = match.overlayConfig.activeAlert;
-  if (req.body.type === 'goal') {
-    const teamName = req.body.teamId === 'home' ? match.teamA.name : match.teamB.name;
-    activeAlert = {
-      id: `alert_hk_${Date.now()}`,
-      type: 'goal',
-      title: 'GOAL!',
-      subtitle: `Field Hockey Strike for ${teamName}!`,
-      player: req.body.player || teamName,
-      timestamp: Date.now(),
-      durationMs: 4500,
-    };
-  }
-
-  const updated = storage.updateMatch(match.id, {
-    fieldHockeyState: nextState,
-    eventsCount: match.eventsCount + 1,
-    overlayConfig: { ...match.overlayConfig, activeAlert },
-  });
-  if (updated) {
-    realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  }
-  res.json({ match: updated });
-});
-
-// Baseball
-app.post('/api/matches/:id/baseball/event', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'baseball' || !match.baseballState) {
-    return res.status(400).json({ error: 'Invalid baseball match' });
-  }
-
-  const nextState = baseballEngine.processEvent(match.baseballState, {
-    type: req.body.type,
-    teamId: req.body.teamId,
-    base: req.body.base,
-    player: req.body.player,
-  });
-
-  let activeAlert = match.overlayConfig.activeAlert;
-  if (req.body.type === 'home_run') {
-    activeAlert = {
-      id: `alert_hr_${Date.now()}`,
-      type: 'home_run',
-      title: 'HOME RUN!',
-      subtitle: 'Deep into the bleachers! Outta here!',
-      player: req.body.player || 'Slugger',
-      timestamp: Date.now(),
-      durationMs: 4500,
-    };
-  }
-
-  const updated = storage.updateMatch(match.id, {
-    baseballState: nextState,
-    eventsCount: match.eventsCount + 1,
-    overlayConfig: { ...match.overlayConfig, activeAlert },
-  });
-  if (updated) {
-    realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  }
-  res.json({ match: updated });
-});
-
-// Rugby
-app.post('/api/matches/:id/rugby/event', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'rugby' || !match.rugbyState) {
-    return res.status(400).json({ error: 'Invalid rugby match' });
-  }
-
-  const nextState = rugbyEngine.processEvent(match.rugbyState, {
-    type: req.body.type,
-    teamId: req.body.teamId || 'home',
-    player: req.body.player,
-    minute: req.body.minute,
-    half: req.body.half,
-  });
-
-  let activeAlert = match.overlayConfig.activeAlert;
-  if (req.body.type === 'try') {
-    const teamName = req.body.teamId === 'home' ? match.teamA.name : match.teamB.name;
-    activeAlert = {
-      id: `alert_try_${Date.now()}`,
-      type: 'try',
-      title: 'TRY! +5 PTS',
-      subtitle: `Grounded over the line for ${teamName}!`,
-      player: req.body.player || teamName,
-      timestamp: Date.now(),
-      durationMs: 4500,
-    };
-  }
-
-  const updated = storage.updateMatch(match.id, {
-    rugbyState: nextState,
-    eventsCount: match.eventsCount + 1,
-    overlayConfig: { ...match.overlayConfig, activeAlert },
-  });
-  if (updated) {
-    realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  }
-  res.json({ match: updated });
-});
-
-// Kabaddi
-app.post('/api/matches/:id/kabaddi/event', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'kabaddi' || !match.kabaddiState) {
-    return res.status(400).json({ error: 'Invalid kabaddi match' });
-  }
-
-  const nextState = kabaddiEngine.processEvent(match.kabaddiState, req.body);
-
-  let activeAlert = match.overlayConfig.activeAlert;
-  if (req.body.type === 'super_raid') {
-    activeAlert = {
-      id: `alert_sr_${Date.now()}`,
-      type: 'super_raid',
-      title: 'SUPER RAID! 🔥',
-      subtitle: `${req.body.touchCount || 3}+ Points by ${req.body.player || 'Raider'}!`,
-      player: req.body.player || 'Raider',
-      timestamp: Date.now(),
-      durationMs: 4500,
-    };
-  } else if (req.body.type === 'super_tackle') {
-    activeAlert = {
-      id: `alert_st_${Date.now()}`,
-      type: 'super_tackle',
-      title: 'SUPER TACKLE! 🛡️',
-      subtitle: `2 Defense Points! Defender brilliance!`,
-      player: req.body.player || 'Defense',
-      timestamp: Date.now(),
-      durationMs: 4000,
-    };
-  } else if (req.body.type === 'all_out') {
-    activeAlert = {
-      id: `alert_ao_${Date.now()}`,
-      type: 'all_out',
-      title: 'ALL OUT! 💥',
-      subtitle: `2 Bonus Points awarded & Court Revived!`,
-      player: 'All Out',
-      timestamp: Date.now(),
-      durationMs: 5000,
-    };
-  }
-
-  const updated = storage.updateMatch(match.id, {
-    kabaddiState: nextState,
-    eventsCount: match.eventsCount + 1,
-    overlayConfig: { ...match.overlayConfig, activeAlert },
-  });
-  if (updated) {
-    realtimeHub.broadcastMatchUpdate(updated.id, updated);
-  }
-  res.json({ match: updated });
-});
-
-// User & Setup Operator Profiles API
-app.get('/api/users', (_req: Request, res: Response) => {
-  const users = storage.getUsers();
-  const activeUser = storage.getActiveUser();
-  res.json({ users, activeUser });
-});
-
-app.get('/api/users/active', (_req: Request, res: Response) => {
-  res.json({ activeUser: storage.getActiveUser() });
-});
-
-app.post('/api/users/active', (req: Request, res: Response) => {
-  const user = storage.setActiveUser(req.body.userId);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  res.json({ activeUser: user });
-});
-
-app.post('/api/users', (req: Request, res: Response) => {
-  const newUser = storage.createUser(req.body);
-  res.status(201).json({ user: newUser });
-});
-
-// Razorpay Payment Gateways & Broadcast Access Passes API
-// Charges ₹499 per hour, ₹1,699 for a day (24h), ₹4,999 for Pro Access
-app.get('/api/payment/status', (_req: Request, res: Response) => {
-  const status = storage.getLicenseStatus();
-  res.json(status);
-});
-
-app.get('/api/payment/licenses', (_req: Request, res: Response) => {
-  const licenses = storage.getLicenses();
-  res.json({ licenses });
-});
-
-app.post('/api/payment/create-order', (req: Request, res: Response) => {
-  const { plan, customerName, customerEmail } = req.body;
-  if (!plan || !['hourly', 'daily', 'pro'].includes(plan)) {
-    return res.status(400).json({ error: 'Invalid plan: must be hourly, daily, or pro' });
-  }
-  const order = storage.createPaymentOrder(plan, { name: customerName, email: customerEmail });
-  res.json(order);
-});
-
-app.post('/api/payment/verify', (req: Request, res: Response) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature, plan, customerName, customerEmail } = req.body;
-  if (!razorpay_order_id || !razorpay_payment_id || !plan) {
-    return res.status(400).json({ error: 'Missing payment verification credentials' });
-  }
-  const license = storage.verifyPayment({
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-    plan,
-    customerName,
-    customerEmail,
-  });
-  res.json({ success: true, license, status: storage.getLicenseStatus() });
-});
-
-
-// 4. Live score summary provider
-app.get('/api/matches/:id/live', async (req: Request, res: Response) => {
-  const liveScore = await scoringProvider.getLiveScore(req.params.id);
-  if (!liveScore) {
-    return res.status(404).json({ error: 'Live score unavailable' });
-  }
-  res.json({ liveScore });
-});
-
-// 5. Automated Ball Simulation for Broadcaster Testing
-app.post('/api/matches/:id/simulate-next-ball', (req: Request, res: Response) => {
-  const match = storage.getMatch(req.params.id);
-  if (!match || match.sport !== 'cricket' || !match.cricketState) {
-    return res.status(400).json({ error: 'Invalid match for cricket simulation' });
-  }
-
-  const outcomes: { runs: number; isWicket?: boolean; isWide?: boolean; isNoBall?: boolean; wicketType?: any }[] = [
-    { runs: 1 },
-    { runs: 0 },
-    { runs: 4 },
-    { runs: 2 },
-    { runs: 6 },
-    { runs: 0, isWide: true },
-    { runs: 1 },
-    { runs: 0, isWicket: true, wicketType: 'caught' },
-  ];
-
-  const outcome = outcomes[Math.floor(Math.random() * outcomes.length)];
-  const result = storage.addBallEvent(match.id, {
-    runsOffBat: outcome.runs,
-    isWicket: outcome.isWicket || false,
-    wicketType: outcome.wicketType,
-    isWide: outcome.isWide || false,
-    isNoBall: outcome.isNoBall || false,
-  });
-
-  if (result) {
-    realtimeHub.broadcastMatchUpdate(result.match.id, result.match);
-  }
-  res.json(result);
-});
-
-app.post('/api/matches/:id/toggle-simulation', (req: Request, res: Response) => {
-  const matchId = req.params.id;
-  const isRunning = simulator.isSimulating(matchId);
-
-  if (isRunning) {
-    simulator.stopSimulation(matchId);
-    return res.json({ simulating: false, message: 'Simulation stopped' });
-  } else {
-    simulator.startSimulation(
-      matchId,
-      (ball) => {
-        const resBall = storage.addBallEvent(matchId, ball);
-        if (resBall) {
-          realtimeHub.broadcastMatchUpdate(resBall.match.id, resBall.match);
-        }
-      },
-      3500
-    );
-    return res.json({ simulating: true, message: 'Simulation active' });
-  }
-});
-
-// 6. Overlay Endpoints, Hostinger MySQL Database & 3-Tier Architecture Telemetry
-app.get('/api/database/hostinger/status', (_req: Request, res: Response) => {
-  const matches = storage.getMatches();
-  const totalEvents = matches.reduce((sum, m) => sum + storage.getBallEvents(m.id).length, 0);
-  res.json(hostingerDb.getStatus(matches.length, totalEvents));
-});
-
-app.get('/api/database/hostinger/schema', (_req: Request, res: Response) => {
-  const matches = storage.getMatches();
-  const allEvents = matches.flatMap((m) => storage.getBallEvents(m.id));
-  const sql = hostingerDb.getDDLSchema(matches, allEvents);
-  res.json({
-    sql,
-    database: process.env.HOSTINGER_DB_NAME || 'u123456789_broadcast_db',
-    tables: ['broadcast_matches', 'broadcast_events_log', 'broadcast_overlay_tokens'],
-    recordsCount: matches.length,
-  });
-});
-
-app.post('/api/database/hostinger/sync', async (_req: Request, res: Response) => {
-  const matches = storage.getMatches();
-  const allEvents = matches.flatMap((m) => storage.getBallEvents(m.id));
-  const result = await hostingerDb.ensureTablesAndSync(matches, allEvents);
-  res.json({
-    ...result,
-    status: hostingerDb.getStatus(matches.length, allEvents.length),
-  });
-});
-
-app.get('/api/architecture/telemetry', (_req: Request, res: Response) => {
-  const matches = storage.getMatches();
-  const totalEventsCaptured = matches.reduce((sum, m) => {
-    const balls = storage.getBallEvents(m.id).length;
-    const fEvents = m.footballState?.events?.length || 0;
-    const bPoints = (m.basketballState?.homeScore || 0) + (m.basketballState?.awayScore || 0);
-    return sum + balls + fEvents + bPoints + 12;
-  }, 0);
-
-  res.json({
-    tier1: {
-      name: 'Presentation & Edge Input Tier',
-      activeConsoles: matches.length,
-      supportedProtocols: ['HTTP/REST', 'WebSocket Frame', 'DOM Keydown Hotkeys', 'Touch Deck'],
-      totalEventsCaptured,
-    },
-    tier2: {
-      name: 'Application & Real-Time Rule Engine Tier',
-      activeEngines: 8,
-      sportsSupported: [
-        'cricket',
-        'football',
-        'basketball',
-        'badminton',
-        'table_tennis',
-        'volleyball',
-        'tennis',
-        'field_hockey',
-      ],
-      wsEndpoint: 'ws://0.0.0.0:3000/ws',
-      transportMode: 'Multiplexed HTTP + WS Pub/Sub',
-    },
-    tier3: {
-      name: 'Data Persistence & OBS Broadcast Output Tier',
-      activeOverlayChannels: matches.filter((m) => Boolean(m.activeOverlayToken)).length,
-      resolution: '1920x1080p60 Alpha',
-      compatibleSwitchers: ['OBS Studio', 'vMix', 'Streamlabs', 'Blackmagic ATEM'],
-      matchesInMemory: matches.length,
-    },
-    timestamp: Date.now(),
-  });
-});
-
-app.get('/api/overlays/:token', (req: Request, res: Response) => {
-  const data = storage.getOverlayByToken(req.params.token);
-  if (!data) {
-    return res.status(404).json({ error: 'Overlay not found or token revoked' });
-  }
-  res.json(data);
-});
-
-app.put('/api/overlays/:token/config', (req: Request, res: Response) => {
-  const updatedMatch = storage.updateOverlayConfig(req.params.token, req.body);
-  if (!updatedMatch) {
-    return res.status(404).json({ error: 'Overlay not found' });
-  }
-  realtimeHub.broadcastOverlayUpdate(req.params.token, {
-    match: updatedMatch,
-    config: updatedMatch.overlayConfig,
-  });
-  realtimeHub.broadcastMatchUpdate(updatedMatch.id, updatedMatch);
-  res.json({ success: true, config: updatedMatch.overlayConfig });
-});
-
-app.post('/api/overlays/:token/trigger-test', (req: Request, res: Response) => {
-  const { type, title, subtitle, player } = req.body;
-  const alert = {
-    id: `alert_test_${Date.now()}`,
-    type: type || 'four',
-    title: title || 'TEST ALERT',
-    subtitle: subtitle || 'Broadcast Graphic Test',
-    player: player || 'Striker',
-    timestamp: Date.now(),
-    durationMs: 4000,
-  };
-
-  const updatedMatch = storage.triggerOverlayAlert(req.params.token, alert);
-  if (!updatedMatch) {
-    return res.status(404).json({ error: 'Overlay not found' });
-  }
-
-  realtimeHub.broadcastAlert(req.params.token, alert);
-  realtimeHub.broadcastOverlayUpdate(req.params.token, {
-    match: updatedMatch,
-    config: updatedMatch.overlayConfig,
-  });
-  res.json({ success: true, alert });
-});
-
-app.post('/api/overlays/generate', (req: Request, res: Response) => {
-  const { matchId } = req.body;
-  const token = storage.generateOverlayToken(matchId);
-  if (!token) {
-    return res.status(404).json({ error: 'Match not found' });
-  }
-  const match = storage.getMatch(matchId);
-  if (match) {
-    realtimeHub.broadcastMatchUpdate(match.id, match);
-  }
-  res.status(201).json({ token });
-});
-
-app.delete('/api/overlays/:token', (req: Request, res: Response) => {
-  const success = storage.revokeOverlayToken(req.params.token);
-  if (!success) {
-    return res.status(404).json({ error: 'Overlay token not found' });
-  }
-  res.json({ success: true });
-});
-
-// --- Server Lifecycle & Vite Middlewares ---
+// 4. Server Lifecycle & Static Asset Serving
 async function startServer() {
   const server = http.createServer(app);
+
+  // Initialize Real-Time WebSocket Broadcast Engine
   realtimeHub.initialize(server);
 
-  if (!isProd) {
+  if (!config.isProd) {
+    // Development Environment: Dynamic Vite Middleware Mode
+    console.log('[ENV] Starting MarketinGlu broadcast engine in DEVELOPMENT mode with Vite HMR...');
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -768,18 +45,89 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.resolve(__dirname, 'dist')));
+    // Production Environment: High-Speed Static Asset Serving with Caching
+    console.log('[ENV] Starting MarketinGlu broadcast engine in PRODUCTION mode...');
+    const distPath = path.resolve(__dirname, 'dist');
+
+    // Static assets with immutable caching headers
+    app.use(
+      '/assets',
+      express.static(path.join(distPath, 'assets'), {
+        maxAge: '1y',
+        immutable: true,
+      })
+    );
+
+    // Root public static assets
+    app.use(
+      express.static(distPath, {
+        maxAge: '1h',
+        index: false,
+      })
+    );
+
+    // Single Page Application (SPA) Fallback Route for Dashboard and Overlays
     app.get('*', (_req: Request, res: Response) => {
-      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
-  server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Sports Overlay server ready on http://0.0.0.0:${PORT}`);
+  // 5. Global Error Handlers
+  app.use(notFoundHandler);
+  app.use(globalErrorHandler);
+
+  // 6. Bind HTTP & WebSocket Server to Port
+  server.listen(config.port, config.host, () => {
+    console.log('================================================================');
+    console.log(`🚀 MarketinGlu Sub-Second OBS Broadcast Engine Online`);
+    console.log(`🌐 Environment:    ${config.env.toUpperCase()}`);
+    console.log(`📡 Local Gateway:  http://${config.host}:${config.port}`);
+    console.log(`❤️  Health Monitor: http://${config.host}:${config.port}/health`);
+    console.log(`⚡ WebSocket Hub:   ws://${config.host}:${config.port}/ws`);
+    console.log('================================================================');
   });
+
+  // 7. Production Graceful Shutdown Protocol
+  const gracefulShutdown = (signal: string) => {
+    console.log(`\n[SHUTDOWN] Received ${signal}. Initiating graceful drainage of active broadcast streams...`);
+
+    // Stop accepting new HTTP connections
+    server.close(() => {
+      console.log('[SHUTDOWN] HTTP server closed.');
+
+      // Drain database pool if active
+      if (hostingerDb && typeof (hostingerDb as any).closePool === 'function') {
+        (hostingerDb as any).closePool();
+        console.log('[SHUTDOWN] Hostinger MySQL connection pool drained.');
+      }
+
+      console.log('[SHUTDOWN] Graceful shutdown completed cleanly. Exiting process.');
+      process.exit(0);
+    });
+
+    // Forced exit timeout in case connections linger
+    setTimeout(() => {
+      console.error('[SHUTDOWN] Forceful termination triggered after 10s timeout.');
+      process.exit(1);
+    }, 10000).unref();
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }
 
+// Global Unhandled Rejection & Uncaught Exception Safety Net
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[CRITICAL] Unhandled Promise Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[CRITICAL] Uncaught Exception thrown:', err);
+  // Log and allow process manager (e.g. Docker / PM2) to handle restart if necessary
+});
+
 startServer().catch((err) => {
-  console.error('Fatal server boot error:', err);
+  console.error('[FATAL] Server boot failure:', err);
   process.exit(1);
 });

@@ -10,10 +10,13 @@ import { OverlayView } from './pages/OverlayView';
 import { ArchitectureView } from './pages/ArchitectureView';
 import { RuleBooks } from './pages/RuleBooks';
 import { useRealtimeSocket } from './hooks/useRealtimeSocket';
+import { PolicyAgreementModal, isPolicyAccepted } from './components/common/PolicyAgreementModal';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [selectedMatchId, setSelectedMatchId] = useState<string>('match_t20_ind_aus');
+  const [hasAcceptedPolicies, setHasAcceptedPolicies] = useState<boolean>(() => isPolicyAccepted());
+  const [showPolicyModal, setShowPolicyModal] = useState<boolean>(() => !isPolicyAccepted());
   const { isConnected } = useRealtimeSocket({});
 
   // Check if current browser path is an overlay route (e.g. /overlay/:token)
@@ -39,6 +42,7 @@ export default function App() {
       <Navbar
         currentTab={currentTab}
         onNavigate={handleNavigate}
+        onOpenPolicies={() => setShowPolicyModal(true)}
         isConnected={isConnected}
       />
 
@@ -106,6 +110,21 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* Mandatory User Policies & Broadcast Compliance Gate */}
+      <PolicyAgreementModal
+        isOpen={showPolicyModal || !hasAcceptedPolicies}
+        canDismiss={hasAcceptedPolicies}
+        onAccept={() => {
+          setHasAcceptedPolicies(true);
+          setShowPolicyModal(false);
+        }}
+        onClose={() => {
+          if (hasAcceptedPolicies) {
+            setShowPolicyModal(false);
+          }
+        }}
+      />
     </div>
   );
 }
