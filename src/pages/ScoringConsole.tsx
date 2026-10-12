@@ -18,6 +18,7 @@ import {
   History,
   Activity,
   CheckCircle2,
+  Layers,
 } from 'lucide-react';
 
 interface ScoringConsoleProps {

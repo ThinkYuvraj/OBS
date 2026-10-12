@@ -51,3 +51,12 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #06b6d4;
 }
+
+/* Utility to hide scrollbars on horizontal scroll tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

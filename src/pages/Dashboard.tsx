@@ -28,12 +28,10 @@ import {
   Keyboard,
   Cpu,
   Database,
-  Zap,
   Search,
   Sparkles,
   Tv,
   Play,
-  Palette,
   LayoutGrid,
   List,
   Activity,
@@ -45,23 +43,16 @@ interface DashboardProps {
 }
 
 const MAIN_SPORTS = [
-  { id: 'all', label: 'All 8 Sports' },
-  { id: 'cricket', label: 'Cricket' },
-  { id: 'football', label: 'Football' },
-  { id: 'basketball', label: 'Basketball' },
-  { id: 'badminton', label: 'Badminton' },
-  { id: 'table_tennis', label: 'Table Tennis' },
-  { id: 'volleyball', label: 'Volleyball' },
-  { id: 'tennis', label: 'Lawn Tennis' },
-  { id: 'field_hockey', label: 'Field Hockey' },
+  { id: 'cricket', label: 'Cricket', icon: '🏏' },
+  { id: 'football', label: 'Football', icon: '⚽' },
+  { id: 'basketball', label: 'Basketball', icon: '🏀' },
+  { id: 'badminton', label: 'Badminton', icon: '🏸' },
+  { id: 'table_tennis', label: 'Table Tennis', icon: '🏓' },
+  { id: 'volleyball', label: 'Volleyball', icon: '🏐' },
+  { id: 'tennis', label: 'Lawn Tennis', icon: '🎾' },
+  { id: 'field_hockey', label: 'Field Hockey', icon: '🏑' },
+  { id: 'all', label: 'All 8 Sports', icon: '🏆' },
 ];
-
-const DEFAULT_MARKETINGLU_THEME = {
-  id: 'sky_broadcast' as OverlayConfig['theme'],
-  label: 'MarketinGlu Cyan-Sky',
-  badge: 'BRAND DEFAULT',
-  gradient: 'from-cyan-500 via-sky-500 to-blue-600',
-};
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -69,7 +60,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [selectedSport, setSelectedSport] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'live' | 'outdoor' | 'arena'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [layoutMode, setLayoutMode] = useState<'grid' | 'compact'>('grid');
+  const [layoutMode, setLayoutMode] = useState<'card' | 'list'>('card');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [simulatingCricket, setSimulatingCricket] = useState<boolean>(false);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
@@ -84,6 +75,65 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const showToast = (msg: string) => {
     setActionFeedback(msg);
     setTimeout(() => setActionFeedback(null), 2800);
+  };
+
+  const getMatchScoreSummary = (m: Match) => {
+    if (m.sport === 'cricket' && m.cricketState) {
+      const inn = m.cricketState.innings[m.cricketState.currentInningsIndex];
+      if (inn) {
+        return {
+          scoreText: `${inn.runs}/${inn.wickets}`,
+          metaText: `${inn.oversFormatted} ov • CRR ${inn.currentRunRate.toFixed(2)}`,
+        };
+      }
+    } else if (m.sport === 'football' && m.footballState) {
+      return {
+        scoreText: `${m.footballState.homeScore} - ${m.footballState.awayScore}`,
+        metaText: `${m.footballState.clock || `${m.footballState.minute}'`} • ${m.footballState.half.toUpperCase()}`,
+      };
+    } else if (m.sport === 'basketball' && m.basketballState) {
+      return {
+        scoreText: `${m.basketballState.homeScore} - ${m.basketballState.awayScore}`,
+        metaText: `Q${m.basketballState.quarter} ${m.basketballState.clock}`,
+      };
+    } else if (m.sport === 'badminton' && m.badmintonState) {
+      return {
+        scoreText: `${m.badmintonState.homePoints} - ${m.badmintonState.awayPoints}`,
+        metaText: `Set ${m.badmintonState.currentSet + 1}`,
+      };
+    } else if (m.sport === 'table_tennis' && m.tableTennisState) {
+      return {
+        scoreText: `${m.tableTennisState.homePoints} - ${m.tableTennisState.awayPoints}`,
+        metaText: `Set ${m.tableTennisState.currentSet + 1}`,
+      };
+    } else if (m.sport === 'volleyball' && m.volleyballState) {
+      return {
+        scoreText: `${m.volleyballState.homeScore} - ${m.volleyballState.awayScore}`,
+        metaText: `Set ${m.volleyballState.currentSet + 1}`,
+      };
+    } else if (m.sport === 'tennis' && m.tennisState) {
+      const currSet = m.tennisState.sets[m.tennisState.currentSet] || { home: 0, away: 0 };
+      return {
+        scoreText: `${m.tennisState.currentGame.homePoints} - ${m.tennisState.currentGame.awayPoints}`,
+        metaText: `Set ${m.tennisState.currentSet + 1} (${currSet.home}-${currSet.away})`,
+      };
+    } else if (m.sport === 'field_hockey' && m.fieldHockeyState) {
+      return {
+        scoreText: `${m.fieldHockeyState.homeScore} - ${m.fieldHockeyState.awayScore}`,
+        metaText: `Q${m.fieldHockeyState.quarter} • ${m.fieldHockeyState.minute}'`,
+      };
+    } else if (m.sport === 'baseball' && m.baseballState) {
+      return {
+        scoreText: `${m.baseballState.awayScore} - ${m.baseballState.homeScore}`,
+        metaText: `${m.baseballState.half.toUpperCase()} ${m.baseballState.inning}`,
+      };
+    } else if (m.sport === 'rugby' && m.rugbyState) {
+      return {
+        scoreText: `${m.rugbyState.homeScore} - ${m.rugbyState.awayScore}`,
+        metaText: `${m.rugbyState.minute}'`,
+      };
+    }
+    return { scoreText: '0 - 0', metaText: 'Live' };
   };
 
   const loadData = () => {
@@ -227,25 +277,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   };
 
-  // Sync MarketinGlu Cyan-Sky default theme across all active OBS channels
-  const handleSyncDefaultTheme = async () => {
-    try {
-      await Promise.all(
-        matches.map((m) =>
-          updateOverlayConfig(m.activeOverlayToken, {
-            theme: DEFAULT_MARKETINGLU_THEME.id,
-          })
-        )
-      );
-      loadData();
-      showToast(
-        `Synced "${DEFAULT_MARKETINGLU_THEME.label}" default theme across all ${matches.length} OBS channels`
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   // Global Demo Auto-Feed for Cricket
   const handleToggleGlobalFeed = async () => {
     const cricketMatch = matches.find((m) => m.sport === 'cricket');
@@ -259,24 +290,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   };
 
-  // Global Broadcast Sting across all channels
-  const handleFireGlobalSting = async (type: string, title: string) => {
-    try {
-      await Promise.all(
-        matches.slice(0, 4).map((m) =>
-          triggerOverlayTest(m.activeOverlayToken, {
-            type,
-            title,
-            subtitle: `${m.name} • Live Studio Feed`,
-            player: m.teamA.name,
-          })
-        )
-      );
-      showToast(`Fired "${title}" graphic across active OBS overlay channels`);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const filteredMatches = matches.filter((m) => {
     const matchesSport = selectedSport === 'all' || m.sport === selectedSport;
@@ -324,325 +337,197 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         </div>
       )}
 
-      {/* Hero / MarketinGlu (#070b14 -> #0c1424 -> #090f1f) Studio Header */}
-      <div className="relative border-b border-slate-800/80 bg-gradient-to-b from-[#0c1424] via-[#090f1f] to-[#070b14] px-6 py-8">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+      {/* Hero / MarketinGlu Studio Header */}
+      <div className="relative border-b border-slate-800/80 bg-gradient-to-b from-[#0c1424] via-[#090f1f] to-[#070b14] px-6 py-6">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-xs font-bold uppercase tracking-wider text-cyan-300">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              MarketinGlu Design System • 3-Tier Broadcast Engine
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+              Live Broadcast Engine • 8 Sports
             </div>
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-200 to-sky-400 bg-clip-text text-transparent mt-2 font-['Space_Grotesk',sans-serif]">
+            <h1 className="text-2xl md:text-3xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-200 to-sky-400 bg-clip-text text-transparent mt-1.5 font-['Space_Grotesk',sans-serif]">
               Master Production Overlay Studio
             </h1>
-            <p className="text-sm text-slate-400 mt-1.5 max-w-2xl text-balance">
-              Engineered with the high-contrast <span className="text-cyan-300 font-semibold">MarketinGlu</span> obsidian-navy &amp; electric-cyan palette (<code className="text-cyan-400 font-mono">#070b14</code>). Control all 8 outdoor and court sports with keyboard hotkeys, game timers, and Hostinger MySQL persistence.
-            </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             <button
               onClick={handleToggleGlobalFeed}
-              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer whitespace-nowrap ${
                 simulatingCricket
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-600 border-emerald-400/50 text-white shadow-lg shadow-emerald-600/25'
                   : 'bg-[#0b1324] hover:bg-[#0d162b] text-cyan-300 border-slate-800/90'
               }`}
             >
-              <Activity className="w-4 h-4" />
-              <span>{simulatingCricket ? 'Auto-Simulating Live' : 'Start Live Auto-Feed'}</span>
+              <Activity className="w-3.5 h-3.5" />
+              <span>{simulatingCricket ? 'Auto-Simulating' : 'Live Auto-Feed'}</span>
             </button>
 
             <button
               onClick={() => onNavigate('architecture')}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-[#0b1324] hover:bg-[#0d162b] text-amber-300 border border-slate-800/90 hover:border-cyan-500/40 rounded-xl transition-all cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#0b1324] hover:bg-[#0d162b] text-amber-300 border border-slate-800/90 hover:border-cyan-500/40 rounded-xl transition-all cursor-pointer whitespace-nowrap"
             >
-              <Layers className="w-4 h-4" />
+              <Layers className="w-3.5 h-3.5" />
               <span>3-Tier Architecture</span>
             </button>
 
             <button
               onClick={() => onNavigate('obs-guide')}
-              className="px-3.5 py-2 text-xs font-bold bg-[#0b1324] hover:bg-[#0d162b] text-slate-200 border border-slate-800/90 rounded-xl transition-all cursor-pointer whitespace-nowrap"
+              className="px-3 py-1.5 text-xs font-bold bg-[#0b1324] hover:bg-[#0d162b] text-slate-200 border border-slate-800/90 rounded-xl transition-all cursor-pointer whitespace-nowrap"
             >
-              OBS Setup Guide
+              OBS Guide
             </button>
 
             <button
               onClick={() => onNavigate('create')}
-              className="flex items-center gap-2 px-4 py-2 text-xs font-bold bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl transition-all shadow-lg shadow-cyan-500/25 cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl transition-all shadow-md shadow-cyan-500/25 cursor-pointer whitespace-nowrap"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>New Match Channel</span>
             </button>
           </div>
         </div>
 
-        {/* Studio Summary Metrics */}
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3.5 mt-7">
+        {/* Studio Summary Metrics - Minimal & Compact */}
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
           <div
             onClick={() => setStatusFilter('all')}
-            className={`cursor-pointer bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border p-4 rounded-xl transition-all ${
+            className={`cursor-pointer bg-[#0c1424]/90 border p-3 rounded-xl transition-all ${
               statusFilter === 'all'
-                ? 'border-cyan-500/50 shadow-lg shadow-cyan-950/40'
+                ? 'border-cyan-500/50 shadow-md shadow-cyan-950/40'
                 : 'border-slate-800/80 hover:border-sky-500/40'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-              <span>Live Broadcast Channels</span>
-              <Tv className="w-4 h-4 text-cyan-400" />
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>All Broadcasts</span>
+              <Tv className="w-3.5 h-3.5 text-cyan-400" />
             </div>
-            <div className="text-2xl font-black font-mono tabular-nums text-white mt-1">
-              {activeCount} <span className="text-xs font-normal text-cyan-400">ON AIR</span>
+            <div className="text-xl font-bold font-mono text-white mt-1">
+              {activeCount} <span className="text-[11px] font-normal text-cyan-400">LIVE</span>
             </div>
           </div>
 
           <div
             onClick={() => setStatusFilter('outdoor')}
-            className={`cursor-pointer bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border p-4 rounded-xl transition-all ${
+            className={`cursor-pointer bg-[#0c1424]/90 border p-3 rounded-xl transition-all ${
               statusFilter === 'outdoor'
-                ? 'border-emerald-500/50 shadow-lg shadow-emerald-950/40'
+                ? 'border-emerald-500/50 shadow-md shadow-emerald-950/40'
                 : 'border-slate-800/80 hover:border-emerald-500/40'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-              <span>Outdoor Stadium Feeds</span>
-              <Radio className="w-4 h-4 text-emerald-400" />
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Outdoor Sports</span>
+              <Radio className="w-3.5 h-3.5 text-emerald-400" />
             </div>
-            <div className="text-2xl font-black font-mono tabular-nums text-emerald-400 mt-1">
-              {outdoorCount} <span className="text-xs font-normal text-slate-400">CHANNELS</span>
+            <div className="text-xl font-bold font-mono text-emerald-400 mt-1">
+              {outdoorCount} <span className="text-[11px] font-normal text-slate-400">FEEDS</span>
             </div>
           </div>
 
           <div
             onClick={() => setStatusFilter('arena')}
-            className={`cursor-pointer bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border p-4 rounded-xl transition-all ${
+            className={`cursor-pointer bg-[#0c1424]/90 border p-3 rounded-xl transition-all ${
               statusFilter === 'arena'
-                ? 'border-cyan-500/50 shadow-lg shadow-cyan-950/40'
+                ? 'border-cyan-500/50 shadow-md shadow-cyan-950/40'
                 : 'border-slate-800/80 hover:border-cyan-500/40'
             }`}
           >
-            <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-              <span>Basketball &amp; Court Feeds</span>
-              <Keyboard className="w-4 h-4 text-sky-400" />
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Arena &amp; Court</span>
+              <Keyboard className="w-3.5 h-3.5 text-sky-400" />
             </div>
-            <div className="text-2xl font-black font-mono tabular-nums text-sky-300 mt-1">
-              {courtArenaCount} <span className="text-xs font-normal text-slate-400">ARENA</span>
+            <div className="text-xl font-bold font-mono text-sky-300 mt-1">
+              {courtArenaCount} <span className="text-[11px] font-normal text-slate-400">FEEDS</span>
             </div>
           </div>
 
           <div
             onClick={() => onNavigate('architecture')}
-            className="cursor-pointer bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 hover:border-purple-500/40 p-4 rounded-xl transition-all"
+            className="cursor-pointer bg-[#0c1424]/90 border border-slate-800/80 hover:border-purple-500/40 p-3 rounded-xl transition-all"
           >
-            <div className="flex items-center justify-between text-xs text-slate-400 font-medium">
-              <span>3-Tier Engine Pipeline</span>
-              <Cpu className="w-4 h-4 text-purple-400" />
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Architecture</span>
+              <Cpu className="w-3.5 h-3.5 text-purple-400" />
             </div>
-            <div className="text-2xl font-black font-mono tabular-nums text-amber-400 mt-1">
-              8 / 8 <span className="text-xs font-normal text-slate-400">SPORTS READY</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Master Broadcast Quick-Action & Easy Onboarding Control Deck (MarketinGlu #0c1424 -> #090f1f) */}
-        <div className="max-w-7xl mx-auto mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Locked MarketinGlu Cyan-Sky Default Theme + 4-Step Easy Onboarding Strip (7 cols) */}
-          <div className="lg:col-span-7 bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between gap-3 shadow-lg shadow-black/40">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Palette className="w-4 h-4 text-cyan-400" />
-                <span className="text-xs font-extrabold uppercase tracking-wider text-white">
-                  Active Studio Theme &amp; Quick-Start Onboarding
-                </span>
-              </div>
-              <button
-                onClick={() => onNavigate('obs-guide')}
-                className="text-[11px] font-mono font-bold text-cyan-400 hover:text-cyan-300 cursor-pointer"
-              >
-                Open Full 4-Step Onboarding Guide →
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-stretch">
-              {/* Single Default Theme Badge: MarketinGlu Cyan-Sky */}
-              <div
-                onClick={handleSyncDefaultTheme}
-                className="sm:col-span-4 p-3 rounded-xl bg-cyan-500/15 border border-cyan-400 shadow-md shadow-cyan-500/15 flex flex-col justify-between cursor-pointer"
-                title="Click to sync MarketinGlu Cyan-Sky theme across all channels"
-              >
-                <div
-                  className={`h-2 w-full rounded-full bg-gradient-to-r ${DEFAULT_MARKETINGLU_THEME.gradient} mb-2`}
-                />
-                <div>
-                  <div className="text-xs font-extrabold text-white">
-                    {DEFAULT_MARKETINGLU_THEME.label}
-                  </div>
-                  <div className="text-[10px] font-mono text-cyan-300 mt-0.5">
-                    {DEFAULT_MARKETINGLU_THEME.badge}
-                  </div>
-                </div>
-              </div>
-
-              {/* Easy 3-Step Visual Onboarding Flow */}
-              <div className="sm:col-span-8 grid grid-cols-3 gap-2">
-                <div
-                  onClick={() => onNavigate('create')}
-                  className="p-2.5 rounded-xl bg-[#060a14]/90 border border-slate-800/90 hover:border-cyan-500/40 cursor-pointer flex flex-col justify-between"
-                >
-                  <span className="text-[10px] font-mono font-bold text-cyan-400">STEP 01</span>
-                  <div className="text-xs font-bold text-white mt-1">Pick Sport</div>
-                  <div className="text-[10px] text-slate-400">8 Live Channels</div>
-                </div>
-
-                <div
-                  onClick={() => onNavigate('multi-scoring', 'match_tt_wtt_final')}
-                  className="p-2.5 rounded-xl bg-[#060a14]/90 border border-slate-800/90 hover:border-cyan-500/40 cursor-pointer flex flex-col justify-between"
-                >
-                  <span className="text-[10px] font-mono font-bold text-sky-400">STEP 02</span>
-                  <div className="text-xs font-bold text-white mt-1">Score Match</div>
-                  <div className="text-[10px] text-slate-400">Hotkeys A / L / Space</div>
-                </div>
-
-                <div
-                  onClick={() => onNavigate('obs-guide')}
-                  className="p-2.5 rounded-xl bg-[#060a14]/90 border border-slate-800/90 hover:border-emerald-500/40 cursor-pointer flex flex-col justify-between"
-                >
-                  <span className="text-[10px] font-mono font-bold text-emerald-400">STEP 03</span>
-                  <div className="text-xs font-bold text-white mt-1">Paste in OBS</div>
-                  <div className="text-[10px] text-slate-400">1920×1080 Browser</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Instant Master Broadcast Sting Soundboard (5 cols) */}
-          <div className="lg:col-span-5 bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-xl p-4 flex flex-col justify-between gap-3 shadow-lg shadow-black/40">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-extrabold uppercase tracking-wider text-white">
-                  Instant On-Air Broadcast Stings
-                </span>
-              </div>
-              <span className="text-[11px] font-mono text-amber-300">LIVE GRAPHICS</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                onClick={() => handleFireGlobalSting('six', 'MAXIMUM SIX!')}
-                className="px-2.5 py-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/25 border border-cyan-500/30 text-xs font-black text-cyan-300 cursor-pointer transition-all"
-              >
-                🏏 SIX!
-              </button>
-              <button
-                onClick={() => handleFireGlobalSting('goal', 'GOAL SCORED!')}
-                className="px-2.5 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/25 border border-emerald-500/30 text-xs font-black text-emerald-300 cursor-pointer transition-all"
-              >
-                ⚽ GOAL!
-              </button>
-              <button
-                onClick={() => handleFireGlobalSting('three_pointer', '3-POINT SPLASH!')}
-                className="px-2.5 py-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/25 border border-amber-500/30 text-xs font-black text-amber-300 cursor-pointer transition-all"
-              >
-                🏀 3-PT!
-              </button>
-              <button
-                onClick={() => handleFireGlobalSting('wicket', 'WICKET DOWN!')}
-                className="px-2.5 py-2 rounded-lg bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/30 text-xs font-black text-rose-300 cursor-pointer transition-all"
-              >
-                🎯 WICKET!
-              </button>
-              <button
-                onClick={() => handleFireGlobalSting('ace', 'SERVICE ACE!')}
-                className="px-2.5 py-2 rounded-lg bg-sky-500/10 hover:bg-sky-500/25 border border-sky-500/30 text-xs font-black text-sky-300 cursor-pointer transition-all"
-              >
-                🎾 ACE!
-              </button>
-              <button
-                onClick={() => onNavigate('multi-scoring', 'match_tt_wtt_final')}
-                className="px-2.5 py-2 rounded-lg bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-xs font-black text-purple-300 cursor-pointer transition-all"
-              >
-                ⌨️ HOTKEYS
-              </button>
+            <div className="text-xl font-bold font-mono text-amber-400 mt-1">
+              8/8 <span className="text-[11px] font-normal text-slate-400">READY</span>
             </div>
           </div>
         </div>
 
-        {/* 3-Tier Device & Project Architecture Summary Banner */}
-        <div className="max-w-7xl mx-auto mt-4 bg-gradient-to-r from-[#0c1424]/95 via-[#090f1f]/95 to-[#0c1424]/95 border border-slate-800/80 rounded-xl p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shrink-0">
-                <Keyboard className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-[11px] font-mono font-bold text-cyan-400">
-                  TIER 1 • PRESENTATION &amp; EDGE INPUT
-                </div>
-                <div className="text-xs font-bold text-white">
-                  Keyboard Hotkey Decks &amp; Game Timers
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  Tactile scoring for Table Tennis, Volleyball, Basketball &amp; Football
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 shrink-0">
-                <Cpu className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-[11px] font-mono font-bold text-purple-400">
-                  TIER 2 • APPLICATION &amp; ENGINE CORE
-                </div>
-                <div className="text-xs font-bold text-white">
-                  8-Sport Rule Engines &amp; WebSocket Hub
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  Express REST Gateway + multiplexed /ws pub-sub fanout
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 shrink-0">
-                <Database className="w-4 h-4" />
-              </div>
-              <div>
-                <div className="text-[11px] font-mono font-bold text-emerald-400">
-                  TIER 3 • HOSTINGER MYSQL &amp; OBS OUTPUT
-                </div>
-                <div className="text-xs font-bold text-white">
-                  Hostinger MySQL Records ({hostingerStatus?.host || 'srv1234.hstgr.io'})
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  {hostingerStatus?.syncedMatchesCount ?? matches.length} match records • phpMyAdmin SQL ready
-                </div>
-              </div>
+        {/* Quick Workflow Bar */}
+        <div className="max-w-7xl mx-auto mt-3.5 bg-[#0c1424]/80 border border-slate-800/80 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-200 block">
+                Quick Workflow
+              </span>
+              <span className="text-[11px] text-slate-400 hidden md:inline">
+                Launch sports graphics to OBS in 3 simple steps
+              </span>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <div
+              onClick={() => onNavigate('create')}
+              className="px-3 py-1.5 rounded-lg bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 cursor-pointer transition-all flex items-center gap-2"
+            >
+              <span className="text-[10px] font-mono font-bold text-cyan-400">01</span>
+              <span className="text-xs font-semibold text-white">Pick Sport</span>
+            </div>
+            <div
+              onClick={() => onNavigate('multi-scoring', 'match_tt_wtt_final')}
+              className="px-3 py-1.5 rounded-lg bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 cursor-pointer transition-all flex items-center gap-2"
+            >
+              <span className="text-[10px] font-mono font-bold text-sky-400">02</span>
+              <span className="text-xs font-semibold text-white">Score Hotkeys</span>
+            </div>
+            <div
+              onClick={() => onNavigate('obs-guide')}
+              className="px-3 py-1.5 rounded-lg bg-[#060a14] border border-slate-800 hover:border-emerald-500/40 cursor-pointer transition-all flex items-center gap-2"
+            >
+              <span className="text-[10px] font-mono font-bold text-emerald-400">03</span>
+              <span className="text-xs font-semibold text-white">OBS Browser</span>
+            </div>
+            <button
+              onClick={() => onNavigate('obs-guide')}
+              className="text-xs font-mono text-cyan-400 hover:text-cyan-300 ml-1 cursor-pointer"
+            >
+              Guide →
+            </button>
+          </div>
+        </div>
+
+        {/* Minimal Database Bar */}
+        <div className="max-w-7xl mx-auto mt-3 bg-[#090f1f]/80 border border-slate-800/80 rounded-xl px-3.5 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2 text-emerald-400 font-mono text-[11px]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>Hostinger MySQL: {hostingerStatus?.host || 'srv1234.hstgr.io'}</span>
+            <span className="text-slate-600">•</span>
+            <span className="text-slate-300">{hostingerStatus?.syncedMatchesCount ?? matches.length} matches synced</span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
             <button
               onClick={handleSyncHostinger}
               disabled={syncingDb}
-              className="px-3 py-2 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/40 text-xs font-bold text-emerald-300 cursor-pointer transition-all"
+              className="px-2 py-0.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-[10px] font-bold text-emerald-300 cursor-pointer transition-all"
             >
-              {syncingDb ? 'Syncing Hostinger DB...' : 'Sync Hostinger DB'}
+              {syncingDb ? 'Syncing...' : 'Sync DB'}
             </button>
             <button
               onClick={handleOpenSqlExport}
-              className="px-3 py-2 rounded-lg bg-[#060a14] hover:bg-[#0b1324] border border-slate-800 hover:border-cyan-500/40 text-xs font-bold text-cyan-300 cursor-pointer transition-all"
+              className="px-2 py-0.5 rounded-lg bg-[#060a14] hover:bg-[#0c1424] border border-slate-800 text-[10px] font-bold text-cyan-300 cursor-pointer transition-all"
             >
-              Export Hostinger .SQL
+              Export .SQL
             </button>
             <button
               onClick={() => onNavigate('architecture')}
-              className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-bold text-white shrink-0 cursor-pointer transition-all shadow-md shadow-cyan-500/20"
+              className="px-2 py-0.5 rounded-lg bg-[#060a14] hover:bg-[#0c1424] border border-slate-800 text-[10px] font-bold text-amber-300 cursor-pointer transition-all"
             >
-              3-Tier Blueprint →
+              Blueprint →
             </button>
           </div>
         </div>
@@ -711,73 +596,121 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Main Workspace Area */}
       <div className="max-w-7xl mx-auto px-6 mt-8">
-        {/* Search, Layout Mode & 8-Sport Filter Bar */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-          <div className="flex flex-wrap items-center gap-1.5 p-1.5 bg-[#090f1f] border border-slate-800/90 rounded-xl">
-            {MAIN_SPORTS.map((sport) => (
-              <button
-                key={sport.id}
-                onClick={() => setSelectedSport(sport.id)}
-                className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer whitespace-nowrap ${
-                  selectedSport === sport.id
-                    ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-md shadow-cyan-500/25'
-                    : 'text-slate-400 hover:text-white hover:bg-[#0c1424]'
-                }`}
-              >
-                {sport.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Search Input + View Toggle + Reset */}
-          <div className="flex flex-wrap items-center gap-2.5">
-            <div className="relative">
+        {/* Search, Filter & View Mode Control Panel */}
+        <div className="bg-[#0b1324]/90 border border-slate-800/80 rounded-2xl p-3.5 shadow-lg space-y-3">
+          {/* Top Row: Search Input + Match Counter + Reset + View Toggle */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/60">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search team, sport, tournament..."
-                className="bg-[#090f1f] border border-slate-800 focus:border-cyan-400 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder:text-slate-500 outline-none w-56"
+                className="w-full bg-[#060a14] border border-slate-800 focus:border-cyan-400 rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder:text-slate-500 outline-none transition-colors"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer"
+                  title="Clear search"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
-            {statusFilter !== 'all' && (
-              <button
-                onClick={() => setStatusFilter('all')}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0c1424] border border-cyan-500/40 text-xs text-cyan-300 cursor-pointer"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Reset Filter</span>
-              </button>
-            )}
+            {/* Actions: Match Counter, Reset & Card/List Switcher */}
+            <div className="flex items-center gap-2 self-end sm:self-auto">
+              <span className="text-[11px] font-mono text-slate-400 px-2.5 py-1 bg-[#060a14] rounded-lg border border-slate-800/80 shrink-0">
+                <span className="text-cyan-400 font-bold">{filteredMatches.length}</span>{' '}
+                <span className="text-slate-500">/</span> {matches.length} matches
+              </span>
 
-            <div className="flex items-center bg-[#090f1f] border border-slate-800 rounded-xl p-1">
-              <button
-                onClick={() => setLayoutMode('grid')}
-                className={`p-1.5 rounded-lg cursor-pointer ${
-                  layoutMode === 'grid' ? 'bg-cyan-500 text-white' : 'text-slate-400 hover:text-white'
-                }`}
-                title="Expanded Broadcast Cards"
-              >
-                <LayoutGrid className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setLayoutMode('compact')}
-                className={`p-1.5 rounded-lg cursor-pointer ${
-                  layoutMode === 'compact'
-                    ? 'bg-cyan-500 text-white'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="Compact Multi-Channel Rack"
-              >
-                <List className="w-3.5 h-3.5" />
-              </button>
+              {(selectedSport !== 'all' || searchQuery !== '' || statusFilter !== 'all') && (
+                <button
+                  onClick={() => {
+                    setSelectedSport('all');
+                    setSearchQuery('');
+                    setStatusFilter('all');
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#060a14] border border-cyan-500/40 text-[11px] text-cyan-300 hover:text-cyan-200 cursor-pointer transition-all shrink-0"
+                  title="Reset all filters"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset</span>
+                </button>
+              )}
+
+              {/* View Toggle */}
+              <div className="flex items-center bg-[#060a14] border border-slate-800 rounded-xl p-0.5 gap-0.5 shrink-0">
+                <button
+                  onClick={() => setLayoutMode('card')}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                    layoutMode === 'card'
+                      ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-sm shadow-cyan-500/25'
+                      : 'text-slate-400 hover:text-white hover:bg-[#0c1424]'
+                  }`}
+                  title="Expanded Broadcast Cards"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>Cards</span>
+                </button>
+                <button
+                  onClick={() => setLayoutMode('list')}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                    layoutMode === 'list'
+                      ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-sm shadow-cyan-500/25'
+                      : 'text-slate-400 hover:text-white hover:bg-[#0c1424]'
+                  }`}
+                  title="Compact Multi-Channel List"
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span>List</span>
+                </button>
+              </div>
             </div>
+          </div>
+
+          {/* Bottom Row: Full-width Sports Selector Strip */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5">
+            {MAIN_SPORTS.map((sport) => {
+              const sportCount =
+                sport.id === 'all'
+                  ? matches.length
+                  : matches.filter((m) => m.sport === sport.id).length;
+
+              const isSelected = selectedSport === sport.id;
+
+              return (
+                <button
+                  key={sport.id}
+                  onClick={() => setSelectedSport(sport.id)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-md shadow-cyan-500/25 font-bold'
+                      : 'bg-[#060a14] border border-slate-800/80 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-[#0c1424]'
+                  }`}
+                >
+                  <span className="text-xs">{sport.icon}</span>
+                  <span>{sport.label}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                      isSelected
+                        ? 'bg-black/35 text-cyan-200 font-bold'
+                        : 'bg-slate-800/70 text-slate-500'
+                    }`}
+                  >
+                    {sportCount}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Matches Grid */}
+        {/* Matches Grid or List */}
         {loading ? (
           <div className="py-20 text-center text-cyan-300/80 font-mono text-sm">
             Loading MarketinGlu Cyan-Sky broadcast studio channels...
@@ -804,295 +737,255 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               </button>
             </div>
           </div>
-        ) : (
-          <div
-            className={`grid gap-5 mt-6 ${
-              layoutMode === 'compact'
-                ? 'grid-cols-1 md:grid-cols-3'
-                : 'grid-cols-1 md:grid-cols-2'
-            }`}
-          >
+        ) : layoutMode === 'list' ? (
+          /* ========================================================
+             COMPACT LIST VIEW (High-Density Multi-Channel Rack)
+             ======================================================== */
+          <div className="space-y-2 mt-5">
             {filteredMatches.map((m) => {
               const isCricket = m.sport === 'cricket';
-
-              let scoreText = '0 - 0';
-              let metaText = '';
-
-              if (isCricket && m.cricketState) {
-                const inn = m.cricketState.innings[m.cricketState.currentInningsIndex];
-                if (inn) {
-                  scoreText = `${inn.runs}/${inn.wickets}`;
-                  metaText = `${inn.oversFormatted} ov • CRR: ${inn.currentRunRate.toFixed(2)}`;
-                }
-              } else if (m.sport === 'football' && m.footballState) {
-                scoreText = `${m.footballState.homeScore} - ${m.footballState.awayScore}`;
-                metaText = `${m.footballState.clock || `${m.footballState.minute}:00`} (+${
-                  m.footballState.extraTime
-                }) • ${m.footballState.half.toUpperCase()} HALF`;
-              } else if (m.sport === 'basketball' && m.basketballState) {
-                scoreText = `${m.basketballState.homeScore} - ${m.basketballState.awayScore}`;
-                metaText = `Q${m.basketballState.quarter} ${m.basketballState.clock} • Shot: ${m.basketballState.shotClock}s`;
-              } else if (m.sport === 'badminton' && m.badmintonState) {
-                scoreText = `${m.badmintonState.homePoints} - ${m.badmintonState.awayPoints}`;
-                metaText = `Set ${m.badmintonState.currentSet + 1} • Server: ${m.badmintonState.server.toUpperCase()}`;
-              } else if (m.sport === 'table_tennis' && m.tableTennisState) {
-                scoreText = `${m.tableTennisState.homePoints} - ${m.tableTennisState.awayPoints}`;
-                metaText = `Set ${m.tableTennisState.currentSet + 1} • Server: ${m.tableTennisState.server.toUpperCase()}`;
-              } else if (m.sport === 'volleyball' && m.volleyballState) {
-                scoreText = `${m.volleyballState.homeScore} - ${m.volleyballState.awayScore}`;
-                metaText = `Set ${m.volleyballState.currentSet + 1} • Server: ${m.volleyballState.server.toUpperCase()}`;
-              } else if (m.sport === 'tennis' && m.tennisState) {
-                const currSet = m.tennisState.sets[m.tennisState.currentSet] || {
-                  home: 0,
-                  away: 0,
-                };
-                scoreText = `${m.tennisState.currentGame.homePoints} - ${m.tennisState.currentGame.awayPoints}`;
-                metaText = `Set ${m.tennisState.currentSet + 1} (${currSet.home}-${currSet.away}) • Aces: ${
-                  m.tennisState.homeAces ?? 0
-                }-${m.tennisState.awayAces ?? 0}`;
-              } else if (m.sport === 'field_hockey' && m.fieldHockeyState) {
-                scoreText = `${m.fieldHockeyState.homeScore} - ${m.fieldHockeyState.awayScore}`;
-                metaText = `Q${m.fieldHockeyState.quarter} • ${m.fieldHockeyState.minute}' • PC: ${m.fieldHockeyState.homePenaltyCorners}-${m.fieldHockeyState.awayPenaltyCorners}`;
-              } else if (m.sport === 'baseball' && m.baseballState) {
-                scoreText = `${m.baseballState.awayScore} - ${m.baseballState.homeScore}`;
-                metaText = `${m.baseballState.half.toUpperCase()} ${m.baseballState.inning} • ${m.baseballState.outs} Out`;
-              } else if (m.sport === 'rugby' && m.rugbyState) {
-                scoreText = `${m.rugbyState.homeScore} - ${m.rugbyState.awayScore}`;
-                metaText = `${m.rugbyState.minute}' • Tries: ${m.rugbyState.homeTries}-${m.rugbyState.awayTries}`;
-              }
-
-              const obsUrl = `${window.location.origin}/overlay/${m.activeOverlayToken}`;
+              const { scoreText, metaText } = getMatchScoreSummary(m);
 
               return (
                 <div
                   key={m.id}
-                  className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 hover:border-cyan-500/50 rounded-2xl p-5 transition-all flex flex-col justify-between shadow-xl shadow-black/50"
+                  className="bg-[#0b1324]/90 border border-slate-800/80 hover:border-cyan-500/40 rounded-xl px-3.5 py-2.5 transition-all shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3"
+                >
+                  {/* Left: Sport, Match & Tournament */}
+                  <div className="flex items-center gap-2.5 min-w-[200px]">
+                    <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[10px] font-bold uppercase tracking-wider text-cyan-300 shrink-0">
+                      {m.sport.replace('_', ' ')}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                        <h4 className="font-bold text-xs text-white truncate max-w-[180px]">
+                          {m.name}
+                        </h4>
+                      </div>
+                      <span className="text-[10px] text-slate-400 truncate block max-w-[180px]">
+                        {m.tournament}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Center: Teams matchup & live score */}
+                  <div className="flex items-center justify-between gap-3 bg-[#060a14]/90 px-3 py-1.5 rounded-lg border border-slate-800/80 flex-1 min-w-[240px]">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: m.teamA.color || '#06b6d4' }}
+                      />
+                      <span className="font-bold text-xs text-white">
+                        {m.teamA.shortName}
+                      </span>
+                      <span className="text-cyan-400 text-[10px] font-semibold">vs</span>
+                      <div
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: m.teamB.color || '#ef4444' }}
+                      />
+                      <span className="font-bold text-xs text-white">
+                        {m.teamB.shortName}
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="font-bold text-sm font-mono tabular-nums text-white">
+                        {scoreText}
+                      </div>
+                      <div className="text-[10px] text-cyan-300/80 font-mono">
+                        {metaText}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0 justify-end">
+                    <button
+                      onClick={(e) => handleCopyObsUrl(m.activeOverlayToken, e)}
+                      className="px-2 py-1 text-[11px] font-mono font-bold bg-[#090f1f] hover:bg-cyan-500/20 border border-slate-800 hover:border-cyan-400 text-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                      title="Copy OBS URL"
+                    >
+                      {copiedToken === m.activeOverlayToken ? (
+                        <Check className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3 h-3 text-cyan-400" />
+                      )}
+                      <span>OBS</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (isCricket) {
+                          onNavigate('scoring', m.id);
+                        } else {
+                          onNavigate('multi-scoring', m.id);
+                        }
+                      }}
+                      className="px-2.5 py-1 text-[11px] font-bold bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <Radio className="w-3 h-3" />
+                      <span>Scorer</span>
+                    </button>
+
+                    <button
+                      onClick={() => onNavigate('overlay-control', m.id)}
+                      className="px-2.5 py-1 text-[11px] font-bold bg-[#090f1f] hover:bg-[#0d162b] border border-slate-800 hover:border-cyan-500/30 text-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <Sliders className="w-3 h-3 text-cyan-400" />
+                      <span>Studio</span>
+                    </button>
+
+                    <a
+                      href={`/overlay/${m.activeOverlayToken}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1 text-cyan-400 hover:text-white rounded-lg transition-colors"
+                      title="Open Overlay"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+
+                    <button
+                      onClick={(e) => handleDelete(m.id, e)}
+                      className="p-1 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
+                      title="Delete match"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* ========================================================
+             COMPACT CARD VIEW (High-Density Modern Broadcast Cards)
+             ======================================================== */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mt-5">
+            {filteredMatches.map((m) => {
+              const isCricket = m.sport === 'cricket';
+              const { scoreText, metaText } = getMatchScoreSummary(m);
+
+              return (
+                <div
+                  key={m.id}
+                  className="bg-[#0b1324]/90 border border-slate-800/80 hover:border-cyan-500/40 rounded-xl p-3.5 transition-all flex flex-col justify-between shadow-lg shadow-black/30 group"
                 >
                   <div>
-                    {/* Top Row: Sport Label, Status, Quick Actions */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-[11px] font-extrabold uppercase tracking-wider text-cyan-300">
+                    {/* Top Header: Sport tag, Tournament, Live badge, Delete */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[10px] font-bold uppercase tracking-wider text-cyan-300 shrink-0">
                           {m.sport.replace('_', ' ')}
                         </span>
-                        <span className="text-xs text-slate-400 truncate max-w-[200px]">
+                        <span className="text-xs text-slate-400 truncate font-medium">
                           {m.tournament}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 font-mono">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                          LIVE ON AIR
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 font-mono">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          LIVE
                         </span>
                         <button
                           onClick={(e) => handleDelete(m.id, e)}
-                          className="p-1 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer"
+                          className="p-1 text-slate-500 hover:text-rose-400 transition-colors cursor-pointer ml-1"
                           title="Delete match"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Match Name & Theme Badge */}
-                    <div className="flex items-center justify-between gap-2 mt-3">
-                      <h3 className="font-extrabold text-lg text-white font-['Space_Grotesk',sans-serif]">{m.name}</h3>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-400/50 text-cyan-300 shrink-0">
-                        MarketinGlu Cyan-Sky
-                      </span>
-                    </div>
+                    {/* Match Name */}
+                    <h3 className="font-bold text-sm text-white font-['Space_Grotesk',sans-serif] mt-1.5 truncate">
+                      {m.name}
+                    </h3>
 
-                    {/* Scoreboard Preview Box + Instant Quick-Score Buttons */}
-                    <div className="mt-3 p-3.5 bg-[#060a14]/95 rounded-xl border border-slate-800/90 flex items-center justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-2.5 h-2.5 rounded-full ring-2 ring-white/20"
+                    {/* Compact Match Score Box */}
+                    <div className="mt-2.5 px-3 py-2 bg-[#060a14]/90 rounded-lg border border-slate-800/80 flex items-center justify-between gap-2">
+                      <div className="flex flex-col gap-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
                             style={{ backgroundColor: m.teamA.color || '#06b6d4' }}
                           />
-                          <span className="font-bold text-sm text-white">
+                          <span className="font-bold text-xs text-white truncate max-w-[100px]">
                             {m.teamA.shortName}
                           </span>
-                          <span className="text-cyan-400 text-xs font-semibold">vs</span>
-                          <div
-                            className="w-2.5 h-2.5 rounded-full ring-2 ring-white/20"
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
                             style={{ backgroundColor: m.teamB.color || '#ef4444' }}
                           />
-                          <span className="font-bold text-sm text-white">
+                          <span className="font-bold text-xs text-white truncate max-w-[100px]">
                             {m.teamB.shortName}
                           </span>
                         </div>
-                        <div className="text-xs text-cyan-300/80 font-mono mt-1">{metaText}</div>
                       </div>
 
-                      {/* Quick Interactive Score Trigger right from Dashboard */}
-                      <div className="flex items-center gap-2">
-                        {isCricket ? (
-                          <button
-                            onClick={(e) => handleQuickScore(m, 'home', e)}
-                            className="px-2.5 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/40 text-[11px] font-mono font-bold text-amber-300 cursor-pointer flex items-center gap-1"
-                            title="Simulate next ball"
-                          >
-                            <Play className="w-3 h-3" />
-                            <span>+Ball</span>
-                          </button>
-                        ) : (
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={(e) => handleQuickScore(m, 'home', e)}
-                              className="px-2.5 py-1 rounded-lg bg-[#0b1324] hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-400 text-[11px] font-mono font-bold text-emerald-300 cursor-pointer transition-colors"
-                              title={`Add point/score for ${m.teamA.name}`}
-                            >
-                              +{m.teamA.shortName}
-                            </button>
-                            <button
-                              onClick={(e) => handleQuickScore(m, 'away', e)}
-                              className="px-2.5 py-1 rounded-lg bg-[#0b1324] hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-400 text-[11px] font-mono font-bold text-cyan-300 cursor-pointer transition-colors"
-                              title={`Add point/score for ${m.teamB.name}`}
-                            >
-                              +{m.teamB.shortName}
-                            </button>
-                          </div>
-                        )}
-
-                        <div className="text-right min-w-[76px]">
-                          <div className="font-black text-2xl font-mono tabular-nums text-white">
-                            {scoreText}
-                          </div>
-                          <div className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">
-                            Live Score
-                          </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-black text-lg font-mono tabular-nums text-white">
+                          {scoreText}
+                        </div>
+                        <div className="text-[10px] text-cyan-300/80 font-mono">
+                          {metaText}
                         </div>
                       </div>
                     </div>
-
-                    {/* Per-Card Instant Broadcast Sting Triggers */}
-                    {layoutMode === 'grid' && (
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 bg-[#060a14]/70 border border-slate-800/80 rounded-xl px-3 py-2">
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                          Instant Overlay Sting:
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {isCricket ? (
-                            <>
-                              <button
-                                onClick={(e) => handleQuickAlert(m, 'four', 'BOUNDARY FOUR!', e)}
-                                className="px-2 py-0.5 rounded bg-cyan-500/15 hover:bg-cyan-500/30 border border-cyan-500/30 text-[10px] font-bold text-cyan-300 cursor-pointer"
-                              >
-                                FOUR!
-                              </button>
-                              <button
-                                onClick={(e) => handleQuickAlert(m, 'six', 'MAXIMUM SIX!', e)}
-                                className="px-2 py-0.5 rounded bg-purple-500/15 hover:bg-purple-500/30 border border-purple-500/30 text-[10px] font-bold text-purple-300 cursor-pointer"
-                              >
-                                SIX!
-                              </button>
-                              <button
-                                onClick={(e) => handleQuickAlert(m, 'wicket', 'WICKET!', e)}
-                                className="px-2 py-0.5 rounded bg-rose-500/15 hover:bg-rose-500/30 border border-rose-500/30 text-[10px] font-bold text-rose-300 cursor-pointer"
-                              >
-                                WICKET!
-                              </button>
-                            </>
-                          ) : m.sport === 'basketball' ? (
-                            <>
-                              <button
-                                onClick={(e) =>
-                                  handleQuickAlert(m, 'three_pointer', '3-POINTER!', e)
-                                }
-                                className="px-2 py-0.5 rounded bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/30 text-[10px] font-bold text-amber-300 cursor-pointer"
-                              >
-                                3-POINTER!
-                              </button>
-                              <button
-                                onClick={(e) => handleQuickAlert(m, 'goal', 'SLAM DUNK!', e)}
-                                className="px-2 py-0.5 rounded bg-cyan-500/15 hover:bg-cyan-500/30 border border-cyan-500/30 text-[10px] font-bold text-cyan-300 cursor-pointer"
-                              >
-                                DUNK!
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                onClick={(e) => handleQuickAlert(m, 'goal', 'GOAL / POINT!', e)}
-                                className="px-2 py-0.5 rounded bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/30 text-[10px] font-bold text-emerald-300 cursor-pointer"
-                              >
-                                GOAL / WINNER!
-                              </button>
-                              <button
-                                onClick={(e) => handleQuickAlert(m, 'ace', 'SERVICE ACE!', e)}
-                                className="px-2 py-0.5 rounded bg-cyan-500/15 hover:bg-cyan-500/30 border border-cyan-500/30 text-[10px] font-bold text-cyan-300 cursor-pointer"
-                              >
-                                ACE / SMASH!
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    )}
                   </div>
 
-                  {/* OBS Link & Controls Row */}
-                  <div className="mt-4 pt-3.5 border-t border-slate-800/80 flex flex-col gap-3">
-                    {/* Copy OBS Browser Source Box */}
-                    <div className="flex items-center gap-2 bg-[#060a14] p-2 rounded-xl border border-slate-800/90 text-xs">
-                      <span className="text-cyan-400 font-mono text-[11px] shrink-0">OBS URL:</span>
-                      <span className="font-mono text-slate-300 truncate text-[11px] flex-1">
-                        {obsUrl}
-                      </span>
+                  {/* Compact Actions Footer */}
+                  <div className="mt-3 pt-2.5 border-t border-slate-800/70 flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5">
                       <button
-                        onClick={(e) => handleCopyObsUrl(m.activeOverlayToken, e)}
-                        className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-[#0c1424] hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-400 text-white rounded-lg transition-colors shrink-0 cursor-pointer"
+                        onClick={() => {
+                          if (isCricket) {
+                            onNavigate('scoring', m.id);
+                          } else {
+                            onNavigate('multi-scoring', m.id);
+                          }
+                        }}
+                        className="px-2.5 py-1 text-[11px] font-bold bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
                       >
-                        {copiedToken === m.activeOverlayToken ? (
-                          <>
-                            <Check className="w-3 h-3 text-emerald-400" />
-                            <span className="text-emerald-400">Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="w-3 h-3" />
-                            <span>Copy</span>
-                          </>
-                        )}
+                        <Radio className="w-3 h-3" />
+                        <span>Scorer</span>
+                      </button>
+
+                      <button
+                        onClick={() => onNavigate('overlay-control', m.id)}
+                        className="px-2.5 py-1 text-[11px] font-bold bg-[#090f1f] hover:bg-[#0d162b] border border-slate-800 hover:border-cyan-500/30 text-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <Sliders className="w-3 h-3 text-cyan-400" />
+                        <span>Studio</span>
                       </button>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            if (isCricket) {
-                              onNavigate('scoring', m.id);
-                            } else {
-                              onNavigate('multi-scoring', m.id);
-                            }
-                          }}
-                          className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl transition-all shadow-md shadow-cyan-500/20 cursor-pointer"
-                        >
-                          <Radio className="w-3.5 h-3.5" />
-                          <span>Scoring &amp; Hotkeys</span>
-                        </button>
-
-                        <button
-                          onClick={() => onNavigate('overlay-control', m.id)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#0b1324] hover:bg-[#0d162b] border border-slate-800 hover:border-cyan-500/40 text-slate-200 rounded-xl transition-colors cursor-pointer"
-                        >
-                          <Sliders className="w-3.5 h-3.5 text-cyan-400" />
-                          <span>Overlay Studio</span>
-                        </button>
-                      </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => handleCopyObsUrl(m.activeOverlayToken, e)}
+                        className="px-2 py-1 text-[11px] font-mono font-bold bg-[#090f1f] hover:bg-cyan-500/20 border border-slate-800 hover:border-cyan-400 text-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                        title="Copy OBS URL"
+                      >
+                        {copiedToken === m.activeOverlayToken ? (
+                          <Check className="w-3 h-3 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3 h-3 text-cyan-400" />
+                        )}
+                        <span>OBS</span>
+                      </button>
 
                       <a
                         href={`/overlay/${m.activeOverlayToken}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1 text-xs font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
+                        className="p-1 text-cyan-400 hover:text-white rounded-lg transition-colors"
+                        title="Open Overlay"
                       >
-                        <span>Launch Overlay</span>
-                        <ExternalLink className="w-3 h-3" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     </div>
                   </div>
