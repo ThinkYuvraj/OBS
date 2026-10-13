@@ -17,12 +17,13 @@ import {
   Layers,
   Tv,
   Scale,
+  Phone,
 } from 'lucide-react';
 import { UserProfile } from '../../types/sports';
 import { fetchActiveUser, fetchLicenseStatus } from '../../services/api';
 import { PricingModal } from '../payment/PricingModal';
 import { UserRoleModal } from './UserRoleModal';
-import emblemDarkImg from '../../assets/images/marketinglu-emblem-dark.png';
+import emblemWhiteCardImg from '../../assets/images/marketinglu-emblem.png';
 import wordmarkImg from '../../assets/images/marketinglu-wordmark.png';
 
 interface NavbarProps {
@@ -54,151 +55,98 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
     refreshMeta();
   }, []);
 
+  const navLinks = [
+    { id: 'dashboard', label: 'Home' },
+    { id: 'scoring', label: 'Cricket' },
+    { id: 'multi-scoring', label: 'Multi-Sport' },
+    { id: 'overlay-control', label: 'Overlay Studio' },
+    { id: 'pricing', label: 'Packages' },
+    { id: 'rule-books', label: 'Rule Books' },
+    { id: 'obs-guide', label: 'OBS Guide' },
+    { id: 'architecture', label: 'Performance' },
+    { id: 'reviews', label: 'Rate Us' },
+    { id: 'legal', label: 'Legal Hub' },
+  ];
+
   return (
     <>
-      <header className="flex items-center justify-between gap-4 px-4 sm:px-6 py-3 border-b border-slate-800/80 bg-[#070b14]/95 backdrop-blur-md sticky top-0 z-40 text-slate-100 shadow-xl shadow-black/40">
-        {/* Brand & Wordmark */}
+      <header className="flex items-center justify-between gap-3 sm:gap-4 px-3 sm:px-6 py-2.5 sm:py-3 border-b border-slate-900/90 bg-[#040814]/95 backdrop-blur-md sticky top-0 z-40 text-slate-100 shadow-xl shadow-black/50">
+        {/* 1. LEFT LOGO: White Rounded Badge with Black MG Emblem + "MARKETIN GLU" Wordmark */}
         <div
-          className="flex items-center gap-3 cursor-pointer whitespace-nowrap shrink-0"
+          className="flex items-center gap-2.5 sm:gap-3 cursor-pointer whitespace-nowrap shrink-0 group"
           onClick={() => onNavigate('dashboard')}
+          title="MarketinGlu Broadcast Suite"
         >
-          <div className="w-10 h-10 rounded-xl bg-[#090f1f] border border-cyan-500/40 flex items-center justify-center p-1 shadow-lg shadow-cyan-500/20 group hover:border-cyan-400 transition-colors">
+          {/* White Rounded Card holding Black MG Emblem */}
+          <div className="w-11 h-7.5 sm:w-13 sm:h-8.5 bg-white rounded-xl flex items-center justify-center px-1.5 py-1 shadow-sm group-hover:shadow-[0_0_12px_rgba(255,255,255,0.4)] transition-all shrink-0">
             <img
-              src={emblemDarkImg}
+              src={emblemWhiteCardImg}
               alt="MarketinGlu Emblem"
-              className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] group-hover:scale-105 transition-transform"
+              className="h-full w-auto object-contain select-none pointer-events-none"
             />
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <img
-                src={wordmarkImg}
-                alt="MARKETINGLU"
-                className="h-4.5 w-auto object-contain brightness-110 drop-shadow-[0_1px_4px_rgba(6,182,212,0.3)]"
-              />
-              <span className="text-[10px] font-black text-cyan-300 font-mono tracking-wider px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30">
-                OBS
-              </span>
-              <span className="hidden lg:inline-block px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 font-bold">
-                ISO 9001:2015
-              </span>
-            </div>
-            <span className="text-[10px] text-slate-400 font-mono tracking-tight -mt-0.5">
-              Sub-second Broadcast Engine
-            </span>
-          </div>
+
+          {/* Official Wordmark Image: "MARKETIN GLU" */}
+          <img
+            src={wordmarkImg}
+            alt="MARKETINGLU"
+            className="h-4.5 sm:h-5.5 w-auto object-contain brightness-110 drop-shadow-[0_1px_6px_rgba(6,182,212,0.35)] select-none"
+          />
         </div>
 
-        {/* Center Nav Links */}
-        <nav className="hidden xl:flex items-center gap-6 text-xs font-semibold text-slate-400">
-          <button
-            onClick={() => onNavigate('dashboard')}
-            className={`transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
-              currentTab === 'dashboard' ? 'text-cyan-400 font-bold' : ''
-            }`}
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => onNavigate('scoring')}
-            className={`transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
-              currentTab === 'scoring' ? 'text-cyan-400 font-bold' : ''
-            }`}
-          >
-            Cricket Console
-          </button>
-          <button
-            onClick={() => onNavigate('multi-scoring')}
-            className={`transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
-              currentTab === 'multi-scoring' || currentTab === 'football-scoring'
-                ? 'text-cyan-400 font-bold'
-                : ''
-            }`}
-          >
-            Multi-Sport Console
-          </button>
-          <button
-            onClick={() => onNavigate('rule-books')}
-            className={`flex items-center gap-1 transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
-              currentTab === 'rule-books' ? 'text-cyan-400 font-bold' : ''
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Rule Books</span>
-          </button>
-          <button
-            onClick={() => onNavigate('overlay-control')}
-            className={`transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
-              currentTab === 'overlay-control' ? 'text-cyan-400 font-bold' : ''
-            }`}
-          >
-            Overlay Studio
-          </button>
-          <button
-            onClick={() => onNavigate('obs-guide')}
-            className={`flex items-center gap-1 transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
-              currentTab === 'obs-guide' ? 'text-cyan-400 font-bold' : ''
-            }`}
-          >
-            <Compass className="w-3.5 h-3.5" />
-            <span>OBS Guide</span>
-          </button>
-          <button
-            onClick={() => onNavigate('architecture')}
-            className={`transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
-              currentTab === 'architecture' ? 'text-cyan-400 font-bold' : ''
-            }`}
-          >
-            3-Tier Architecture
-          </button>
-          <button
-            onClick={() => onNavigate('reviews')}
-            className={`flex items-center gap-1.5 transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
-              currentTab === 'reviews' ? 'text-cyan-400 font-bold' : 'text-slate-300'
-            }`}
-            title="Rate Us on Google Play Store & Read Community Reviews"
-          >
-            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-            <span>Rate Us</span>
-          </button>
-          <button
-            onClick={() => onNavigate('pricing')}
-            className={`flex items-center gap-1.5 transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
-              currentTab === 'pricing' ? 'text-cyan-400 font-bold' : 'text-slate-300'
-            }`}
-            title="Passes & Razorpay/Paytm Invoicing (₹499/hr • ₹1,699/day)"
-          >
-            <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Pricing</span>
-          </button>
-          <button
-            onClick={() => onNavigate('legal')}
-            className={`flex items-center gap-1.5 transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 ${
-              currentTab === 'legal' ? 'text-cyan-400 font-bold' : 'text-slate-300'
-            }`}
-            title="Indian Legal Compliance, IT Rules & Grievance Redressal"
-          >
-            <Scale className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Legal Hub</span>
-          </button>
-          {onOpenPolicies && (
-            <button
-              onClick={onOpenPolicies}
-              className="flex items-center gap-1 transition-colors hover:text-cyan-300 cursor-pointer whitespace-nowrap shrink-0 text-slate-400"
-              title="Review MarketinGlu Broadcast Legal Policies & SLA"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Policies</span>
-            </button>
-          )}
+        {/* 2. CENTER CAPSULE NAVBAR: Enclosed Pill Container with Glowing Active Tab */}
+        <nav className="hidden xl:flex items-center gap-1 px-1.5 py-1 rounded-full bg-[#051122]/90 border border-cyan-500/25 shadow-inner backdrop-blur-md overflow-x-auto no-scrollbar">
+          {navLinks.map((tab) => {
+            const isActive =
+              currentTab === tab.id ||
+              (tab.id === 'multi-scoring' && currentTab === 'football-scoring');
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onNavigate(tab.id)}
+                className={`transition-all cursor-pointer whitespace-nowrap shrink-0 text-xs font-semibold px-3.5 py-1.5 rounded-full ${
+                  isActive
+                    ? 'border border-cyan-400 bg-cyan-950/60 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.35)]'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </nav>
 
-        {/* Right Actions: License Badge, Operator Switcher, New Match + Mobile Hamburger */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Payment & Access Pass Action (Desktop/Tablet) */}
+        {/* 3. RIGHT ACTION SUITE: Phone Hotline (+91 96545 96149) + Cyan Pill CTA + Broadcast Badges */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Phone Hotline Contact Badge */}
+          <a
+            href="tel:+919654596149"
+            className="hidden lg:flex items-center gap-2 text-xs font-bold text-white hover:text-cyan-300 transition-colors shrink-0 group"
+            title="MarketinGlu Broadcast Hotline: +91 96545 96149"
+          >
+            <div className="w-7 h-7 rounded-lg sm:rounded-xl border border-cyan-500/40 bg-cyan-500/10 flex items-center justify-center text-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.25)] group-hover:border-cyan-300 group-hover:bg-cyan-500/20 transition-all">
+              <Phone className="w-3.5 h-3.5" />
+            </div>
+            <span className="tracking-tight text-white group-hover:text-cyan-300 transition-colors font-mono">
+              +91 96545 96149
+            </span>
+          </a>
+
+          {/* Primary Action Button: Pill Shaped with Glowing Cyan Border ("New Match" CTA) */}
+          <button
+            onClick={() => onNavigate('create')}
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full border border-cyan-400 text-cyan-300 hover:text-slate-950 hover:bg-cyan-400 font-bold text-xs transition-all shadow-[0_0_12px_rgba(6,182,212,0.25)] whitespace-nowrap shrink-0 cursor-pointer"
+            title="Create a New Live Match Overlay Channel"
+          >
+            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span className="hidden sm:inline">New Match</span>
+          </button>
+
+          {/* Payment Pass Indicator (Desktop/Tablet) */}
           <button
             onClick={() => setShowPricingModal(true)}
-            className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all border cursor-pointer ${
+            className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold font-mono transition-all border cursor-pointer ${
               licenseStatus?.isActive
                 ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
                 : 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
@@ -216,37 +164,16 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
           {/* Operator Switcher (Desktop/Tablet) */}
           <button
             onClick={() => setShowUserModal(true)}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0d1527] hover:bg-[#111e38] border border-slate-800 hover:border-cyan-500/40 text-xs font-semibold text-slate-200 transition-colors cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-[#0d1527] hover:bg-[#111e38] border border-slate-800 hover:border-cyan-500/40 text-xs font-semibold text-slate-200 transition-colors cursor-pointer"
             title="Switch Operator Setup Profile"
           >
             <span className="text-sm">{activeUser?.avatar || '👤'}</span>
-            <span className="hidden md:inline-block truncate max-w-[120px]">
+            <span className="hidden xl:inline-block truncate max-w-[100px]">
               {activeUser?.name || 'Operator'}
             </span>
           </button>
 
-          {/* Client Help Desk Button */}
-          {onOpenHelpDesk && (
-            <button
-              onClick={onOpenHelpDesk}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#0d1527] hover:bg-[#111e38] border border-cyan-500/30 hover:border-cyan-400 text-xs font-bold text-cyan-300 transition-colors cursor-pointer shadow-sm"
-              title="Open Client Help Desk (Email: support@marketinglu.com)"
-            >
-              <LifeBuoy className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden lg:inline">Help Desk</span>
-            </button>
-          )}
-
-          {/* New Match Action */}
-          <button
-            onClick={() => onNavigate('create')}
-            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 rounded-lg transition-all shadow-md shadow-cyan-500/20 whitespace-nowrap shrink-0 cursor-pointer"
-          >
-            <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            <span className="hidden sm:inline">New Match</span>
-          </button>
-
-          {/* Mobile Drawer Toggle (Phone/Tablet) */}
+          {/* Mobile Menu Hamburger (Phone/Tablet) */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="xl:hidden p-2 rounded-xl bg-[#0d1527] border border-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-white transition-colors cursor-pointer"
@@ -264,8 +191,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
           <div className="bg-[#090f1f] border-b border-slate-800 p-4 max-h-[85vh] overflow-y-auto space-y-4 shadow-2xl">
             {/* Drawer Header */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <img src={emblemDarkImg} alt="MarketinGlu" className="w-7 h-5 object-contain" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-6 bg-white rounded-lg flex items-center justify-center p-1 shadow-sm shrink-0">
+                  <img src={emblemWhiteCardImg} alt="MarketinGlu" className="h-full w-auto object-contain" />
+                </div>
                 <img src={wordmarkImg} alt="MARKETINGLU" className="h-4 w-auto object-contain" />
               </div>
               <button
@@ -275,6 +204,20 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {/* Direct Phone Helpline in Drawer */}
+            <a
+              href="tel:+919654596149"
+              className="flex items-center justify-between p-3 rounded-xl bg-[#060a14] border border-cyan-500/30 text-white hover:border-cyan-400"
+            >
+              <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-300">
+                <Phone className="w-4 h-4 text-cyan-400" />
+                <span>24/7 Helpline: +91 96545 96149</span>
+              </div>
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">
+                CALL NOW
+              </span>
+            </a>
 
             {/* Operator & License Cards */}
             <div className="grid grid-cols-2 gap-2">
@@ -312,18 +255,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
             {/* Navigation Grid Links */}
             <div className="space-y-1">
               <div className="text-[10px] font-mono text-slate-500 uppercase tracking-wider px-2 py-1">
-                Studio Channels & Tools
+                Studio Channels &amp; Tools
               </div>
               {[
-                { id: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
+                { id: 'dashboard', label: 'Home (Dashboard)', icon: LayoutGrid },
                 { id: 'scoring', label: 'ICC Cricket Console', icon: Tv },
                 { id: 'multi-scoring', label: 'Multi-Sport Engine', icon: SlidersHorizontal },
-                { id: 'rule-books', label: 'Sports Rule Books', icon: BookOpen },
-                { id: 'pricing', label: 'Pass Pricing (₹499/hr • Razorpay/Paytm)', icon: CreditCard },
-                { id: 'legal', label: 'Indian Legal Compliance & Forms', icon: Scale },
+                { id: 'pricing', label: 'Packages & Passes (₹499/hr)', icon: CreditCard },
+                { id: 'rule-books', label: 'Rule Books & Signals', icon: BookOpen },
+                { id: 'legal', label: 'Indian Legal Compliance', icon: Scale },
                 { id: 'overlay-control', label: 'OBS Overlay Studio', icon: Sliders },
                 { id: 'obs-guide', label: 'OBS Setup Guide', icon: Compass },
-                { id: 'architecture', label: '3-Tier Architecture', icon: Layers },
+                { id: 'architecture', label: 'Performance Architecture', icon: Layers },
                 { id: 'reviews', label: 'Rate Us & Play Store Reviews', icon: Star, highlight: true },
               ].map((item) => {
                 const IconComponent = item.icon;
@@ -350,82 +293,39 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
               })}
             </div>
 
-            {/* Help Desk & Policies */}
-            <div className="pt-2 border-t border-slate-800 space-y-1.5">
-              {onOpenHelpDesk && (
-                <button
-                  onClick={() => {
-                    onOpenHelpDesk();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-300 bg-rose-500/10 border border-rose-500/30 text-left cursor-pointer"
-                >
-                  <LifeBuoy className="w-4 h-4 text-rose-400" />
-                  <span>Report Match Issue (support@marketinglu.com)</span>
-                </button>
-              )}
-              {onOpenPolicies && (
-                <button
-                  onClick={() => {
-                    onOpenPolicies();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white text-left cursor-pointer"
-                >
-                  <ShieldCheck className="w-4 h-4 text-slate-400" />
-                  <span>Legal Policies & Broadcast SLA</span>
-                </button>
-              )}
-            </div>
+            {/* Client Help Desk Action */}
+            {onOpenHelpDesk && (
+              <button
+                onClick={() => {
+                  onOpenHelpDesk();
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full py-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/20 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <LifeBuoy className="w-4 h-4 text-cyan-400" />
+                <span>Client Help Desk (support@marketinglu.com)</span>
+              </button>
+            )}
           </div>
-
-          <div
-            className="flex-1"
-            onClick={() => setMobileMenuOpen(false)}
-          />
         </div>
       )}
 
-      {/* Native Mobile Bottom Navigation Bar (Android Play Store Style) */}
-      <nav className="xl:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#070b14]/95 backdrop-blur-lg border-t border-slate-800/90 pb-safe shadow-[0_-8px_25px_rgba(0,0,0,0.6)]">
-        <div className="grid grid-cols-5 items-center justify-around px-1 py-1.5">
-          {[
-            { id: 'dashboard', label: 'Home', icon: LayoutGrid },
-            { id: 'scoring', label: 'Cricket', icon: Tv },
-            { id: 'multi-scoring', label: 'Sports', icon: SlidersHorizontal },
-            { id: 'rule-books', label: 'Rules', icon: BookOpen },
-            { id: 'reviews', label: 'Rate Us', icon: Star },
-          ].map((item) => {
-            const Icon = item.icon;
-            const active = currentTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all cursor-pointer ${
-                  active ? 'text-cyan-400 font-bold scale-105' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Icon className={`w-4.5 h-4.5 ${active ? 'text-cyan-400 stroke-[2.5]' : 'text-slate-400'}`} />
-                <span className="text-[10px] tracking-tight mt-0.5 font-medium">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
-      {/* Pricing Gateway Modal */}
+      {/* Pricing Passes Modal */}
       <PricingModal
         isOpen={showPricingModal}
         onClose={() => setShowPricingModal(false)}
-        onPaymentSuccess={() => refreshMeta()}
+        onPaymentSuccess={() => {
+          refreshMeta();
+        }}
       />
 
-      {/* Operator Setup User Profile Modal */}
+      {/* Operator Setup Profile Modal */}
       <UserRoleModal
         isOpen={showUserModal}
         onClose={() => setShowUserModal(false)}
-        onUserChanged={(u) => setActiveUser(u)}
+        onUserChanged={(user: UserProfile) => {
+          setActiveUser(user);
+        }}
       />
     </>
   );
