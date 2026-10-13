@@ -571,7 +571,7 @@ export const ArchitectureView: React.FC<ArchitectureViewProps> = ({ onBack, onNa
               </button>
               <button
                 onClick={() => onNavigate('overlay-control', selectedMatch?.id)}
-                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-bold text-white cursor-pointer shadow-md shadow-cyan-500/20"
+                className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-xs font-bold text-white cursor-pointer shadow-md shadow-cyan-500/20"
               >
                 Open Overlay Studio
               </button>

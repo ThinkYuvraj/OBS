@@ -240,7 +240,7 @@ export const ReviewsPage: React.FC<ReviewsPageProps> = ({ onBack, onNavigateToCo
             {onBack && (
               <button
                 onClick={onBack}
-                className="px-4 py-2 rounded-xl bg-[#090f1f] hover:bg-[#0f1933] border border-slate-800 hover:border-cyan-500/40 text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
+                className="px-4 py-2 rounded-lg bg-[#090f1f] hover:bg-[#0f1933] border border-slate-800 hover:border-cyan-500/40 text-xs font-semibold text-slate-300 transition-colors cursor-pointer"
               >
                 Back to Dashboard
               </button>
@@ -372,9 +372,9 @@ export const ReviewsPage: React.FC<ReviewsPageProps> = ({ onBack, onNavigateToCo
                       <div key={stars} className="flex items-center gap-2.5 text-xs font-mono text-slate-400">
                         <span className="w-4 text-right font-bold text-slate-300">{stars}</span>
                         <Star className="w-3 h-3 fill-amber-400 stroke-amber-400" />
-                        <div className="flex-1 h-2 bg-[#060a14] rounded-full overflow-hidden border border-slate-800/80">
+                        <div className="flex-1 h-2 bg-[#060a14] rounded-md overflow-hidden border border-slate-800/80">
                           <div
-                            className="h-full bg-gradient-to-r from-amber-400 to-cyan-400 rounded-full"
+                            className="h-full bg-gradient-to-r from-amber-400 to-cyan-400 rounded-md"
                             style={{ width: `${pct}%` }}
                           />
                         </div>

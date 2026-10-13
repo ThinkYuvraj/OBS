@@ -628,7 +628,7 @@ export const LegalCompliancePage: React.FC<LegalCompliancePageProps> = ({
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-mono font-bold text-cyan-400">{g.id}</span>
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 uppercase">
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 uppercase">
                               {g.status}
                             </span>
                           </div>

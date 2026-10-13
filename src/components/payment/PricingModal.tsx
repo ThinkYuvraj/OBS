@@ -46,7 +46,7 @@ export const PricingModal: React.FC<PricingModalProps> = ({ isOpen, onClose, onP
 
           <div className="flex items-center gap-2">
             {currentStatus?.isActive && (
-              <span className="hidden sm:inline-block px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              <span className="hidden sm:inline-block px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                 ACTIVE: {currentStatus.remainingHours}h Left
               </span>
             )}

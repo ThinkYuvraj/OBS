@@ -195,10 +195,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
 
         {/* Right Actions: License Badge, Operator Switcher, New Match + Mobile Hamburger */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Payment & Access Pass Pill (Desktop/Tablet) */}
+          {/* Payment & Access Pass Action (Desktop/Tablet) */}
           <button
             onClick={() => setShowPricingModal(true)}
-            className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold font-mono transition-all border cursor-pointer ${
+            className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold font-mono transition-all border cursor-pointer ${
               licenseStatus?.isActive
                 ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
                 : 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
@@ -213,10 +213,10 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
             </span>
           </button>
 
-          {/* Operator Switcher Pill (Desktop/Tablet) */}
+          {/* Operator Switcher (Desktop/Tablet) */}
           <button
             onClick={() => setShowUserModal(true)}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0d1527] hover:bg-[#111e38] border border-slate-800 hover:border-cyan-500/40 text-xs font-semibold text-slate-200 transition-colors cursor-pointer"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0d1527] hover:bg-[#111e38] border border-slate-800 hover:border-cyan-500/40 text-xs font-semibold text-slate-200 transition-colors cursor-pointer"
             title="Switch Operator Setup Profile"
           >
             <span className="text-sm">{activeUser?.avatar || '👤'}</span>
@@ -229,7 +229,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
           {onOpenHelpDesk && (
             <button
               onClick={onOpenHelpDesk}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-[#0d1527] hover:bg-[#111e38] border border-cyan-500/30 hover:border-cyan-400 text-xs font-bold text-cyan-300 transition-colors cursor-pointer shadow-sm"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#0d1527] hover:bg-[#111e38] border border-cyan-500/30 hover:border-cyan-400 text-xs font-bold text-cyan-300 transition-colors cursor-pointer shadow-sm"
               title="Open Client Help Desk (Email: support@marketinglu.com)"
             >
               <LifeBuoy className="w-3.5 h-3.5 text-cyan-400" />
@@ -240,7 +240,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, onNavigate, onOpenPo
           {/* New Match Action */}
           <button
             onClick={() => onNavigate('create')}
-            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 rounded-xl transition-all shadow-md shadow-cyan-500/20 whitespace-nowrap shrink-0 cursor-pointer"
+            className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-cyan-400 via-sky-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 rounded-lg transition-all shadow-md shadow-cyan-500/20 whitespace-nowrap shrink-0 cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 stroke-[3]" />
             <span className="hidden sm:inline">New Match</span>

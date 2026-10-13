@@ -421,7 +421,7 @@ export const RuleBooks: React.FC<RuleBooksProps> = ({ onBack, onNavigateToConsol
                   <h2 className="text-2xl font-black text-white font-['Space_Grotesk',sans-serif]">
                     {currentRule.name}
                   </h2>
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${currentRule.badgeColor}`}>
+                  <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold border ${currentRule.badgeColor}`}>
                     {currentRule.governingBody}
                   </span>
                 </div>

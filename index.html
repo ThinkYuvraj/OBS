@@ -23,23 +23,49 @@
   </head>
   <body>
     <div id="root">
-      <div style="min-height:100vh;background:#070b14;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;color:#f1f5f9;text-align:center;padding:24px;">
-        <div style="position:relative;margin-bottom:24px;display:flex;align-items:center;justify-content:center;">
-          <div style="position:absolute;width:190px;height:190px;border-radius:50%;border:2px solid rgba(6,182,212,0.25);border-top-color:#06b6d4;border-right-color:rgba(59,130,246,0.6);animation:mglSpin 3.5s linear infinite;"></div>
-          <img src="/marketinglu-emblem-dark.png" alt="MarketinGlu Logo" style="width:140px;height:auto;filter:drop-shadow(0 0 20px rgba(6,182,212,0.85));animation:mglPulse 2s ease-in-out infinite;" />
+      <div style="min-height:100vh;background:#040814;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;color:#f1f5f9;text-align:center;padding:24px;position:relative;">
+        <!-- Ambient Cyan Glow -->
+        <div style="position:absolute;width:420px;height:420px;background:rgba(6,182,212,0.12);border-radius:50%;filter:blur(110px);pointer-events:none;"></div>
+
+        <!-- 1. Top Logo Emblem Card (Dark rounded frame with rim glow + white inner card) -->
+        <div style="position:relative;margin-bottom:28px;z-index:2;">
+          <div style="background:#091122;border:1px solid rgba(6,182,212,0.35);border-radius:24px;padding:14px;box-shadow:0 0 35px rgba(6,182,212,0.35);display:flex;align-items:center;justify-content:center;width:220px;height:140px;box-sizing:border-box;">
+            <div style="background:#ffffff;border-radius:16px;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:8px;box-sizing:border-box;">
+              <img src="/marketinglu-emblem.png" alt="MarketinGlu Emblem" style="max-height:76px;width:auto;object-contain:contain;" />
+            </div>
+          </div>
         </div>
-        <img src="/marketinglu-wordmark.png" alt="MARKETINGLU" style="width:180px;height:auto;margin-bottom:14px;filter:drop-shadow(0 2px 8px rgba(6,182,212,0.4));" />
-        <div style="font-family:monospace;font-size:11px;color:#06b6d4;letter-spacing:2px;font-weight:700;margin-bottom:16px;">
-          SUB-SECOND BROADCAST ENGINE • ISO 9001:2015
+
+        <!-- 2. Wordmark: MARKETIN GLU -->
+        <img src="/marketinglu-wordmark.png" alt="MARKETINGLU" style="width:260px;height:auto;margin-bottom:14px;filter:drop-shadow(0 2px 10px rgba(6,182,212,0.45));z-index:2;" />
+
+        <!-- 3. Subtitle Pill: ⚡ SOFTWARE & DIGITAL GROWTH ENGINE -->
+        <div style="margin-bottom:32px;z-index:2;">
+          <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 18px;border-radius:999px;border:1px solid rgba(6,182,212,0.4);background:rgba(6,21,40,0.8);color:#67e8f9;font-family:monospace;font-size:11px;font-weight:700;letter-spacing:1px;box-shadow:0 0 15px rgba(6,182,212,0.2);">
+            <span style="color:#22d3ee;font-size:12px;">⚡</span>
+            <span>SOFTWARE &amp; DIGITAL GROWTH ENGINE</span>
+          </div>
         </div>
-        <div style="width:220px;height:4px;background:#0d1527;border-radius:999px;overflow:hidden;border:1px solid rgba(6,182,212,0.3);">
-          <div style="width:70%;height:100%;background:linear-gradient(90deg,#06b6d4,#3b82f6);border-radius:999px;animation:mglBar 1.5s ease-in-out infinite alternate;"></div>
+
+        <!-- 4. Progress Bar & Telemetry Status Row -->
+        <div style="width:340px;max-width:90vw;z-index:2;">
+          <!-- Progress Track -->
+          <div style="width:100%;height:6px;background:#0c1626;border-radius:999px;overflow:hidden;border:1px solid rgba(6,182,212,0.2);position:relative;">
+            <div style="width:81%;height:100%;background:linear-gradient(90deg,#06b6d4,#38bdf8);border-radius:999px;box-shadow:0 0 12px #06b6d4;"></div>
+          </div>
+
+          <!-- Status Row: Left msg, Tag, 81% -->
+          <div style="display:flex;align-items:center;justify-content:space-between;font-family:monospace;font-size:11px;margin-top:10px;">
+            <div style="display:flex;align-items:center;gap:8px;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              <span style="width:8px;height:8px;border-radius:50%;background:#22d3ee;box-shadow:0 0 8px #22d3ee;display:inline-block;"></span>
+              <span style="font-weight:500;">Calibrating 144Hz Smooth Engine &amp; ...</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+              <span style="color:#06b6d4;font-weight:700;">[GPU_ACCEL]</span>
+              <span style="color:#67e8f9;font-weight:800;font-size:12px;">81%</span>
+            </div>
+          </div>
         </div>
-        <style>
-          @keyframes mglSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-          @keyframes mglPulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 16px rgba(6,182,212,0.7)); } 50% { transform: scale(1.04); filter: drop-shadow(0 0 28px rgba(6,182,212,1)); } }
-          @keyframes mglBar { 0% { width: 30%; } 100% { width: 95%; } }
-        </style>
       </div>
     </div>
     <script type="module" src="/src/main.tsx"></script>

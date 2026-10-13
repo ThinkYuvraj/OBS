@@ -90,7 +90,7 @@ export const PricingPage: React.FC<PricingPageProps> = ({ onBack, onNavigate }) 
       {/* Hero Showcase */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 pb-6">
         <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-mono font-bold uppercase tracking-wider mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-mono font-bold uppercase tracking-wider mb-3">
             <Sparkles className="w-3.5 h-3.5" />
             <span>PAY-PER-MATCH OR 24-HOUR TOURNAMENT PASSES</span>
           </div>

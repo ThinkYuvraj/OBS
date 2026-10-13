@@ -348,7 +348,7 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
             >
               {/* Popular Badge */}
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-[10px] font-mono font-black uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-lg shadow-emerald-500/30">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-md text-[10px] font-mono font-black uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-lg shadow-emerald-500/30">
                   {plan.badge}
                 </div>
               )}
@@ -357,7 +357,7 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div>
                   {!plan.popular && (
-                    <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border mb-2 ${plan.badgeColor}`}>
+                    <span className={`inline-block px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold border mb-2 ${plan.badgeColor}`}>
                       {plan.badge}
                     </span>
                   )}
@@ -414,7 +414,7 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
                   handleCheckout(plan.id);
                 }}
                 disabled={loading}
-                className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                className={`w-full py-3 rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black shadow-lg shadow-cyan-500/25'
                     : 'bg-[#060a14] hover:bg-cyan-500/10 text-cyan-400 border border-slate-800 hover:border-cyan-500/40'
@@ -658,7 +658,7 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
                 type="button"
                 onClick={handleCompletePaytmPayment}
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-sky-500/25 cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-lg bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-sky-500/25 cursor-pointer flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
@@ -673,7 +673,7 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
               <button
                 type="button"
                 onClick={() => setPaytmModalData(null)}
-                className="w-full py-2.5 rounded-xl bg-[#060a14] border border-slate-800 text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
+                className="w-full py-2.5 rounded-lg bg-[#060a14] border border-slate-800 text-slate-400 hover:text-white text-xs font-semibold cursor-pointer"
               >
                 Cancel Transaction
               </button>

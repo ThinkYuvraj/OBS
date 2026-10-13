@@ -354,8 +354,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       <div className="relative border-b border-slate-800/80 bg-gradient-to-b from-[#0c1424] via-[#090f1f] to-[#070b14] px-3 sm:px-6 py-4 sm:py-6">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-[11px] font-bold uppercase tracking-wider text-cyan-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+              <span className="w-1.5 h-1.5 rounded-xs bg-cyan-400 animate-pulse" />
               Live Broadcast Engine • 8 Sports
             </div>
             <h1 className="text-2xl md:text-3xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-200 to-sky-400 bg-clip-text text-transparent mt-1.5 font-['Space_Grotesk',sans-serif]">
@@ -735,7 +735,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <span className="text-xs">{sport.icon}</span>
                   <span>{sport.label}</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
+                    className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
                       isSelected
                         ? 'bg-black/35 text-cyan-200 font-bold'
                         : 'bg-slate-800/70 text-slate-500'

@@ -832,7 +832,7 @@ export const OverlayControl: React.FC<OverlayControlProps> = ({ matchId, onBack 
             <div className="space-y-4">
               {/* Locked Default Theme Indicator */}
               <div className="p-3 rounded-xl bg-cyan-500/15 border border-cyan-400">
-                <div className="h-2 w-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 mb-2" />
+                <div className="h-2 w-full rounded-md bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 mb-2" />
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="text-xs font-extrabold text-white">MarketinGlu Cyan-Sky</div>

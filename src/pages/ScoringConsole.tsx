@@ -210,7 +210,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
     return (
       <div className="min-h-screen bg-[#070b14] flex flex-col items-center justify-center p-6 text-center">
         <p className="text-slate-300 mb-4">No cricket match state found.</p>
-        <button onClick={onBack} className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl text-sm font-bold">
+        <button onClick={onBack} className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg text-sm font-bold">
           Return to Dashboard
         </button>
       </div>
@@ -302,7 +302,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
             {/* Score & Batting Team */}
             <div className="flex items-center gap-3 sm:gap-5">
               <div
-                className="w-2.5 sm:w-3 h-14 sm:h-16 rounded-full shrink-0"
+                className="w-2.5 sm:w-3 h-14 sm:h-16 rounded-md shrink-0"
                 style={{ backgroundColor: battingTeam.color || '#06b6d4' }}
               />
               <div>
