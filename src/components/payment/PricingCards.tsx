@@ -296,29 +296,29 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
           <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
             Choose Payment Gateway:
           </span>
-          <div className="flex items-center bg-[#060a14] p-1 rounded-xl border border-slate-800">
+          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#051122]/90 border border-cyan-500/30 shadow-inner backdrop-blur-md">
             <button
               type="button"
               onClick={() => setGateway('razorpay')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 gateway === 'razorpay'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/20'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
               }`}
             >
-              <CreditCard className="w-3.5 h-3.5" />
+              <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
               <span>Razorpay (UPI / Cards)</span>
             </button>
             <button
               type="button"
               onClick={() => setGateway('paytm')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 gateway === 'paytm'
-                  ? 'bg-gradient-to-r from-sky-500 to-blue-700 text-white shadow-md shadow-sky-500/20'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
               }`}
             >
-              <Smartphone className="w-3.5 h-3.5" />
+              <Smartphone className="w-3.5 h-3.5 text-sky-400" />
               <span>Paytm (Wallet / QR)</span>
             </button>
           </div>

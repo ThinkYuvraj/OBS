@@ -545,25 +545,30 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
       </div>
 
       <div className="max-w-6xl mx-auto px-3 sm:px-6 mt-4 sm:mt-6 space-y-4 sm:space-y-6 w-full overflow-hidden">
-        {/* Fast Sport Channel Pills (Instant 1-Click Switch between Table Tennis, Volleyball, Badminton, Basketball, Football, Tennis, Field Hockey) */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#090f1f] border border-slate-800/80 rounded-xl p-2.5">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {allMatches.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => {
-                  setActiveId(m.id);
-                  loadData(m.id);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                  m.id === activeId
-                    ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-md shadow-cyan-500/20'
-                    : 'bg-[#060a14] text-slate-400 hover:text-white border border-slate-800/80'
-                }`}
-              >
-                {m.sport.replace('_', ' ').toUpperCase()}
-              </button>
-            ))}
+        {/* Fast Sport Channel Category Capsule */}
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#090f1f]/80 border border-slate-800/80 rounded-2xl p-2.5">
+          <div className="overflow-x-auto no-scrollbar py-0.5">
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#051122]/90 border border-cyan-500/30 shadow-inner backdrop-blur-md">
+              {allMatches.map((m) => {
+                const isActive = m.id === activeId;
+                return (
+                  <button
+                    key={m.id}
+                    onClick={() => {
+                      setActiveId(m.id);
+                      loadData(m.id);
+                    }}
+                    className={`px-3.5 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                      isActive
+                        ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
+                    }`}
+                  >
+                    {m.sport.replace('_', ' ').toUpperCase()}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Keyboard Hotkeys Active Toggle */}

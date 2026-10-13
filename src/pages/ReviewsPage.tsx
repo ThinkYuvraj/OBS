@@ -675,19 +675,21 @@ export const ReviewsPage: React.FC<ReviewsPageProps> = ({ onBack, onNavigateToCo
                   <SlidersHorizontal className="w-3 h-3 text-cyan-400" />
                   Sport:
                 </span>
-                {['all', 'cricket', 'football', 'basketball', 'kabaddi'].map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setActiveFilterSport(s)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                      activeFilterSport === s
-                        ? 'bg-cyan-500 text-slate-950 font-bold'
-                        : 'bg-[#060a14] text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
-                  </button>
-                ))}
+                <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#051122]/90 border border-cyan-500/30 shadow-inner backdrop-blur-md overflow-x-auto no-scrollbar">
+                  {['all', 'cricket', 'football', 'basketball', 'kabaddi'].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setActiveFilterSport(s)}
+                      className={`px-3.5 py-1 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                        activeFilterSport === s
+                          ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
+                      }`}
+                    >
+                      {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-center gap-2">

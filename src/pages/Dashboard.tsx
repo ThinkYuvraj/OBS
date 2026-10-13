@@ -712,40 +712,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          {/* Bottom Row: Full-width Sports Selector Strip */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5">
-            {MAIN_SPORTS.map((sport) => {
-              const sportCount =
-                sport.id === 'all'
-                  ? matches.length
-                  : matches.filter((m) => m.sport === sport.id).length;
+          {/* Bottom Row: Full-width Sports Category Selector Capsule */}
+          <div className="overflow-x-auto no-scrollbar scroll-smooth py-1">
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#051122]/90 border border-cyan-500/30 shadow-inner backdrop-blur-md">
+              {MAIN_SPORTS.map((sport) => {
+                const sportCount =
+                  sport.id === 'all'
+                    ? matches.length
+                    : matches.filter((m) => m.sport === sport.id).length;
 
-              const isSelected = selectedSport === sport.id;
+                const isSelected = selectedSport === sport.id;
 
-              return (
-                <button
-                  key={sport.id}
-                  onClick={() => setSelectedSport(sport.id)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 ${
-                    isSelected
-                      ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-md shadow-cyan-500/25 font-bold'
-                      : 'bg-[#060a14] border border-slate-800/80 text-slate-400 hover:text-white hover:border-slate-700 hover:bg-[#0c1424]'
-                  }`}
-                >
-                  <span className="text-xs">{sport.icon}</span>
-                  <span>{sport.label}</span>
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
+                return (
+                  <button
+                    key={sport.id}
+                    onClick={() => setSelectedSport(sport.id)}
+                    className={`px-3.5 py-1.5 text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 rounded-full ${
                       isSelected
-                        ? 'bg-black/35 text-cyan-200 font-bold'
-                        : 'bg-slate-800/70 text-slate-500'
+                        ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                        : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
                     }`}
                   >
-                    {sportCount}
-                  </span>
-                </button>
-              );
-            })}
+                    <span className="text-xs">{sport.icon}</span>
+                    <span>{sport.label}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                        isSelected
+                          ? 'bg-cyan-400/20 text-cyan-200 border border-cyan-400/40 font-bold'
+                          : 'bg-slate-800/70 text-slate-400'
+                      }`}
+                    >
+                      {sportCount}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 

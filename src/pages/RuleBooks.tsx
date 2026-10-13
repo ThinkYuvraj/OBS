@@ -387,25 +387,27 @@ export const RuleBooks: React.FC<RuleBooksProps> = ({ onBack, onNavigateToConsol
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Horizontal Sport Selection Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-6 no-scrollbar">
-          {filteredRules.map((sport) => {
-            const isSelected = selectedSport === sport.id;
-            return (
-              <button
-                key={sport.id}
-                onClick={() => setSelectedSport(sport.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${
-                  isSelected
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-cyan-400/50 shadow-lg shadow-cyan-500/20'
-                    : 'bg-[#0d1527]/70 text-slate-300 border-slate-800 hover:border-slate-700 hover:bg-[#111c34]'
-                }`}
-              >
-                <span className="text-sm">{sport.icon}</span>
-                <span>{sport.name}</span>
-              </button>
-            );
-          })}
+        {/* Horizontal Sport Selection Category Capsule */}
+        <div className="overflow-x-auto pb-3 mb-6 no-scrollbar">
+          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#051122]/90 border border-cyan-500/30 shadow-inner backdrop-blur-md">
+            {filteredRules.map((sport) => {
+              const isSelected = selectedSport === sport.id;
+              return (
+                <button
+                  key={sport.id}
+                  onClick={() => setSelectedSport(sport.id)}
+                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                    isSelected
+                      ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
+                  }`}
+                >
+                  <span className="text-xs">{sport.icon}</span>
+                  <span>{sport.name}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Selected Sport Rule Details Card */}

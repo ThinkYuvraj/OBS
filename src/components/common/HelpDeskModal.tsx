@@ -345,38 +345,27 @@ export const HelpDeskModal: React.FC<HelpDeskModalProps> = ({
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="px-5 py-2 bg-[#080d19]/90 border-b border-slate-800/60 flex items-center gap-1.5">
-          <button
-            onClick={() => setActiveTab('report')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'report'
-                ? 'bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 font-black shadow-md shadow-cyan-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            Report An Issue
-          </button>
-          <button
-            onClick={() => setActiveTab('tickets')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'tickets'
-                ? 'bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 font-black shadow-md shadow-cyan-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            Ticket History &amp; Status
-          </button>
-          <button
-            onClick={() => setActiveTab('faq')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              activeTab === 'faq'
-                ? 'bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 font-black shadow-md shadow-cyan-500/20'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-            }`}
-          >
-            Fast Fix Guide &amp; Knowledge Base
-          </button>
+        {/* Tab Navigation Category Capsule */}
+        <div className="px-5 py-2.5 bg-[#080d19]/90 border-b border-slate-800/60 overflow-x-auto no-scrollbar">
+          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#051122]/90 border border-cyan-500/30 shadow-inner backdrop-blur-md">
+            {[
+              { id: 'report', label: 'Report An Issue' },
+              { id: 'tickets', label: 'Ticket History & Status' },
+              { id: 'faq', label: 'Fast Fix Guide & Knowledge Base' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`px-3.5 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+                  activeTab === tab.id
+                    ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Modal Scrollable Body */}

@@ -149,29 +149,31 @@ export const RuleBookModal: React.FC<RuleBookModalProps> = ({
             )}
           </div>
 
-          {/* Section Filter Pills */}
-          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-            {(
-              [
-                { id: 'all', label: 'All Rules' },
-                { id: 'scoring', label: 'Scoring Matrix' },
-                { id: 'rules', label: 'Key Regulations' },
-                { id: 'referee', label: 'Signals' },
-                { id: 'broadcast', label: 'OBS Tips' },
-              ] as const
-            ).map((sec) => (
-              <button
-                key={sec.id}
-                onClick={() => setActiveSection(sec.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
-                  activeSection === sec.id
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                }`}
-              >
-                {sec.label}
-              </button>
-            ))}
+          {/* Section Filter Category Capsule */}
+          <div className="overflow-x-auto no-scrollbar py-0.5">
+            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#051122]/90 border border-cyan-500/30 shadow-inner backdrop-blur-md">
+              {(
+                [
+                  { id: 'all', label: 'All Rules' },
+                  { id: 'scoring', label: 'Scoring Matrix' },
+                  { id: 'rules', label: 'Key Regulations' },
+                  { id: 'referee', label: 'Signals' },
+                  { id: 'broadcast', label: 'OBS Tips' },
+                ] as const
+              ).map((sec) => (
+                <button
+                  key={sec.id}
+                  onClick={() => setActiveSection(sec.id)}
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer transition-all whitespace-nowrap shrink-0 ${
+                    activeSection === sec.id
+                      ? 'border border-cyan-400 bg-cyan-950/70 text-white shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+                  }`}
+                >
+                  {sec.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
