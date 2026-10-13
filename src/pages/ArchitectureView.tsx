@@ -58,9 +58,9 @@ export const ArchitectureView: React.FC<ArchitectureViewProps> = ({ onBack, onNa
   const [syncingDb, setSyncingDb] = useState(false);
   const [traceLog, setTraceLog] = useState<string[]>(
     [
-      '[READY] 3-Tier Broadcast Pipeline initialized on port 3000',
+      '[READY] 3-Tier Broadcast Pipeline initialized (Backend Port 8000, Vite Port 5173)',
       '[TIER-1] Keyboard Hotkey Controller & Touch Consoles bound to 8 sports',
-      '[TIER-2] Express REST + WebSocket Multiplexer Hub (/ws) active',
+      '[TIER-2] Express REST + WebSocket Multiplexer Hub (/ws on :8000) active',
       '[TIER-3] Hostinger MySQL Database Connector (Port 3306) & 1080p60 OBS Renderers ready',
     ]
   );
@@ -388,7 +388,7 @@ export const ArchitectureView: React.FC<ArchitectureViewProps> = ({ onBack, onNa
                   <div className="p-3 rounded-xl bg-[#090f1f] border border-slate-800/90">
                     <div className="text-xs font-bold text-white flex items-center justify-between">
                       <span>2. Real-Time WebSocket Multiplexer</span>
-                      <span className="font-mono text-[10px] text-emerald-400">ws://0.0.0.0:3000/ws</span>
+                      <span className="font-mono text-[10px] text-emerald-400">ws://0.0.0.0:8000/ws</span>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-1">
                       Room-based pub/sub channels isolated by matchId and overlay token with sub-15ms fanout.
@@ -514,7 +514,7 @@ export const ArchitectureView: React.FC<ArchitectureViewProps> = ({ onBack, onNa
               <span className="text-xs font-bold uppercase tracking-wider text-cyan-400 font-mono">
                 3-Tier Real-Time Data Bus Verification Log
               </span>
-              <span className="text-[11px] font-mono text-slate-400">Port 3000 • WebSocket + REST</span>
+              <span className="text-[11px] font-mono text-slate-400">Backend :8000 • Vite :5173 • WebSocket + REST</span>
             </div>
             <div className="bg-[#060a14] border border-slate-800/90 rounded-xl p-3.5 font-mono text-xs space-y-2 min-h-[160px]">
               {traceLog.map((line, i) => (

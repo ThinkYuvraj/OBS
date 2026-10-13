@@ -10,6 +10,7 @@ import supportRouter from './support';
 import reviewsRouter from './reviews';
 import legalRouter from './legal';
 import { storage } from '../storage';
+import { config } from '../config/env';
 
 const apiRouter = Router();
 
@@ -74,7 +75,7 @@ apiRouter.get('/architecture/telemetry', (_req: Request, res: Response) => {
         'rugby',
         'kabaddi',
       ],
-      wsEndpoint: 'ws://0.0.0.0:3000/ws',
+      wsEndpoint: `ws://0.0.0.0:${config.port}/ws`,
       transportMode: 'Multiplexed HTTP + WS Pub/Sub',
     },
     tier3: {

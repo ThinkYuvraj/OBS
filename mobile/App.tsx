@@ -16,7 +16,7 @@ import { WebView, WebViewNavigation } from 'react-native-webview';
 // Production MarketinGlu Web Gateway or Local Development Host
 const APP_URL = Platform.select({
   ios: 'https://obs.marketinglu.com',
-  android: 'http://10.0.2.2:3000', // Points to localhost when running on Android Emulator
+  android: 'http://10.0.2.2:5173', // Points to localhost Vite dev server when running on Android Emulator
   default: 'https://obs.marketinglu.com',
 });
 

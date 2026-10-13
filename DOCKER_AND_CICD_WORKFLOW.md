@@ -11,7 +11,7 @@ This document describes how to build, run, test, and deploy the **MarketinGlu OB
 # 1. Build Production Docker Image
 npm run docker:build
 
-# 2. Run Container with Environment Variables on Port 3000
+# 2. Run Container with Environment Variables on Port 8000
 npm run docker:run
 
 # 3. Launch with Docker Compose (Background Daemon)
@@ -30,9 +30,9 @@ docker build -t marketinglu/obs-broadcast-engine:latest .
 docker run -d \
   --name marketinglu_broadcast \
   --restart unless-stopped \
-  -p 3000:3000 \
+  -p 8000:8000 \
   -e NODE_ENV=production \
-  -e PORT=3000 \
+  -e PORT=8000 \
   -e HOST=0.0.0.0 \
   marketinglu/obs-broadcast-engine:latest
 ```
@@ -53,7 +53,7 @@ The provided `Dockerfile` leverages a **multi-stage build architecture**:
 2. **Automated Healthcheck**:
    ```dockerfile
    HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-     CMD curl -f http://localhost:3000/health || exit 1
+     CMD curl -f http://localhost:8000/health || exit 1
    ```
 3. **Graceful Drainage**: Listens for `SIGTERM` / `SIGINT` signals to drain active WebSocket broadcast connections and MySQL connection pools before process exit.
 4. **Timezone**: Pre-configured with `Asia/Kolkata` (Indian Standard Time - IST).
@@ -114,7 +114,8 @@ flowchart LR
 | Variable | Default | Purpose |
 | :--- | :--- | :--- |
 | `NODE_ENV` | `production` | Node environment (`development` / `production`). |
-| `PORT` | `3000` | HTTP & WebSocket server port. |
+| `PORT` | `8000` | HTTP & WebSocket server port. |
+| `VITE_PORT` | `5173` | Vite frontend dev/preview server port. |
 | `HOST` | `0.0.0.0` | Binding IP address for container networking. |
 | `RAZORPAY_KEY_ID` | `rzp_test_...` | Razorpay public key for broadcast passes. |
 | `RAZORPAY_KEY_SECRET` | `rzp_sec_...` | Razorpay webhook & verification secret. |
@@ -140,5 +141,5 @@ docker inspect --format='{{json .State.Health}}' marketinglu_broadcast_app | jq
 docker logs -f --tail 100 marketinglu_broadcast_app
 
 # Run live healthcheck probe manually
-curl -i http://localhost:3000/health
+curl -i http://localhost:8000/health
 ```

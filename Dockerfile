@@ -37,7 +37,7 @@ WORKDIR /app
 
 # Set production environment variables
 ENV NODE_ENV=production \
-    PORT=3000 \
+    PORT=8000 \
     HOST=0.0.0.0
 
 # Install curl for healthcheck probes
@@ -65,11 +65,11 @@ RUN addgroup -S -g 1001 broadcastgroup && \
 USER broadcastuser
 
 # Expose HTTP & WebSocket Port
-EXPOSE 3000
+EXPOSE 8000
 
 # Docker Healthcheck: Query local Express health endpoint every 30 seconds
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:3000/health || exit 1
+  CMD curl -f http://localhost:8000/health || exit 1
 
 # Start MarketinGlu Broadcast Server
 CMD ["node", "dist/server.js"]

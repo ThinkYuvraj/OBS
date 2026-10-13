@@ -52,9 +52,10 @@ docker compose logs -f broadcast-suite
 ```
 
 The application is now live at:
-- **Dashboard & Consoles**: `http://localhost:3000`
-- **Healthcheck & Metrics**: `http://localhost:3000/health`
-- **WebSocket Streaming**: `ws://localhost:3000/ws`
+- **Vite Frontend**: `http://localhost:5173`
+- **Backend API & Consoles**: `http://localhost:8000`
+- **Healthcheck & Metrics**: `http://localhost:8000/health`
+- **WebSocket Streaming**: `ws://localhost:8000/ws`
 
 ---
 
@@ -109,7 +110,7 @@ server {
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml;
 
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://127.0.0.1:8000;
         proxy_http_version 1.1;
 
         # WebSocket Upgrade headers (Critical for sub-second live score stream)

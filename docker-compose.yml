@@ -7,10 +7,10 @@ services:
     container_name: marketinglu_broadcast_engine
     restart: unless-stopped
     ports:
-      - "${PORT:-3000}:3000"
+      - "${PORT:-8000}:8000"
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=8000
       - HOST=0.0.0.0
       - CORS_ORIGIN=*
       - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID:-rzp_test_marketinGlu_subsecond}
@@ -22,7 +22,7 @@ services:
       - HOSTINGER_DB_NAME=${HOSTINGER_DB_NAME:-u123456789_broadcast_db}
       - HOSTINGER_DB_PORT=${HOSTINGER_DB_PORT:-3306}
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 5s
       retries: 3
