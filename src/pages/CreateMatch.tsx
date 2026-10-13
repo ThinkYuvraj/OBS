@@ -1571,12 +1571,12 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
                       <td className="py-2 px-3 font-sans font-semibold text-white flex items-center gap-2">
                         <span>{player.name}</span>
                         {player.isCaptain && (
-                          <span className="px-1.5 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 text-[9px] font-mono text-amber-300 font-bold">
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-[9px] font-mono text-amber-300 font-bold">
                             C
                           </span>
                         )}
                         {player.isViceCaptain && (
-                          <span className="px-1.5 py-0.2 rounded bg-cyan-500/20 border border-cyan-500/40 text-[9px] font-mono text-cyan-300 font-bold">
+                          <span className="px-1.5 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/40 text-[9px] font-mono text-cyan-300 font-bold">
                             VC
                           </span>
                         )}

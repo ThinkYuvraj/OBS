@@ -90,7 +90,7 @@ export const RacquetVolleyScoreBug: React.FC<RacquetVolleyScoreBugProps> = ({ ma
         <div className="flex items-center gap-2">
           <span className="text-white font-mono">SET {currentSetNum}</span>
           {statusBadge && (
-            <span className="bg-rose-600 text-white px-1.5 py-0.2 rounded-sm text-[10px] font-extrabold">
+            <span className="bg-rose-600 text-white px-1.5 py-0.5 rounded-sm text-[10px] font-extrabold">
               {statusBadge}
             </span>
           )}

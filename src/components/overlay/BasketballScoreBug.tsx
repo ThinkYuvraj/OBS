@@ -60,7 +60,7 @@ export const BasketballScoreBug: React.FC<BasketballScoreBugProps> = ({
                 <span className="text-[10px] text-amber-400 font-mono font-extrabold">◀ POSS</span>
               )}
               {state.homeFouls >= 5 && (
-                <span className="px-1.5 py-0.2 bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[9px] font-mono font-bold rounded-sm">
+                <span className="px-1.5 py-0.5 bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[9px] font-mono font-bold rounded-sm">
                   BONUS
                 </span>
               )}
@@ -97,7 +97,7 @@ export const BasketballScoreBug: React.FC<BasketballScoreBugProps> = ({
           <div className="flex flex-col justify-center px-4 py-2 flex-1 items-end text-right">
             <div className="flex items-center gap-2">
               {state.awayFouls >= 5 && (
-                <span className="px-1.5 py-0.2 bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[9px] font-mono font-bold rounded-sm">
+                <span className="px-1.5 py-0.5 bg-amber-500/20 border border-amber-400/50 text-amber-300 text-[9px] font-mono font-bold rounded-sm">
                   BONUS
                 </span>
               )}

@@ -735,7 +735,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <span className="text-xs">{sport.icon}</span>
                   <span>{sport.label}</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono ${
                       isSelected
                         ? 'bg-black/35 text-cyan-200 font-bold'
                         : 'bg-slate-800/70 text-slate-500'

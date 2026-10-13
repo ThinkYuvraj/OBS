@@ -34,7 +34,7 @@ export const KabaddiScoreBug: React.FC<KabaddiScoreBugProps> = ({
         <span className="truncate max-w-[190px]">{tournamentName}</span>
         <div className="flex items-center gap-2">
           {state.isSuperTackleOn && (
-            <span className="px-1.5 py-0.2 bg-amber-500 text-black text-[9px] font-black rounded-sm animate-pulse">
+            <span className="px-1.5 py-0.5 bg-amber-500 text-black text-[9px] font-black rounded-sm animate-pulse">
               SUPER TACKLE ON
             </span>
           )}

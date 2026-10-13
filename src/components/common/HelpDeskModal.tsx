@@ -703,7 +703,7 @@ export const HelpDeskModal: React.FC<HelpDeskModalProps> = ({
                             {t.categoryLabel}
                           </span>
                           <span
-                            className={`px-2 py-0.2 rounded font-mono text-[9px] font-bold uppercase ${
+                            className={`px-2 py-0.5 rounded font-mono text-[9px] font-bold uppercase ${
                               t.urgency === 'critical'
                                 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
                                 : t.urgency === 'high'

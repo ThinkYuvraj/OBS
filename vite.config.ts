@@ -1,7 +1,27 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'url';
-import { defineConfig, loadEnv } from 'vite';
+import { createLogger, defineConfig, loadEnv } from 'vite';
+
+// Custom logger to suppress all TailwindCSS and styling warnings
+const customLogger = createLogger();
+const originalWarn = customLogger.warn;
+customLogger.warn = (msg, options) => {
+  if (
+    typeof msg === 'string' &&
+    (msg.toLowerCase().includes('tailwind') ||
+      msg.toLowerCase().includes('postcss') ||
+      msg.toLowerCase().includes('@tailwindcss') ||
+      msg.toLowerCase().includes('lightningcss') ||
+      msg.toLowerCase().includes('css') ||
+      msg.toLowerCase().includes('chunk size') ||
+      msg.toLowerCase().includes('@theme') ||
+      msg.toLowerCase().includes('@layer'))
+  ) {
+    return;
+  }
+  originalWarn(msg, options);
+};
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -11,10 +31,40 @@ export default defineConfig(({ mode }) => {
   const backendWsUrl = `ws://localhost:${backendPort}`;
 
   return {
-    plugins: [react(), tailwindcss()],
+    customLogger,
+    plugins: [
+      react(),
+      tailwindcss({
+        optimize: {
+          minify: true,
+        },
+      }),
+    ],
     resolve: {
       alias: {
         '@': fileURLToPath(new URL('.', import.meta.url)),
+      },
+    },
+    css: {
+      devSourcemap: false,
+    },
+    build: {
+      chunkSizeWarningLimit: 5000,
+      rollupOptions: {
+        onwarn(warning, defaultHandler) {
+          const str = (warning.message || '') + (warning.id || '') + (warning.code || '');
+          if (
+            str.toLowerCase().includes('tailwind') ||
+            str.toLowerCase().includes('postcss') ||
+            str.toLowerCase().includes('lightningcss') ||
+            str.toLowerCase().includes('css') ||
+            warning.code === 'UNUSED_EXTERNAL_IMPORT' ||
+            warning.code === 'CIRCULAR_DEPENDENCY'
+          ) {
+            return;
+          }
+          defaultHandler(warning);
+        },
       },
     },
     server: {

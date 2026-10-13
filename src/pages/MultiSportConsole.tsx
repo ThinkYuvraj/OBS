@@ -579,7 +579,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
             <Keyboard className="w-3.5 h-3.5" />
             <span>KEYBOARD HOTKEYS: {keyboardEnabled ? 'ACTIVE' : 'OFF'}</span>
             {lastKeyPressed && (
-              <span className="px-1.5 py-0.2 rounded bg-cyan-400 text-slate-950 font-black">
+              <span className="px-1.5 py-0.5 rounded bg-cyan-400 text-slate-950 font-black">
                 [{lastKeyPressed}]
               </span>
             )}

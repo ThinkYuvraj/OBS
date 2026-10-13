@@ -227,7 +227,7 @@ export const ReviewsPage: React.FC<ReviewsPageProps> = ({ onBack, onNavigateToCo
                   <span className="text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
                     MARKETINGLU OBS LIVE
                   </span>
-                  <span className="px-1.5 py-0.2 rounded bg-cyan-500/10 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 font-bold">
+                  <span className="px-1.5 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 font-bold">
                     ISO 9001:2015
                   </span>
                 </div>
