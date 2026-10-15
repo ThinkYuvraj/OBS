@@ -41,6 +41,8 @@ import {
 } from 'lucide-react';
 import { RuleBookModal } from '../components/common/RuleBookModal';
 import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
+import { useTheme } from '../contexts/ThemeContext';
+import { useToast } from '../contexts/ToastContext';
 
 interface DashboardProps {
   onNavigate: (tab: string, matchId?: string) => void;
@@ -62,6 +64,8 @@ const MAIN_SPORTS = [
 ];
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+  const { isRedWhite } = useTheme();
+  const toast = useToast();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSport, setSelectedSport] = useState<string>('all');
@@ -82,6 +86,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
   const showToast = (msg: string) => {
     setActionFeedback(msg);
+    toast.info(msg);
     setTimeout(() => setActionFeedback(null), 2800);
   };
 
@@ -351,14 +356,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       )}
 
       {/* Hero / MarketinGlu Studio Header */}
-      <div className="relative border-b border-slate-800/80 bg-gradient-to-b from-[#0c1424] via-[#090f1f] to-[#070b14] px-3 sm:px-6 py-4 sm:py-6">
+      <div
+        className={`relative border-b px-3 sm:px-6 py-4 sm:py-6 transition-colors duration-300 ${
+          isRedWhite
+            ? 'border-rose-950/80 bg-gradient-to-b from-[#18060d] via-[#100408] to-[#0b0306]'
+            : 'border-slate-800/80 bg-gradient-to-b from-[#0c1424] via-[#090f1f] to-[#070b14]'
+        }`}
+      >
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-cyan-500/10 border border-cyan-500/30 text-[11px] font-bold uppercase tracking-wider text-cyan-300">
-              <span className="w-1.5 h-1.5 rounded-xs bg-cyan-400 animate-pulse" />
-              Live Broadcast Engine • 8 Sports
+            <div
+              className={`inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider border ${
+                isRedWhite
+                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-300'
+                  : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+              }`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-xs animate-pulse ${isRedWhite ? 'bg-rose-400' : 'bg-cyan-400'}`} />
+              Live Broadcast Engine • 11 Sports Supported
             </div>
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-200 to-sky-400 bg-clip-text text-transparent mt-1.5 font-['Space_Grotesk',sans-serif]">
+            <h1
+              className={`text-2xl md:text-3xl font-black tracking-tight bg-clip-text text-transparent mt-1.5 font-['Space_Grotesk',sans-serif] ${
+                isRedWhite
+                  ? 'bg-gradient-to-r from-white via-rose-100 to-rose-400'
+                  : 'bg-gradient-to-r from-white via-cyan-200 to-sky-400'
+              }`}
+            >
               Master Production Overlay Studio
             </h1>
           </div>
@@ -369,6 +392,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer whitespace-nowrap ${
                 simulatingCricket
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-600 border-emerald-400/50 text-white shadow-lg shadow-emerald-600/25'
+                  : isRedWhite
+                  ? 'bg-[#18070d] hover:bg-[#200911] text-rose-300 border-rose-900/50'
                   : 'bg-[#0b1324] hover:bg-[#0d162b] text-cyan-300 border-slate-800/90'
               }`}
             >
@@ -393,7 +418,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
             <button
               onClick={() => onNavigate('create')}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl transition-all shadow-md shadow-cyan-500/25 cursor-pointer whitespace-nowrap"
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white rounded-xl transition-all shadow-md cursor-pointer whitespace-nowrap ${
+                isRedWhite
+                  ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 hover:from-rose-500 hover:to-red-500 shadow-rose-600/30'
+                  : 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 shadow-cyan-500/25'
+              }`}
             >
               <Plus className="w-3.5 h-3.5" />
               <span>New Match Channel</span>

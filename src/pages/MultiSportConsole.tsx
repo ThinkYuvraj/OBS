@@ -28,6 +28,9 @@ import {
   Move,
   BookOpen,
   LifeBuoy,
+  Volume2,
+  VolumeX,
+  Printer,
 } from 'lucide-react';
 import { FootballScoreBug } from '../components/overlay/FootballScoreBug';
 import { BasketballScoreBug } from '../components/overlay/BasketballScoreBug';
@@ -38,6 +41,8 @@ import { BroadcastGameTimer } from '../components/console/BroadcastGameTimer';
 import { RuleBookModal } from '../components/common/RuleBookModal';
 import { HelpDeskModal } from '../components/common/HelpDeskModal';
 import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
+import { broadcastAudio } from '../utils/audio';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface MultiSportConsoleProps {
   matchId: string;
@@ -59,6 +64,9 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
   const [copied, setCopied] = useState(false);
   const [showRuleBook, setShowRuleBook] = useState(false);
   const [showHelpDesk, setShowHelpDesk] = useState(false);
+
+  const { isRedWhite } = useTheme();
+  const [isMuted, setIsMuted] = useState(() => broadcastAudio.getIsMuted());
 
   // Interactive Keyboard Hotkey Mode
   const [keyboardEnabled, setKeyboardEnabled] = useState(true);
@@ -137,6 +145,11 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
     });
     setMatch(updated);
     if (type !== 'clock') {
+      if (type === 'goal') {
+        broadcastAudio.playSixSound();
+      } else {
+        broadcastAudio.playClick();
+      }
       pushActivity(
         `${type.toUpperCase()} recorded for ${
           teamId === 'home' ? match.teamA.shortName : match.teamB.shortName
@@ -165,11 +178,18 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
     });
     setMatch(updated);
     if (payload.type === 'score') {
+      if ((payload.points || 0) >= 3) {
+        broadcastAudio.playSixSound();
+      } else {
+        broadcastAudio.playFourSound();
+      }
       pushActivity(
         `${payload.teamId === 'home' ? match.teamA.shortName : match.teamB.shortName} ${
           (payload.points || 0) > 0 ? `+${payload.points}` : payload.points
         } pts`
       );
+    } else {
+      broadcastAudio.playClick();
     }
   };
 
@@ -192,6 +212,11 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
         updated = await postVolleyballEvent(match.id, { winner, ...extra });
       }
       setMatch(updated);
+      if (extra?.isAce) {
+        broadcastAudio.playSixSound();
+      } else {
+        broadcastAudio.playFourSound();
+      }
       const label =
         extra?.type === 'swap_server'
           ? 'Server swapped'
@@ -475,12 +500,40 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
             </button>
           )}
 
+          {/* Sound Mute/Unmute */}
+          <button
+            onClick={() => setIsMuted(broadcastAudio.toggleMute())}
+            className={`p-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+              isMuted
+                ? 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
+                : isRedWhite
+                ? 'bg-rose-950/40 border-rose-500/40 text-rose-300 hover:text-white'
+                : 'bg-cyan-950/40 border-cyan-500/40 text-cyan-300 hover:text-white'
+            }`}
+            title={isMuted ? 'Unmute Console Audio Cues' : 'Mute Console Audio Cues'}
+          >
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+          </button>
+
+          {/* Print Match Scoresheet */}
+          <button
+            onClick={() => window.print()}
+            className="p-2 text-xs font-semibold rounded-xl bg-[#060a14] border border-slate-800 hover:border-slate-600 text-slate-300 hover:text-white cursor-pointer transition-all"
+            title="Print or Export Match Scoresheet (Ctrl + P)"
+          >
+            <Printer className="w-3.5 h-3.5" />
+          </button>
+
           <button
             onClick={() => setShowRuleBook(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#060a14] hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 hover:text-cyan-200 rounded-xl transition-colors cursor-pointer shadow-sm"
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#060a14] hover:bg-slate-800 border rounded-xl transition-colors cursor-pointer shadow-sm ${
+              isRedWhite
+                ? 'border-rose-500/40 text-rose-300 hover:text-white'
+                : 'border-cyan-500/40 text-cyan-300 hover:text-white'
+            }`}
             title={`Open Official ${match.sport.replace('_', ' ')} Rule Book`}
           >
-            <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+            <BookOpen className={`w-3.5 h-3.5 ${isRedWhite ? 'text-rose-400' : 'text-cyan-400'}`} />
             <span>Rule Book</span>
           </button>
 

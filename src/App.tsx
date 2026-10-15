@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/layout/Navbar';
 import { Dashboard } from './pages/Dashboard';
 import { CreateMatch } from './pages/CreateMatch';
@@ -18,13 +18,60 @@ import { HelpDeskModal } from './components/common/HelpDeskModal';
 import { SettingsModal } from './components/layout/SettingsModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
 import { fetchActiveUser } from './services/api';
 import { UserProfile } from './types/sports';
 
+const TAB_PAGE_TITLES: Record<string, string> = {
+  dashboard: 'MarketinGlu | Live Broadcast Dashboard',
+  scoring: 'MarketinGlu | ICC Cricket Scoring Console',
+  'multi-scoring': 'MarketinGlu | Multi-Sport Broadcast Console',
+  'football-scoring': 'MarketinGlu | Football Broadcast Console',
+  create: 'MarketinGlu | New Match Setup',
+  'overlay-control': 'MarketinGlu | OBS Overlay Studio',
+  'obs-guide': 'MarketinGlu | OBS & vMix Integration Guide',
+  'rule-books': 'MarketinGlu | Multi-Sport Official Rule Books',
+  architecture: 'MarketinGlu | 3-Tier Broadcast Architecture',
+  reviews: 'MarketinGlu | Verified Reviews & Ratings',
+  pricing: 'MarketinGlu | Broadcast License Passes',
+  legal: 'MarketinGlu | Indian Legal & Statutory Compliance',
+};
+
+function parseCurrentLocation(): { tab: string; matchId?: string } {
+  const pathname = window.location.pathname.replace(/^\/+/, '').split('/')[0] || '';
+  const searchParams = new URLSearchParams(window.location.search);
+  const matchIdParam = searchParams.get('matchId') || undefined;
+
+  const validTabs = [
+    'dashboard',
+    'scoring',
+    'multi-scoring',
+    'football-scoring',
+    'create',
+    'overlay-control',
+    'obs-guide',
+    'rule-books',
+    'architecture',
+    'reviews',
+    'pricing',
+    'legal',
+  ];
+
+  if (validTabs.includes(pathname)) {
+    return { tab: pathname, matchId: matchIdParam };
+  }
+
+  return { tab: 'dashboard', matchId: matchIdParam };
+}
+
 function AppContent() {
   const { isRedWhite } = useTheme();
-  const [currentTab, setCurrentTab] = useState<string>('dashboard');
-  const [selectedMatchId, setSelectedMatchId] = useState<string>('match_t20_ind_aus');
+  const { info } = useToast();
+
+  const [routeState, setRouteState] = useState<{ tab: string; matchId?: string }>(() => parseCurrentLocation());
+  const currentTab = routeState.tab;
+  const selectedMatchId = routeState.matchId || 'match_t20_ind_aus';
+
   const [hasAcceptedPolicies, setHasAcceptedPolicies] = useState<boolean>(() => isPolicyAccepted());
   const [showPolicyModal, setShowPolicyModal] = useState<boolean>(() => !isPolicyAccepted());
   const [showHelpDesk, setShowHelpDesk] = useState<boolean>(false);
@@ -35,14 +82,54 @@ function AppContent() {
 
   const { isConnected } = useRealtimeSocket({});
 
-  const loadUser = () => {
+  const loadUser = useCallback(() => {
     fetchActiveUser()
       .then((res) => setActiveUser(res.activeUser))
       .catch(console.error);
-  };
+  }, []);
 
   useEffect(() => {
     loadUser();
+  }, [loadUser]);
+
+  // Handle browser Back / Forward (Popstate) navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const parsed = parseCurrentLocation();
+      setRouteState(parsed);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Sync document title with current tab
+  useEffect(() => {
+    const title = TAB_PAGE_TITLES[currentTab] || 'MarketinGlu | Sub-Second OBS Broadcast Suite';
+    document.title = title;
+  }, [currentTab]);
+
+  // Global Keyboard Shortcuts (Shift+S -> Settings, Shift+L -> Log In, Shift+? -> Help)
+  useEffect(() => {
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) {
+        return;
+      }
+      if (e.shiftKey && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        setShowSettings((prev) => !prev);
+      } else if (e.shiftKey && e.key.toLowerCase() === 'l') {
+        e.preventDefault();
+        setAuthMode('login');
+        setShowAuthModal((prev) => !prev);
+      } else if (e.key === '?') {
+        e.preventDefault();
+        setShowHelpDesk((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalShortcuts);
+    return () => window.removeEventListener('keydown', handleGlobalShortcuts);
   }, []);
 
   // Check if current browser path is an overlay route (e.g. /overlay/:token)
@@ -53,12 +140,27 @@ function AppContent() {
   }
 
   const handleNavigate = (tab: string, matchId?: string) => {
-    if (matchId) {
-      setSelectedMatchId(matchId);
-    } else if (tab === 'multi-scoring' && selectedMatchId === 'match_t20_ind_aus') {
-      setSelectedMatchId('match_nba_lal_gsw');
+    let targetMatchId = matchId || selectedMatchId;
+    if (tab === 'multi-scoring' && targetMatchId === 'match_t20_ind_aus') {
+      targetMatchId = 'match_nba_lal_gsw';
     }
-    setCurrentTab(tab);
+
+    setRouteState({ tab, matchId: targetMatchId });
+
+    // Build URL for browser history
+    let newPath = tab === 'dashboard' ? '/' : `/${tab}`;
+    if (['scoring', 'multi-scoring', 'football-scoring', 'overlay-control'].includes(tab) && targetMatchId) {
+      newPath += `?matchId=${encodeURIComponent(targetMatchId)}`;
+    }
+
+    try {
+      if (window.location.pathname + window.location.search !== newPath) {
+        window.history.pushState(null, '', newPath);
+      }
+    } catch {
+      // ignore
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -92,9 +194,10 @@ function AppContent() {
 
         {currentTab === 'create' && (
           <CreateMatch
-            onMatchCreated={(newId, sport) =>
-              handleNavigate(sport === 'cricket' ? 'scoring' : 'multi-scoring', newId)
-            }
+            onMatchCreated={(newId, sport) => {
+              info(`Match created successfully: ${newId}`);
+              handleNavigate(sport === 'cricket' ? 'scoring' : 'multi-scoring', newId);
+            }}
             onCancel={() => handleNavigate('dashboard')}
           />
         )}
@@ -221,7 +324,9 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </ThemeProvider>
   );
 }

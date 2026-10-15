@@ -21,10 +21,15 @@ import {
   Layers,
   BookOpen,
   LifeBuoy,
+  Volume2,
+  VolumeX,
+  Printer,
 } from 'lucide-react';
 import { RuleBookModal } from '../components/common/RuleBookModal';
 import { HelpDeskModal } from '../components/common/HelpDeskModal';
 import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
+import { broadcastAudio } from '../utils/audio';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface ScoringConsoleProps {
   matchId: string;
@@ -75,12 +80,26 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
     toastTimerRef.current = setTimeout(() => setActionFeedback(null), 2200);
   }, []);
 
+  const { isRedWhite } = useTheme();
+  const [isMuted, setIsMuted] = useState(() => broadcastAudio.getIsMuted());
+
   const handleRecordBall = useCallback(
     async (ballData: Partial<BallEvent>) => {
       if (!match || !match.cricketState) return;
       try {
         const res = await postBallEvent(matchId, ballData);
         setMatch(res.match);
+
+        if (ballData.isWicket) {
+          broadcastAudio.playWicketSound();
+        } else if (ballData.runsOffBat === 4) {
+          broadcastAudio.playFourSound();
+        } else if (ballData.runsOffBat === 6) {
+          broadcastAudio.playSixSound();
+        } else {
+          broadcastAudio.playClick();
+        }
+
         showToast(
           ballData.isWicket
             ? 'Wicket recorded!'
@@ -102,6 +121,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
     try {
       const res = await undoBallEvent(matchId);
       setMatch(res.match);
+      broadcastAudio.playUndoSound();
       showToast('Undid previous ball');
     } catch (err: any) {
       showToast(err.message || 'Nothing to undo');
@@ -113,6 +133,7 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
     try {
       const res = await redoBallEvent(matchId);
       setMatch(res.match);
+      broadcastAudio.playClick(700);
       showToast('Redid ball');
     } catch (err: any) {
       showToast(err.message || 'Nothing to redo');
@@ -251,16 +272,47 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
           </div>
         </div>
 
-        {/* Global Undo / Redo + Default Theme Pill */}
-        <div className="flex items-center gap-2.5">
-          <span className="hidden sm:inline-flex px-2.5 py-1 rounded-lg bg-cyan-500/15 border border-cyan-400 text-[10px] font-mono font-bold text-cyan-300">
-            MarketinGlu Cyan-Sky • DEFAULT
+        {/* Global Controls & Theme Badge */}
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <span
+            className={`hidden sm:inline-flex px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold border ${
+              isRedWhite
+                ? 'bg-rose-500/15 border-rose-500/40 text-rose-300'
+                : 'bg-cyan-500/15 border-cyan-400 text-cyan-300'
+            }`}
+          >
+            {isRedWhite ? 'Red & White • DEFAULT' : 'MarketinGlu • SECONDARY'}
           </span>
           {actionFeedback && (
             <div className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-semibold rounded-lg animate-pulse">
               {actionFeedback}
             </div>
           )}
+
+          {/* Sound Mute/Unmute */}
+          <button
+            onClick={() => setIsMuted(broadcastAudio.toggleMute())}
+            className={`p-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer ${
+              isMuted
+                ? 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
+                : isRedWhite
+                ? 'bg-rose-950/40 border-rose-500/40 text-rose-300 hover:text-white'
+                : 'bg-cyan-950/40 border-cyan-500/40 text-cyan-300 hover:text-white'
+            }`}
+            title={isMuted ? 'Unmute Console Audio Cues' : 'Mute Console Audio Cues'}
+          >
+            {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+          </button>
+
+          {/* Print Match Scoresheet */}
+          <button
+            onClick={() => window.print()}
+            className="p-2 text-xs font-semibold rounded-xl bg-[#060a14] border border-slate-800 hover:border-slate-600 text-slate-300 hover:text-white cursor-pointer transition-all"
+            title="Print or Export Match Scoresheet (Ctrl + P)"
+          >
+            <Printer className="w-3.5 h-3.5" />
+          </button>
+
           <button
             onClick={handleUndo}
             className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 rounded-xl cursor-pointer"
@@ -278,10 +330,14 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
           </button>
           <button
             onClick={() => setShowRuleBook(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#060a14] hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 hover:text-cyan-200 rounded-xl cursor-pointer transition-all shadow-sm"
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#060a14] hover:bg-slate-800 border rounded-xl cursor-pointer transition-all shadow-sm ${
+              isRedWhite
+                ? 'border-rose-500/40 text-rose-300 hover:text-white'
+                : 'border-cyan-500/40 text-cyan-300 hover:text-white'
+            }`}
             title="Open ICC Cricket Official Rule Book & Umpire Signals"
           >
-            <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+            <BookOpen className={`w-3.5 h-3.5 ${isRedWhite ? 'text-rose-400' : 'text-cyan-400'}`} />
             <span>Rule Book</span>
           </button>
           <button

@@ -31,6 +31,8 @@ import { BroadcastAlertOverlay } from '../components/overlay/BroadcastAlertOverl
 import { extractYouTubeVideoId } from './OverlayView';
 import { useRealtimeSocket } from '../hooks/useRealtimeSocket';
 import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
+import { useToast } from '../contexts/ToastContext';
+import { playAudioEffect } from '../utils/audio';
 
 interface OverlayControlProps {
   matchId: string;
@@ -106,6 +108,7 @@ const DEFAULT_STREAM_FEED: StreamFeedConfig = {
 };
 
 export const OverlayControl: React.FC<OverlayControlProps> = ({ matchId, onBack }) => {
+  const { showToast } = useToast();
   const [activeId, setActiveId] = useState<string>(matchId);
   const [allMatches, setAllMatches] = useState<Match[]>([]);
   const [match, setMatch] = useState<Match | null>(null);
@@ -237,6 +240,7 @@ export const OverlayControl: React.FC<OverlayControlProps> = ({ matchId, onBack 
   };
 
   const handleToggleAllPush = (goLive: boolean) => {
+    playAudioEffect(goLive ? 'boundarySix' : 'click');
     const updatedDestinations = (streamFeed.destinations || DEFAULT_DESTINATIONS).map((d) =>
       d.enabled
         ? {
@@ -247,18 +251,25 @@ export const OverlayControl: React.FC<OverlayControlProps> = ({ matchId, onBack 
         : d
     );
     handleStreamFeedUpdate({ destinations: updatedDestinations }, true);
+    showToast(
+      goLive ? 'All enabled destinations are now LIVE broadcasting!' : 'Broadcast output stopped.',
+      goLive ? 'success' : 'info'
+    );
   };
 
   const handleTestAlert = async (type: string, title: string, subtitle: string) => {
     try {
+      playAudioEffect(type === 'six' || type === 'wicket' ? 'boundarySix' : 'click');
       await triggerOverlayTest(match.activeOverlayToken, {
         type,
         title,
         subtitle,
         player: match.teamA.name,
       });
-    } catch (err) {
+      showToast(`Triggered test broadcast graphic: "${title}"`, 'success');
+    } catch (err: any) {
       console.error(err);
+      showToast('Failed to trigger test broadcast alert', 'error');
     }
   };
 
@@ -266,13 +277,17 @@ export const OverlayControl: React.FC<OverlayControlProps> = ({ matchId, onBack 
 
   const copyUrl = () => {
     navigator.clipboard.writeText(obsUrl);
+    playAudioEffect('click');
     setCopied(true);
+    showToast('OBS Browser Source link copied to clipboard!', 'success');
     setTimeout(() => setCopied(false), 2000);
   };
 
   const copyRtmpEndpoint = (dest: ProductionDestination) => {
     navigator.clipboard.writeText(`${dest.rtmpUrl}/${dest.streamKey}`);
+    playAudioEffect('click');
     setCopiedRtmpId(dest.id);
+    showToast(`RTMP URL copied for ${dest.name}`, 'info');
     setTimeout(() => setCopiedRtmpId(null), 2000);
   };
 

@@ -22,6 +22,8 @@ import {
   Eye,
   RefreshCw,
 } from 'lucide-react';
+import { useToast } from '../contexts/ToastContext';
+import { playAudioEffect } from '../utils/audio';
 
 interface CreateMatchProps {
   onMatchCreated: (matchId: string, sport: SportType) => void;
@@ -326,6 +328,7 @@ const deriveShortCode = (name: string): string => {
 };
 
 export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCancel }) => {
+  const { showToast } = useToast();
   const [sport, setSport] = useState<SportType>('cricket');
   const [tournament, setTournament] = useState(SPORT_CONFIGS.cricket.tournament);
   const [matchName, setMatchName] = useState(SPORT_CONFIGS.cricket.matchName);
@@ -485,6 +488,9 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
     setTeamBSecondary(tempSec);
     setTeamBLogoUrl(tempLogo);
     setTeamBSquad(tempSquad);
+
+    playAudioEffect('click');
+    showToast('Swapped Home and Away teams', 'info');
   };
 
   // Save Custom Team to Vault
@@ -510,6 +516,8 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
     try {
       localStorage.setItem('marketinGlu_saved_teams', JSON.stringify(updated));
     } catch {}
+    playAudioEffect('click');
+    showToast(`Saved "${targetName}" to Custom Teams Vault!`, 'success');
     setSaveSuccessMsg(`Saved "${targetName}" to Custom Teams Vault!`);
     setTimeout(() => setSaveSuccessMsg(null), 3000);
   };
@@ -531,6 +539,8 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
       if (vaultTeam.logoUrl) setTeamBLogoUrl(vaultTeam.logoUrl);
       setTeamBSquad(vaultTeam.squad);
     }
+    playAudioEffect('click');
+    showToast(`Loaded "${vaultTeam.name}" from Custom Teams Vault!`, 'info');
   };
 
   // Handle Local File Upload for Team Logo (Converts to Base64)
@@ -771,9 +781,12 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
       }
 
       const created = await createMatch(initialMatch);
+      playAudioEffect('boundarySix');
+      showToast(`Match "${created.name}" created and loaded!`, 'success');
       onMatchCreated(created.id, sport);
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to initialize match');
+      showToast(err.message || 'Failed to initialize match', 'error');
     } finally {
       setSubmitting(false);
     }
