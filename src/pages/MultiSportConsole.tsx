@@ -40,6 +40,7 @@ import { KabaddiScoreBug } from '../components/overlay/KabaddiScoreBug';
 import { BroadcastGameTimer } from '../components/console/BroadcastGameTimer';
 import { RuleBookModal } from '../components/common/RuleBookModal';
 import { HelpDeskModal } from '../components/common/HelpDeskModal';
+import { PanelGuideModal } from '../components/common/PanelGuideModal';
 import { MarketingluLoadingScreen } from '../components/common/MarketingluLoadingScreen';
 import { broadcastAudio } from '../utils/audio';
 import { useTheme } from '../contexts/ThemeContext';
@@ -64,6 +65,7 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
   const [copied, setCopied] = useState(false);
   const [showRuleBook, setShowRuleBook] = useState(false);
   const [showHelpDesk, setShowHelpDesk] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   const { isRedWhite } = useTheme();
   const [isMuted, setIsMuted] = useState(() => broadcastAudio.getIsMuted());
@@ -522,6 +524,19 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
             title="Print or Export Match Scoresheet (Ctrl + P)"
           >
             <Printer className="w-3.5 h-3.5" />
+          </button>
+
+          <button
+            onClick={() => setShowGuide(true)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#060a14] hover:bg-slate-800 border rounded-xl transition-colors cursor-pointer shadow-sm ${
+              isRedWhite
+                ? 'border-rose-500/40 text-rose-200 hover:text-white'
+                : 'border-cyan-500/40 text-cyan-200 hover:text-white'
+            }`}
+            title="Open Operator Panel Guide & Hotkey Manual (Shift+G or ?)"
+          >
+            <BookOpen className={`w-3.5 h-3.5 ${isRedWhite ? 'text-rose-400' : 'text-cyan-400'}`} />
+            <span>Panel Guide</span>
           </button>
 
           <button
@@ -1569,6 +1584,12 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
         matchName={match.name}
         sport={match.sport}
         overlayToken={match.activeOverlayToken}
+      />
+
+      {/* Broadcast Operator Panel Guide Modal */}
+      <PanelGuideModal
+        isOpen={showGuide}
+        onClose={() => setShowGuide(false)}
       />
     </div>
   );

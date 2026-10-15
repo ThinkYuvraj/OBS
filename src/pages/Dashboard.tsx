@@ -46,6 +46,7 @@ import { useToast } from '../contexts/ToastContext';
 
 interface DashboardProps {
   onNavigate: (tab: string, matchId?: string) => void;
+  onOpenGuide?: () => void;
 }
 
 const MAIN_SPORTS = [
@@ -63,7 +64,7 @@ const MAIN_SPORTS = [
   { id: 'all', label: 'All 11 Sports', icon: '🏆' },
 ];
 
-export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onNavigate, onOpenGuide }) => {
   const { isRedWhite } = useTheme();
   const toast = useToast();
   const [matches, setMatches] = useState<Match[]>([]);
@@ -418,6 +419,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span>{simulatingCricket ? 'Auto-Simulating' : 'Live Auto-Feed'}</span>
             </button>
 
+            {onOpenGuide && (
+              <button
+                onClick={onOpenGuide}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer whitespace-nowrap shadow-sm ${
+                  isRedWhite
+                    ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border-rose-500/40 shadow-rose-950/40'
+                    : 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border-cyan-500/40 shadow-cyan-950/40'
+                }`}
+                title="Interactive Guide: How to Use the Broadcast Panel (Shift+G or ?)"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>How to Use Panel</span>
+              </button>
+            )}
+
             <button
               onClick={() => onNavigate('architecture')}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-[#0b1324] hover:bg-[#0d162b] text-amber-300 border border-slate-800/90 hover:border-cyan-500/40 rounded-xl transition-all cursor-pointer whitespace-nowrap"
@@ -550,12 +566,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               <span className="text-[10px] font-mono font-bold text-emerald-400">03</span>
               <span className="text-xs font-semibold text-white">OBS Browser</span>
             </div>
-            <button
-              onClick={() => onNavigate('obs-guide')}
-              className="text-xs font-mono text-cyan-400 hover:text-cyan-300 ml-1 cursor-pointer"
-            >
-              Guide →
-            </button>
+            {onOpenGuide ? (
+              <button
+                onClick={onOpenGuide}
+                className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all ml-1 shadow-sm ${
+                  isRedWhite
+                    ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/40 text-rose-200'
+                    : 'bg-cyan-500/15 hover:bg-cyan-500/25 border-cyan-500/40 text-cyan-200'
+                }`}
+                title="Launch interactive walkthrough & keyboard guide"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>Panel Guide</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => onNavigate('obs-guide')}
+                className="text-xs font-mono text-cyan-400 hover:text-cyan-300 ml-1 cursor-pointer"
+              >
+                Guide →
+              </button>
+            )}
           </div>
         </div>
 

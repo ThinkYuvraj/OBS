@@ -39,6 +39,7 @@ interface NavbarProps {
   onNavigate: (tab: string) => void;
   onOpenPolicies?: () => void;
   onOpenHelpDesk?: () => void;
+  onOpenGuide?: () => void;
   onOpenSettings?: () => void;
   onOpenAuth?: (mode: 'login' | 'signup') => void;
   isConnected?: boolean;
@@ -49,6 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onNavigate,
   onOpenPolicies,
   onOpenHelpDesk,
+  onOpenGuide,
   onOpenSettings,
   onOpenAuth,
   isConnected = true,
@@ -243,6 +245,22 @@ export const Navbar: React.FC<NavbarProps> = ({
               </>
             )}
           </button>
+
+          {/* Panel Guide Quick Access */}
+          {onOpenGuide && (
+            <button
+              onClick={onOpenGuide}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-sm ${
+                isRedWhite
+                  ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/40 text-rose-200 shadow-rose-950/30'
+                  : 'bg-cyan-500/15 hover:bg-cyan-500/25 border-cyan-500/40 text-cyan-200 shadow-cyan-950/30'
+              }`}
+              title="Open Operator Panel Guide & Hotkey Manual (Shift+G or ?)"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Panel Guide</span>
+            </button>
+          )}
 
           {/* Settings Button */}
           {onOpenSettings && (

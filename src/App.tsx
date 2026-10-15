@@ -15,6 +15,7 @@ import { LegalCompliancePage } from './pages/LegalCompliancePage';
 import { useRealtimeSocket } from './hooks/useRealtimeSocket';
 import { PolicyAgreementModal, isPolicyAccepted } from './components/common/PolicyAgreementModal';
 import { HelpDeskModal } from './components/common/HelpDeskModal';
+import { PanelGuideModal } from './components/common/PanelGuideModal';
 import { SettingsModal } from './components/layout/SettingsModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
@@ -77,6 +78,7 @@ function AppContent() {
   const [showPolicyModal, setShowPolicyModal] = useState<boolean>(() => !isPolicyAccepted());
   const [showHelpDesk, setShowHelpDesk] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showGuideModal, setShowGuideModal] = useState<boolean>(false);
   const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
@@ -123,9 +125,12 @@ function AppContent() {
         e.preventDefault();
         setAuthMode('login');
         setShowAuthModal((prev) => !prev);
+      } else if (e.shiftKey && e.key.toLowerCase() === 'g') {
+        e.preventDefault();
+        setShowGuideModal((prev) => !prev);
       } else if (e.key === '?') {
         e.preventDefault();
-        setShowHelpDesk((prev) => !prev);
+        setShowGuideModal((prev) => !prev);
       }
     };
 
@@ -184,6 +189,7 @@ function AppContent() {
         onNavigate={handleNavigate}
         onOpenPolicies={() => setShowPolicyModal(true)}
         onOpenHelpDesk={() => setShowHelpDesk(true)}
+        onOpenGuide={() => setShowGuideModal(true)}
         onOpenSettings={() => setShowSettings(true)}
         onOpenAuth={handleOpenAuth}
         isConnected={isConnected}
@@ -191,7 +197,9 @@ function AppContent() {
 
       {/* Main View Router with Safe Bottom Padding for Mobile Bottom Bar */}
       <main className="flex-1 pb-20 xl:pb-0 w-full overflow-x-hidden">
-        {currentTab === 'dashboard' && <Dashboard onNavigate={handleNavigate} />}
+        {currentTab === 'dashboard' && (
+          <Dashboard onNavigate={handleNavigate} onOpenGuide={() => setShowGuideModal(true)} />
+        )}
 
         {currentTab === 'create' && (
           <CreateMatch
@@ -317,6 +325,13 @@ function AppContent() {
       <HelpDeskModal
         isOpen={showHelpDesk}
         onClose={() => setShowHelpDesk(false)}
+      />
+
+      {/* Broadcast Operator Panel Guide Modal */}
+      <PanelGuideModal
+        isOpen={showGuideModal}
+        onClose={() => setShowGuideModal(false)}
+        onNavigate={handleNavigate}
       />
     </div>
   );
