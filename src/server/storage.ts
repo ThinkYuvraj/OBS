@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import {
   BallEvent,
   BroadcastLicense,
@@ -18,6 +19,8 @@ import {
   GrievanceRedressalTicket,
   DpdpDataRequest,
   TakedownNotice,
+  OperatorRole,
+  SportType,
 } from '../types/sports';
 import {
   calculateRRR,
@@ -30,6 +33,7 @@ class StorageManager {
   private undoneEvents: Map<string, BallEvent[]> = new Map(); // matchId -> undone
   private overlayTokens: Map<string, OverlayTokenRecord> = new Map(); // token -> record
   private users: Map<string, UserProfile> = new Map();
+  private userPasswords: Map<string, string> = new Map(); // email.toLowerCase() -> passwordHash
   private activeUserId: string = 'user_producer_1';
   private licenses: Map<string, BroadcastLicense> = new Map();
   private supportTickets: Map<string, SupportTicket> = new Map();
@@ -940,6 +944,7 @@ class StorageManager {
     ];
     for (const u of initialUsers) {
       this.users.set(u.id, u);
+      this.userPasswords.set(u.email.toLowerCase(), this.hashPassword('operator123'));
     }
 
     // Seed Active Broadcast License (24h Day Pass active for testing)
@@ -1563,6 +1568,99 @@ class StorageManager {
     };
     this.users.set(id, newUser);
     return newUser;
+  }
+
+  hashPassword(password: string): string {
+    return crypto.createHash('sha256').update(password + '_mktglu_salt_2026').digest('hex');
+  }
+
+  findUserByEmail(email: string): UserProfile | undefined {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    return Array.from(this.users.values()).find((u) => u.email.trim().toLowerCase() === cleanEmail);
+  }
+
+  signupUser(data: {
+    name: string;
+    email: string;
+    password: string;
+    role?: OperatorRole;
+    title?: string;
+    avatar?: string;
+    assignedSports?: SportType[];
+    preferredSetup?: string;
+  }): { user: UserProfile; token: string } {
+    const cleanEmail = (data.email || '').trim().toLowerCase();
+    if (!cleanEmail) throw new Error('Valid email address is required');
+    if (!data.name?.trim()) throw new Error('Operator full name is required');
+    if (!data.password || data.password.length < 4) {
+      throw new Error('Password must be at least 4 characters long');
+    }
+
+    const existing = this.findUserByEmail(cleanEmail);
+    if (existing) {
+      throw new Error(`Account already exists with email: ${cleanEmail}`);
+    }
+
+    const id = `user_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const role: OperatorRole = data.role || 'scorer';
+    const roleTitleMap: Record<OperatorRole, string> = {
+      producer: 'Executive Broadcast Producer & Director',
+      scorer: 'Lead Match Scorer & Technical Official',
+      graphics: 'Broadcast Graphics & OBS TD',
+      viewer: 'Clean Feed & Multi-View Monitor',
+    };
+    const roleAvatarMap: Record<OperatorRole, string> = {
+      producer: '🎬',
+      scorer: '⚡',
+      graphics: '🎨',
+      viewer: '👁️',
+    };
+
+    const newUser: UserProfile = {
+      id,
+      name: data.name.trim(),
+      email: cleanEmail,
+      role,
+      title: data.title || roleTitleMap[role] || 'Broadcast Operator',
+      avatar: data.avatar || roleAvatarMap[role] || '🎧',
+      assignedSports: data.assignedSports || ['cricket', 'football', 'basketball', 'kabaddi'],
+      preferredSetup: data.preferredSetup || 'Arena Scoring Deck',
+      lastActive: Date.now(),
+    };
+
+    this.users.set(id, newUser);
+    this.userPasswords.set(cleanEmail, this.hashPassword(data.password));
+    this.activeUserId = id;
+
+    const token = `mktglu_auth_token_${id}_${Date.now()}`;
+    return { user: newUser, token };
+  }
+
+  loginUser(data: { email: string; password?: string; userId?: string }): { user: UserProfile; token: string } | null {
+    let user: UserProfile | undefined;
+
+    if (data.userId) {
+      user = this.users.get(data.userId);
+    } else if (data.email) {
+      const cleanEmail = data.email.trim().toLowerCase();
+      user = this.findUserByEmail(cleanEmail);
+      if (user && data.password) {
+        const expectedHash = this.userPasswords.get(cleanEmail);
+        if (expectedHash) {
+          const inputHash = this.hashPassword(data.password);
+          if (inputHash !== expectedHash) {
+            return null; // Invalid password
+          }
+        }
+      }
+    }
+
+    if (!user) return null;
+
+    user.lastActive = Date.now();
+    this.activeUserId = user.id;
+    const token = `mktglu_auth_token_${user.id}_${Date.now()}`;
+    return { user, token };
   }
 
   // --- Payment Gateway & License Passes (₹499/hr, ₹1699/day, ₹4999/pro) ---

@@ -3,6 +3,7 @@ import matchesRouter from './matches';
 import sportsRouter from './sports';
 import overlaysRouter from './overlays';
 import usersRouter from './users';
+import authRouter from './auth';
 import paymentRouter from './payment';
 import hostingerRouter from './hostinger';
 import healthRouter from './health';
@@ -26,20 +27,23 @@ apiRouter.use('/reviews', reviewsRouter);
 // 4. Indian Legal Compliance, Grievance Redressal & Disclosures
 apiRouter.use('/legal', legalRouter);
 
-// 3. Matches & Scoring (matches router handles CRUD, events, simulation; sports router handles multi-sports)
+// 5. Broadcaster Authentication (Sign Up & Login with Hostinger DB sync)
+apiRouter.use('/auth', authRouter);
+
+// 6. Matches & Scoring (matches router handles CRUD, events, simulation; sports router handles multi-sports)
 apiRouter.use('/matches', sportsRouter);
 apiRouter.use('/matches', matchesRouter);
 
-// 4. Overlays
+// 7. Overlays
 apiRouter.use('/overlays', overlaysRouter);
 
-// 5. Users & Operator Profiles
+// 8. Users & Operator Profiles
 apiRouter.use('/users', usersRouter);
 
-// 6. Payment Gateway & Licenses
+// 9. Payment Gateway & Licenses
 apiRouter.use('/payment', paymentRouter);
 
-// 7. Hostinger MySQL Database Tier
+// 10. Hostinger MySQL Database Tier
 apiRouter.use('/database', hostingerRouter);
 
 // 7. 3-Tier Architecture Telemetry

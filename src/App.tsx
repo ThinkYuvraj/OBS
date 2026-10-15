@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/layout/Navbar';
 import { Dashboard } from './pages/Dashboard';
 import { CreateMatch } from './pages/CreateMatch';
@@ -15,14 +15,35 @@ import { LegalCompliancePage } from './pages/LegalCompliancePage';
 import { useRealtimeSocket } from './hooks/useRealtimeSocket';
 import { PolicyAgreementModal, isPolicyAccepted } from './components/common/PolicyAgreementModal';
 import { HelpDeskModal } from './components/common/HelpDeskModal';
+import { SettingsModal } from './components/layout/SettingsModal';
+import { AuthModal } from './components/auth/AuthModal';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { fetchActiveUser } from './services/api';
+import { UserProfile } from './types/sports';
 
-export default function App() {
+function AppContent() {
+  const { isRedWhite } = useTheme();
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [selectedMatchId, setSelectedMatchId] = useState<string>('match_t20_ind_aus');
   const [hasAcceptedPolicies, setHasAcceptedPolicies] = useState<boolean>(() => isPolicyAccepted());
   const [showPolicyModal, setShowPolicyModal] = useState<boolean>(() => !isPolicyAccepted());
   const [showHelpDesk, setShowHelpDesk] = useState<boolean>(false);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [activeUser, setActiveUser] = useState<UserProfile | null>(null);
+
   const { isConnected } = useRealtimeSocket({});
+
+  const loadUser = () => {
+    fetchActiveUser()
+      .then((res) => setActiveUser(res.activeUser))
+      .catch(console.error);
+  };
+
+  useEffect(() => {
+    loadUser();
+  }, []);
 
   // Check if current browser path is an overlay route (e.g. /overlay/:token)
   const pathname = window.location.pathname;
@@ -41,14 +62,27 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleOpenAuth = (mode: 'login' | 'signup') => {
+    setAuthMode(mode);
+    setShowAuthModal(true);
+  };
+
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] antialiased selection:bg-cyan-500 selection:text-white">
-      {/* Universal Top Bar */}
+    <div
+      className={`min-h-screen text-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif] antialiased transition-colors duration-300 ${
+        isRedWhite
+          ? 'bg-[#0b0507] selection:bg-rose-600 selection:text-white'
+          : 'bg-[#070b14] selection:bg-cyan-500 selection:text-white'
+      }`}
+    >
+      {/* Universal Top Bar with Theme Toggle, Settings & Auth Triggers */}
       <Navbar
         currentTab={currentTab}
         onNavigate={handleNavigate}
         onOpenPolicies={() => setShowPolicyModal(true)}
         onOpenHelpDesk={() => setShowHelpDesk(true)}
+        onOpenSettings={() => setShowSettings(true)}
+        onOpenAuth={handleOpenAuth}
         isConnected={isConnected}
       />
 
@@ -140,6 +174,26 @@ export default function App() {
         )}
       </main>
 
+      {/* Broadcaster Studio Settings & Hostinger DB Modal */}
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        activeUser={activeUser}
+        onOpenAuth={handleOpenAuth}
+        onUserLoggedOut={(updated) => setActiveUser(updated)}
+      />
+
+      {/* Broadcaster Sign Up Window & Log In Modal (Hostinger DB) */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode={authMode}
+        onAuthSuccess={(user) => {
+          setActiveUser(user);
+          loadUser();
+        }}
+      />
+
       {/* Mandatory User Policies & Broadcast Compliance Gate */}
       <PolicyAgreementModal
         isOpen={showPolicyModal || !hasAcceptedPolicies}
@@ -161,5 +215,13 @@ export default function App() {
         onClose={() => setShowHelpDesk(false)}
       />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 }

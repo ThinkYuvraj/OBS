@@ -663,5 +663,122 @@ export async function submitReview(reviewData: {
   return res.json();
 }
 
+// Broadcaster Authentication & Hostinger DB Sync
+export async function signupBroadcaster(data: {
+  name: string;
+  email: string;
+  password: string;
+  role?: string;
+  title?: string;
+  avatar?: string;
+  assignedSports?: string[];
+  preferredSetup?: string;
+}): Promise<{
+  success: boolean;
+  user: UserProfile;
+  token: string;
+  hostingerSynced: boolean;
+  message: string;
+}> {
+  const res = await fetch(`${API_BASE}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.error || 'Failed to create broadcaster account');
+  }
+  return json;
+}
+
+export async function loginBroadcaster(data: {
+  email?: string;
+  password?: string;
+  userId?: string;
+}): Promise<{
+  success: boolean;
+  user: UserProfile;
+  token: string;
+  message: string;
+}> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.error || 'Failed to sign in');
+  }
+  return json;
+}
+
+export async function fetchAuthMe(): Promise<{
+  authenticated: boolean;
+  user: UserProfile;
+  database: {
+    connected: boolean;
+    mode: string;
+    host: string;
+    database: string;
+  };
+}> {
+  const res = await fetch(`${API_BASE}/auth/me`);
+  if (!res.ok) throw new Error('Failed to verify session');
+  return res.json();
+}
+
+export async function logoutBroadcaster(): Promise<{
+  success: boolean;
+  message: string;
+  activeUser: UserProfile;
+}> {
+  const res = await fetch(`${API_BASE}/auth/logout`, {
+    method: 'POST',
+  });
+  if (!res.ok) throw new Error('Failed to sign out');
+  return res.json();
+}
+
+export async function testHostingerConnection(): Promise<{
+  success: boolean;
+  message: string;
+  pingMs?: number;
+}> {
+  const res = await fetch(`${API_BASE}/auth/test-hostinger`, {
+    method: 'POST',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Hostinger connection probe failed');
+  }
+  return res.json();
+}
+
+export async function configureHostingerDb(config: {
+  host?: string;
+  port?: number;
+  user?: string;
+  password?: string;
+  database?: string;
+}): Promise<{
+  success: boolean;
+  probe: { success: boolean; message: string; pingMs?: number };
+  status: HostingerDatabaseStatus;
+  message: string;
+}> {
+  const res = await fetch(`${API_BASE}/auth/configure-hostinger`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.error || 'Failed to configure Hostinger database');
+  }
+  return json;
+}
+
 
 
