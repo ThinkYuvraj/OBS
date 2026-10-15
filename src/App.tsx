@@ -19,6 +19,7 @@ import { SettingsModal } from './components/layout/SettingsModal';
 import { AuthModal } from './components/auth/AuthModal';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { ToastProvider, useToast } from './contexts/ToastContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { fetchActiveUser } from './services/api';
 import { UserProfile } from './types/sports';
 
@@ -323,10 +324,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <ToastProvider>
-        <AppContent />
-      </ToastProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

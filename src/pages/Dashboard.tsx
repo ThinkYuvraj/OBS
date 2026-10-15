@@ -202,6 +202,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     showToast('Downloaded Hostinger phpMyAdmin .sql dump file');
   };
 
+  const handleExportMatchesJson = () => {
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      generator: 'MarketinGlu OBS Broadcast Engine v2.0',
+      totalMatches: matches.length,
+      matches,
+    };
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `marketinGlu_broadcast_matches_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${matches.length} broadcast matches to JSON backup`);
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -566,6 +583,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               Export .SQL
             </button>
             <button
+              onClick={handleExportMatchesJson}
+              className="px-2 py-0.5 rounded-lg bg-[#060a14] hover:bg-[#0c1424] border border-slate-800 text-[10px] font-bold text-sky-300 cursor-pointer transition-all"
+              title="Download full JSON match archive"
+            >
+              Backup .JSON
+            </button>
+            <button
               onClick={() => onNavigate('architecture')}
               className="px-2 py-0.5 rounded-lg bg-[#060a14] hover:bg-[#0c1424] border border-slate-800 text-[10px] font-bold text-amber-300 cursor-pointer transition-all"
             >
@@ -663,9 +687,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       )}
 
       {/* Main Workspace Area */}
-      <div className="max-w-7xl mx-auto px-6 mt-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-6 sm:mt-8">
         {/* Search, Filter & View Mode Control Panel */}
-        <div className="bg-[#0b1324]/90 border border-slate-800/80 rounded-2xl p-3.5 shadow-lg space-y-3">
+        <div
+          className={`border rounded-2xl p-3.5 shadow-lg space-y-3 transition-colors ${
+            isRedWhite
+              ? 'bg-[#120509]/90 border-rose-950/80 shadow-rose-950/20'
+              : 'bg-[#0b1324]/90 border-slate-800/80 shadow-black/40'
+          }`}
+        >
           {/* Top Row: Search Input + Match Counter + Reset + View Toggle */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/60">
             {/* Search Input */}
@@ -675,8 +705,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search team, sport, tournament..."
-                className="w-full bg-[#060a14] border border-slate-800 focus:border-cyan-400 rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder:text-slate-500 outline-none transition-colors"
+                placeholder="Search team, sport, tournament, venue..."
+                className={`w-full bg-[#060a14] border rounded-xl pl-8 pr-8 py-1.5 text-xs text-white placeholder:text-slate-500 outline-none transition-colors ${
+                  isRedWhite ? 'border-rose-950 focus:border-rose-500' : 'border-slate-800 focus:border-cyan-400'
+                }`}
               />
               {searchQuery && (
                 <button
@@ -692,7 +724,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             {/* Actions: Match Counter, Reset & Card/List Switcher */}
             <div className="flex items-center gap-2 self-end sm:self-auto">
               <span className="text-[11px] font-mono text-slate-400 px-2.5 py-1 bg-[#060a14] rounded-lg border border-slate-800/80 shrink-0">
-                <span className="text-cyan-400 font-bold">{filteredMatches.length}</span>{' '}
+                <span className={`font-bold ${isRedWhite ? 'text-rose-400' : 'text-cyan-400'}`}>
+                  {filteredMatches.length}
+                </span>{' '}
                 <span className="text-slate-500">/</span> {matches.length} matches
               </span>
 
@@ -703,7 +737,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     setSearchQuery('');
                     setStatusFilter('all');
                   }}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#060a14] border border-cyan-500/40 text-[11px] text-cyan-300 hover:text-cyan-200 cursor-pointer transition-all shrink-0"
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#060a14] border text-[11px] cursor-pointer transition-all shrink-0 ${
+                    isRedWhite
+                      ? 'border-rose-500/40 text-rose-300 hover:text-rose-200'
+                      : 'border-cyan-500/40 text-cyan-300 hover:text-cyan-200'
+                  }`}
                   title="Reset all filters"
                 >
                   <RotateCcw className="w-3 h-3" />
@@ -717,7 +755,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   onClick={() => setLayoutMode('card')}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
                     layoutMode === 'card'
-                      ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-sm shadow-cyan-500/25'
+                      ? isRedWhite
+                        ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 text-white shadow-sm shadow-rose-600/25'
+                        : 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-sm shadow-cyan-500/25'
                       : 'text-slate-400 hover:text-white hover:bg-[#0c1424]'
                   }`}
                   title="Expanded Broadcast Cards"
@@ -729,7 +769,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   onClick={() => setLayoutMode('list')}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
                     layoutMode === 'list'
-                      ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-sm shadow-cyan-500/25'
+                      ? isRedWhite
+                        ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-red-600 text-white shadow-sm shadow-rose-600/25'
+                        : 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white shadow-sm shadow-cyan-500/25'
                       : 'text-slate-400 hover:text-white hover:bg-[#0c1424]'
                   }`}
                   title="Compact Multi-Channel List"
@@ -743,7 +785,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
           {/* Bottom Row: Full-width Sports Category Selector Capsule */}
           <div className="overflow-x-auto no-scrollbar scroll-smooth py-1">
-            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#051122]/90 border border-cyan-500/30 shadow-inner backdrop-blur-md">
+            <div
+              className={`inline-flex items-center gap-1 p-1 rounded-full border shadow-inner backdrop-blur-md ${
+                isRedWhite
+                  ? 'bg-[#15060c]/90 border-rose-500/30'
+                  : 'bg-[#051122]/90 border-cyan-500/30'
+              }`}
+            >
               {MAIN_SPORTS.map((sport) => {
                 const sportCount =
                   sport.id === 'all'
@@ -758,7 +806,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     onClick={() => setSelectedSport(sport.id)}
                     className={`px-3.5 py-1.5 text-xs transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 shrink-0 rounded-full ${
                       isSelected
-                        ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                        ? isRedWhite
+                          ? 'border border-rose-500 bg-rose-950/70 text-white font-bold shadow-[0_0_12px_rgba(225,29,72,0.4)]'
+                          : 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
                         : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
                     }`}
                   >
@@ -767,7 +817,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <span
                       className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
                         isSelected
-                          ? 'bg-cyan-400/20 text-cyan-200 border border-cyan-400/40 font-bold'
+                          ? isRedWhite
+                            ? 'bg-rose-400/20 text-rose-200 border border-rose-400/40 font-bold'
+                            : 'bg-cyan-400/20 text-cyan-200 border border-cyan-400/40 font-bold'
                           : 'bg-slate-800/70 text-slate-400'
                       }`}
                     >
@@ -825,11 +877,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               return (
                 <div
                   key={m.id}
-                  className="bg-[#0b1324]/90 border border-slate-800/80 hover:border-cyan-500/40 rounded-xl px-3.5 py-2.5 transition-all shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3"
+                  className={`rounded-xl px-3.5 py-2.5 transition-all shadow-md flex flex-col md:flex-row md:items-center justify-between gap-3 border ${
+                    isRedWhite
+                      ? 'bg-[#120509]/95 border-rose-950/80 hover:border-rose-500/40'
+                      : 'bg-[#0b1324]/90 border-slate-800/80 hover:border-cyan-500/40'
+                  }`}
                 >
                   {/* Left: Sport, Match & Tournament */}
                   <div className="flex items-center gap-2.5 min-w-[200px]">
-                    <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[10px] font-bold uppercase tracking-wider text-cyan-300 shrink-0">
+                    <span
+                      className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                        isRedWhite
+                          ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                          : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                      }`}
+                    >
                       {m.sport.replace('_', ' ')}
                     </span>
                     <div className="min-w-0">
@@ -855,7 +917,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       <span className="font-bold text-xs text-white">
                         {m.teamA.shortName}
                       </span>
-                      <span className="text-cyan-400 text-[10px] font-semibold">vs</span>
+                      <span
+                        className={`text-[10px] font-semibold ${
+                          isRedWhite ? 'text-rose-400' : 'text-cyan-400'
+                        }`}
+                      >
+                        vs
+                      </span>
                       <div
                         className="w-2 h-2 rounded-full shrink-0"
                         style={{ backgroundColor: m.teamB.color || '#ef4444' }}
@@ -869,7 +937,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       <div className="font-bold text-sm font-mono tabular-nums text-white">
                         {scoreText}
                       </div>
-                      <div className="text-[10px] text-cyan-300/80 font-mono">
+                      <div
+                        className={`text-[10px] font-mono ${
+                          isRedWhite ? 'text-rose-300/80' : 'text-cyan-300/80'
+                        }`}
+                      >
                         {metaText}
                       </div>
                     </div>
@@ -879,13 +951,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                   <div className="flex items-center gap-1.5 shrink-0 justify-end">
                     <button
                       onClick={(e) => handleCopyObsUrl(m.activeOverlayToken, e)}
-                      className="px-2 py-1 text-[11px] font-mono font-bold bg-[#090f1f] hover:bg-cyan-500/20 border border-slate-800 hover:border-cyan-400 text-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                      className={`px-2 py-1 text-[11px] font-mono font-bold bg-[#090f1f] border rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                        isRedWhite
+                          ? 'hover:bg-rose-500/20 border-rose-950/80 hover:border-rose-400 text-slate-300'
+                          : 'hover:bg-cyan-500/20 border-slate-800 hover:border-cyan-400 text-slate-300'
+                      }`}
                       title="Copy OBS URL"
                     >
                       {copiedToken === m.activeOverlayToken ? (
                         <Check className="w-3 h-3 text-emerald-400" />
                       ) : (
-                        <Copy className="w-3 h-3 text-cyan-400" />
+                        <Copy
+                          className={`w-3 h-3 ${isRedWhite ? 'text-rose-400' : 'text-cyan-400'}`}
+                        />
                       )}
                       <span>OBS</span>
                     </button>
@@ -898,7 +976,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                           onNavigate('multi-scoring', m.id);
                         }
                       }}
-                      className="px-2.5 py-1 text-[11px] font-bold bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                      className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 border ${
+                        isRedWhite
+                          ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/30 text-rose-300'
+                          : 'bg-cyan-500/15 hover:bg-cyan-500/25 border-cyan-500/30 text-cyan-300'
+                      }`}
                     >
                       <Radio className="w-3 h-3" />
                       <span>Scorer</span>
@@ -906,9 +988,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                     <button
                       onClick={() => onNavigate('overlay-control', m.id)}
-                      className="px-2.5 py-1 text-[11px] font-bold bg-[#090f1f] hover:bg-[#0d162b] border border-slate-800 hover:border-cyan-500/30 text-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                      className={`px-2.5 py-1 text-[11px] font-bold bg-[#090f1f] hover:bg-[#0d162b] border rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                        isRedWhite
+                          ? 'border-rose-950/70 hover:border-rose-500/30 text-slate-300'
+                          : 'border-slate-800 hover:border-cyan-500/30 text-slate-300'
+                      }`}
                     >
-                      <Sliders className="w-3 h-3 text-cyan-400" />
+                      <Sliders
+                        className={`w-3 h-3 ${isRedWhite ? 'text-rose-400' : 'text-cyan-400'}`}
+                      />
                       <span>Studio</span>
                     </button>
 
@@ -916,7 +1004,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                       href={`/overlay/${m.activeOverlayToken}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="p-1 text-cyan-400 hover:text-white rounded-lg transition-colors"
+                      className={`p-1 rounded-lg transition-colors ${
+                        isRedWhite ? 'text-rose-400 hover:text-white' : 'text-cyan-400 hover:text-white'
+                      }`}
                       title="Open Overlay"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
@@ -946,13 +1036,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               return (
                 <div
                   key={m.id}
-                  className="bg-[#0b1324]/90 border border-slate-800/80 hover:border-cyan-500/40 rounded-xl p-3.5 transition-all flex flex-col justify-between shadow-lg shadow-black/30 group"
+                  className={`rounded-xl p-3.5 transition-all flex flex-col justify-between shadow-lg group border ${
+                    isRedWhite
+                      ? 'bg-[#120509]/95 border-rose-950/80 hover:border-rose-500/40 shadow-rose-950/20'
+                      : 'bg-[#0b1324]/90 border-slate-800/80 hover:border-cyan-500/40 shadow-black/30'
+                  }`}
                 >
                   <div>
                     {/* Top Header: Sport tag, Tournament, Live badge, Delete */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-[10px] font-bold uppercase tracking-wider text-cyan-300 shrink-0">
+                        <span
+                          className={`px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                            isRedWhite
+                              ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                              : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                          }`}
+                        >
                           {m.sport.replace('_', ' ')}
                         </span>
                         <span className="text-xs text-slate-400 truncate font-medium">
@@ -1007,7 +1107,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         <div className="font-black text-lg font-mono tabular-nums text-white">
                           {scoreText}
                         </div>
-                        <div className="text-[10px] text-cyan-300/80 font-mono">
+                        <div
+                          className={`text-[10px] font-mono ${
+                            isRedWhite ? 'text-rose-300/80' : 'text-cyan-300/80'
+                          }`}
+                        >
                           {metaText}
                         </div>
                       </div>
@@ -1025,7 +1129,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             onNavigate('multi-scoring', m.id);
                           }
                         }}
-                        className="px-2.5 py-1 text-[11px] font-bold bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                        className={`px-2.5 py-1 text-[11px] font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 border ${
+                          isRedWhite
+                            ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/30 text-rose-300'
+                            : 'bg-cyan-500/15 hover:bg-cyan-500/25 border-cyan-500/30 text-cyan-300'
+                        }`}
                       >
                         <Radio className="w-3 h-3" />
                         <span>Scorer</span>
@@ -1033,9 +1141,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                       <button
                         onClick={() => onNavigate('overlay-control', m.id)}
-                        className="px-2.5 py-1 text-[11px] font-bold bg-[#090f1f] hover:bg-[#0d162b] border border-slate-800 hover:border-cyan-500/30 text-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                        className={`px-2.5 py-1 text-[11px] font-bold bg-[#090f1f] hover:bg-[#0d162b] border rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                          isRedWhite
+                            ? 'border-rose-950/70 hover:border-rose-500/30 text-slate-300'
+                            : 'border-slate-800 hover:border-cyan-500/30 text-slate-300'
+                        }`}
                       >
-                        <Sliders className="w-3 h-3 text-cyan-400" />
+                        <Sliders
+                          className={`w-3 h-3 ${isRedWhite ? 'text-rose-400' : 'text-cyan-400'}`}
+                        />
                         <span>Studio</span>
                       </button>
                     </div>
@@ -1054,13 +1168,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                       <button
                         onClick={(e) => handleCopyObsUrl(m.activeOverlayToken, e)}
-                        className="px-2 py-1 text-[11px] font-mono font-bold bg-[#090f1f] hover:bg-cyan-500/20 border border-slate-800 hover:border-cyan-400 text-slate-300 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                        className={`px-2 py-1 text-[11px] font-mono font-bold bg-[#090f1f] border rounded-lg transition-colors cursor-pointer flex items-center gap-1 ${
+                          isRedWhite
+                            ? 'hover:bg-rose-500/20 border-rose-950/80 hover:border-rose-400 text-slate-300'
+                            : 'hover:bg-cyan-500/20 border-slate-800 hover:border-cyan-400 text-slate-300'
+                        }`}
                         title="Copy OBS URL"
                       >
                         {copiedToken === m.activeOverlayToken ? (
                           <Check className="w-3 h-3 text-emerald-400" />
                         ) : (
-                          <Copy className="w-3 h-3 text-cyan-400" />
+                          <Copy
+                            className={`w-3 h-3 ${isRedWhite ? 'text-rose-400' : 'text-cyan-400'}`}
+                          />
                         )}
                         <span>OBS</span>
                       </button>
@@ -1069,7 +1189,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         href={`/overlay/${m.activeOverlayToken}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-1 text-cyan-400 hover:text-white rounded-lg transition-colors"
+                        className={`p-1 rounded-lg transition-colors ${
+                          isRedWhite ? 'text-rose-400 hover:text-white' : 'text-cyan-400 hover:text-white'
+                        }`}
                         title="Open Overlay"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
