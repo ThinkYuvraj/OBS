@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { IssueCategory, IssueUrgency, ScreenshotAttachment, SportType, SupportTicket } from '../../types/sports';
 import { submitSupportTicket, fetchSupportTickets } from '../../services/api';
+import { useToast } from '../../contexts/ToastContext';
 import { MarketingluLoadingScreen } from './MarketingluLoadingScreen';
 
 interface HelpDeskModalProps {
@@ -101,6 +102,7 @@ export const HelpDeskModal: React.FC<HelpDeskModalProps> = ({
   sport,
   overlayToken,
 }) => {
+  const { warning: toastWarning } = useToast();
   const [activeTab, setActiveTab] = useState<'report' | 'tickets' | 'faq'>('report');
   const [category, setCategory] = useState<IssueCategory>('obs_not_updating');
   const [customCategoryTitle, setCustomCategoryTitle] = useState('');
@@ -160,7 +162,7 @@ export const HelpDeskModal: React.FC<HelpDeskModalProps> = ({
 
   const handleProcessFile = (file: File) => {
     if (file.size > 5 * 1024 * 1024) {
-      alert('Screenshot attachment exceeds 5MB limit. Please attach a smaller image.');
+      toastWarning('Screenshot attachment exceeds 5MB limit. Please attach a smaller image.');
       return;
     }
 
@@ -193,7 +195,7 @@ export const HelpDeskModal: React.FC<HelpDeskModalProps> = ({
   const handleCaptureScreen = async () => {
     try {
       if (!navigator.mediaDevices?.getDisplayMedia) {
-        alert('Screen capture API is not supported in this browser. Please use file upload or paste from clipboard (Ctrl+V).');
+        toastWarning('Screen capture API is not supported in this browser. Please use file upload or paste from clipboard (Ctrl+V).');
         return;
       }
 

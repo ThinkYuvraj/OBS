@@ -3,13 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>MarketinGlu OBS - Live Sports ScoreBug</title>
+    <title>LiveStream ScoreBug - Broadcast Sports Overlay</title>
     <meta name="description" content="Professional real-time broadcast score overlays for OBS, vMix, and live streaming with ball-by-ball scoring, multi-sport engine, and graphics customization." />
-    <meta property="og:title" content="MarketinGlu OBS - Live Sports ScoreBug" />
+    <meta property="og:title" content="LiveStream ScoreBug - Broadcast Sports Overlay" />
     <meta property="og:description" content="Professional real-time broadcast score overlays for OBS, vMix, and live streaming with ball-by-ball scoring, multi-sport engine, and graphics customization." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#070b14" />
+    <meta name="theme-color" content="#0b0507" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -21,48 +21,60 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=Chakra+Petch:wght@600;700;800&display=swap" rel="stylesheet">
   </head>
-  <body>
+  <body class="theme-red-white" style="background:#0b0507;color:#f8fafc;margin:0;padding:0;">
     <div id="root">
-      <div style="min-height:100vh;background:#040814;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;color:#f1f5f9;text-align:center;padding:24px;position:relative;">
-        <!-- Ambient Cyan Glow -->
-        <div style="position:absolute;width:420px;height:420px;background:rgba(6,182,212,0.12);border-radius:50%;filter:blur(110px);pointer-events:none;"></div>
+      <div style="min-height:100vh;background:#0b0507;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;color:#f8fafc;text-align:center;padding:24px;position:relative;overflow:hidden;">
+        <!-- Ambient Red & White Glow Aura -->
+        <div style="position:absolute;width:480px;height:480px;background:radial-gradient(circle, rgba(225,29,72,0.22) 0%, rgba(255,255,255,0.06) 45%, transparent 70%);border-radius:50%;filter:blur(100px);pointer-events:none;"></div>
+        <div style="position:absolute;width:260px;height:260px;background:rgba(244,63,94,0.18);border-radius:50%;filter:blur(70px);pointer-events:none;"></div>
 
-        <!-- 1. Top Logo Emblem Card (Dark rounded frame with rim glow + white inner card) -->
-        <div style="position:relative;margin-bottom:28px;z-index:2;">
-          <div style="background:#091122;border:1px solid rgba(6,182,212,0.35);border-radius:24px;padding:14px;box-shadow:0 0 35px rgba(6,182,212,0.35);display:flex;align-items:center;justify-content:center;width:220px;height:140px;box-sizing:border-box;">
-            <div style="background:#ffffff;border-radius:16px;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:8px;box-sizing:border-box;">
-              <img src="/marketinglu-emblem.png" alt="MarketinGlu Emblem" style="max-height:76px;width:auto;object-contain:contain;" />
+        <!-- 1. Authentic 3D Cricket Ball with White Seam and Center Emblem Card -->
+        <div style="position:relative;margin-bottom:28px;z-index:2;display:flex;align-items:center;justify-content:center;">
+          <!-- Ambient Crimson Halo -->
+          <div style="position:absolute;width:240px;height:240px;border-radius:50%;background:rgba(220,38,38,0.35);filter:blur(30px);pointer-events:none;"></div>
+
+          <!-- 3D Cricket Ball Body -->
+          <div style="position:relative;width:180px;height:180px;border-radius:50%;background:radial-gradient(circle at 35% 28%, #ff4d4d 0%, #dc2626 30%, #b91c1c 60%, #7f1d1d 85%, #450a0a 100%);box-shadow:0 0 50px rgba(220,38,38,0.7),inset -10px -10px 25px rgba(0,0,0,0.85),inset 6px 6px 16px rgba(255,255,255,0.45);border:3px solid rgba(185,28,28,0.7);display:flex;align-items:center;justify-content:center;">
+            <!-- White Seam Stitching Line -->
+            <div style="position:absolute;top:0;bottom:0;left:50%;width:2px;background:#ffffff;box-shadow:0 0 4px #ffffff;opacity:0.8;transform:translateX(-50%);"></div>
+
+            <!-- Specular Highlight -->
+            <div style="position:absolute;top:10px;left:24px;width:50px;height:30px;background:rgba(255,255,255,0.35);border-radius:50%;filter:blur(5px);transform:rotate(-35deg);pointer-events:none;"></div>
+
+            <!-- Center Pure White Card holding MarketinGlu Emblem -->
+            <div style="position:relative;z-index:2;background:#ffffff;border:2px solid #dc2626;border-radius:18px;width:120px;height:82px;display:flex;align-items:center;justify-content:center;padding:6px;box-sizing:border-box;box-shadow:0 6px 20px rgba(0,0,0,0.5),0 0 20px rgba(255,255,255,0.9);">
+              <img src="/marketinglu-emblem.png" alt="MarketinGlu Emblem" style="max-height:56px;width:auto;object-contain:contain;display:block;" />
             </div>
           </div>
         </div>
 
-        <!-- 2. Wordmark: MARKETIN GLU -->
-        <img src="/marketinglu-wordmark.png" alt="MARKETINGLU" style="width:260px;height:auto;margin-bottom:14px;filter:drop-shadow(0 2px 10px rgba(6,182,212,0.45));z-index:2;" />
+        <!-- 2. Wordmark: MARKETIN GLU in Proper White with Crimson Drop Shadow -->
+        <img src="/marketinglu-wordmark.png" alt="MARKETINGLU" style="width:260px;height:auto;margin-bottom:14px;filter:drop-shadow(0 4px 16px rgba(220,38,38,0.7));z-index:2;display:block;" />
 
-        <!-- 3. Subtitle Pill: ⚡ SOFTWARE & DIGITAL GROWTH ENGINE -->
-        <div style="margin-bottom:32px;z-index:2;">
-          <div style="display:inline-flex;align-items:center;gap:6px;padding:6px 18px;border-radius:999px;border:1px solid rgba(6,182,212,0.4);background:rgba(6,21,40,0.8);color:#67e8f9;font-family:monospace;font-size:11px;font-weight:700;letter-spacing:1px;box-shadow:0 0 15px rgba(6,182,212,0.2);">
-            <span style="color:#22d3ee;font-size:12px;">⚡</span>
-            <span>SOFTWARE &amp; DIGITAL GROWTH ENGINE</span>
+        <!-- 3. Subtitle Pill: Proper White & Cricket Ball Red Badge -->
+        <div style="margin-bottom:30px;z-index:2;">
+          <div style="display:inline-flex;align-items:center;gap:7px;padding:7px 22px;border-radius:999px;border:2px solid #dc2626;background:#ffffff;color:#dc2626;font-family:monospace;font-size:11px;font-weight:900;letter-spacing:1.2px;box-shadow:0 0 25px rgba(255,255,255,0.4),0 0 15px rgba(220,38,38,0.5);">
+            <span style="color:#dc2626;font-size:12px;">🏏</span>
+            <span style="color:#dc2626;">CRICKET BALL RED &amp; PROPER WHITE SUITE</span>
           </div>
         </div>
 
-        <!-- 4. Progress Bar & Telemetry Status Row -->
+        <!-- 4. Slender Progress Bar & Telemetry Status Row in Red & White -->
         <div style="width:340px;max-width:90vw;z-index:2;">
           <!-- Progress Track -->
-          <div style="width:100%;height:6px;background:#0c1626;border-radius:999px;overflow:hidden;border:1px solid rgba(6,182,212,0.2);position:relative;">
-            <div style="width:81%;height:100%;background:linear-gradient(90deg,#06b6d4,#38bdf8);border-radius:999px;box-shadow:0 0 12px #06b6d4;"></div>
+          <div style="width:100%;height:8px;background:#18040a;border-radius:999px;overflow:hidden;border:2px solid rgba(220,38,38,0.6);position:relative;box-shadow:inset 0 1px 4px rgba(0,0,0,0.9);">
+            <div style="width:96%;height:100%;background:linear-gradient(90deg,#991b1b,#dc2626,#ffffff);border-radius:999px;box-shadow:0 0 16px #dc2626;"></div>
           </div>
 
-          <!-- Status Row: Left msg, Tag, 81% -->
+          <!-- Status Row: Left msg, Tag, 99% -->
           <div style="display:flex;align-items:center;justify-content:space-between;font-family:monospace;font-size:11px;margin-top:10px;">
-            <div style="display:flex;align-items:center;gap:8px;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              <span style="width:8px;height:8px;border-radius:50%;background:#22d3ee;box-shadow:0 0 8px #22d3ee;display:inline-block;"></span>
-              <span style="font-weight:500;">Calibrating 144Hz Smooth Engine &amp; ...</span>
+            <div style="display:flex;align-items:center;gap:8px;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              <span style="width:8px;height:8px;border-radius:50%;background:#ef4444;box-shadow:0 0 10px #ef4444;display:inline-block;flex-shrink:0;"></span>
+              <span style="font-weight:700;letter-spacing:0.3px;color:#ffffff;">Calibrating Cricket Ball Red Engine...</span>
             </div>
             <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-              <span style="color:#06b6d4;font-weight:700;">[GPU_ACCEL]</span>
-              <span style="color:#67e8f9;font-weight:800;font-size:12px;">81%</span>
+              <span style="color:#f87171;font-weight:800;">[CRICKET_BALL_RED]</span>
+              <span style="color:#ffffff;font-weight:900;font-size:12px;">99%</span>
             </div>
           </div>
         </div>

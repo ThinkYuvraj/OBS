@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { PassPlan, PaymentGateway, BroadcastLicense, GstInvoiceDetails } from '../../types/sports';
 import { createPaymentOrder, verifyPayment } from '../../services/api';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface PricingCardsProps {
   onPaymentSuccess?: (license: BroadcastLicense) => void;
@@ -103,6 +104,7 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
   className = '',
   isModal = false,
 }) => {
+  const { isRedWhite } = useTheme();
   const [selectedPlan, setSelectedPlan] = useState<PassPlan>('daily');
   const [gateway, setGateway] = useState<PaymentGateway>('razorpay');
   const [loading, setLoading] = useState(false);
@@ -291,22 +293,30 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {/* Gateway Selector & Security Trust Badge Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6 bg-[#0c1424]/80 border border-slate-800 rounded-2xl p-3.5 sm:p-4 backdrop-blur-md">
+      <div className={`flex flex-wrap items-center justify-between gap-4 mb-6 border-2 rounded-2xl p-3.5 sm:p-4 backdrop-blur-md ${
+        isRedWhite ? 'bg-white border-red-200 shadow-sm' : 'bg-[#0c1424]/80 border-slate-800'
+      }`}>
         <div className="flex items-center gap-2">
-          <span className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
+          <span className={`text-xs font-mono font-bold uppercase tracking-wider ${isRedWhite ? 'text-slate-700' : 'text-slate-400'}`}>
             Choose Payment Gateway:
           </span>
-          <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#051122]/90 border border-cyan-500/30 shadow-inner backdrop-blur-md">
+          <div className={`inline-flex items-center gap-1.5 p-1 rounded-full border-2 backdrop-blur-md ${
+            isRedWhite ? 'bg-red-50/70 border-red-200' : 'bg-[#051122]/90 border-cyan-500/30 shadow-inner'
+          }`}>
             <button
               type="button"
               onClick={() => setGateway('razorpay')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 gateway === 'razorpay'
-                  ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  ? isRedWhite
+                    ? 'border-2 border-red-600 bg-red-600 text-white font-black shadow-sm'
+                    : 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : isRedWhite
+                  ? 'text-slate-700 hover:text-red-600 hover:bg-white font-semibold'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
               }`}
             >
-              <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
+              <CreditCard className={`w-3.5 h-3.5 ${gateway === 'razorpay' && isRedWhite ? 'text-white' : 'text-cyan-400'}`} />
               <span>Razorpay (UPI / Cards)</span>
             </button>
             <button
@@ -314,19 +324,23 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
               onClick={() => setGateway('paytm')}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                 gateway === 'paytm'
-                  ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  ? isRedWhite
+                    ? 'border-2 border-red-600 bg-red-600 text-white font-black shadow-sm'
+                    : 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : isRedWhite
+                  ? 'text-slate-700 hover:text-red-600 hover:bg-white font-semibold'
                   : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
               }`}
             >
-              <Smartphone className="w-3.5 h-3.5 text-sky-400" />
+              <Smartphone className={`w-3.5 h-3.5 ${gateway === 'paytm' && isRedWhite ? 'text-white' : 'text-sky-400'}`} />
               <span>Paytm (Wallet / QR)</span>
             </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 text-[11px] font-mono text-emerald-400">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>RBI Tokenized • 256-Bit SSL • SAC 998434 (18% GST)</span>
+        <div className="flex items-center gap-3 text-[11px] font-mono text-emerald-600">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <span className={isRedWhite ? 'text-slate-600 font-semibold' : 'text-emerald-400'}>RBI Tokenized • 256-Bit SSL • SAC 998434 (18% GST)</span>
         </div>
       </div>
 
@@ -340,15 +354,23 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
             <div
               key={plan.id}
               onClick={() => setSelectedPlan(plan.id)}
-              className={`relative flex flex-col rounded-3xl p-6 transition-all cursor-pointer border ${
+              className={`relative flex flex-col rounded-3xl p-6 transition-all cursor-pointer border-2 ${
                 isSelected
-                  ? 'bg-gradient-to-b from-[#0f1d38] via-[#0b162a] to-[#070d18] border-cyan-400 shadow-[0_0_35px_rgba(6,182,212,0.25)] ring-2 ring-cyan-500/30'
+                  ? isRedWhite
+                    ? 'bg-white border-red-600 shadow-xl shadow-red-600/15 ring-2 ring-red-500/30'
+                    : 'bg-gradient-to-b from-[#0f1d38] via-[#0b162a] to-[#070d18] border-cyan-400 shadow-[0_0_35px_rgba(6,182,212,0.25)] ring-2 ring-cyan-500/30'
+                  : isRedWhite
+                  ? 'bg-white border-red-200 hover:border-red-400 shadow-sm'
                   : 'bg-gradient-to-b from-[#0c1424]/80 to-[#070b14]/80 border-slate-800/90 hover:border-slate-700 hover:bg-[#0e172a]/90'
               }`}
             >
               {/* Popular Badge */}
               {plan.popular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-md text-[10px] font-mono font-black uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-lg shadow-emerald-500/30">
+                <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full text-[10px] font-mono font-black uppercase tracking-wider shadow-sm ${
+                  isRedWhite
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 shadow-emerald-500/30'
+                }`}>
                   {plan.badge}
                 </div>
               )}
@@ -357,17 +379,23 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div>
                   {!plan.popular && (
-                    <span className={`inline-block px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold border mb-2 ${plan.badgeColor}`}>
+                    <span className={`inline-block px-2.5 py-0.5 rounded-md text-[10px] font-mono font-bold border mb-2 ${
+                      isRedWhite ? 'bg-red-50 text-red-700 border-red-200' : plan.badgeColor
+                    }`}>
                       {plan.badge}
                     </span>
                   )}
-                  <h3 className="text-lg font-black text-white font-['Space_Grotesk',sans-serif]">
+                  <h3 className={`text-lg font-black font-['Space_Grotesk',sans-serif] ${isRedWhite ? 'text-slate-900' : 'text-white'}`}>
                     {plan.name}
                   </h3>
                 </div>
                 <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border ${
                   isSelected
-                    ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                    ? isRedWhite
+                      ? 'bg-red-50 text-red-600 border-red-300 shadow-sm'
+                      : 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                    : isRedWhite
+                    ? 'bg-red-50/50 border-red-100 text-slate-600'
                     : 'bg-slate-800/60 border-slate-700/60 text-slate-400'
                 }`}>
                   <Icon className="w-5 h-5" />
@@ -375,31 +403,39 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
               </div>
 
               {/* Price Display */}
-              <div className="mb-4 pb-4 border-b border-slate-800">
+              <div className={`mb-4 pb-4 border-b ${isRedWhite ? 'border-red-100' : 'border-slate-800'}`}>
                 <div className="flex items-baseline gap-1.5">
-                  <span className="text-3xl sm:text-4xl font-black text-white font-['Space_Grotesk',sans-serif] tracking-tight">
+                  <span className={`text-3xl sm:text-4xl font-black font-['Space_Grotesk',sans-serif] tracking-tight ${
+                    isRedWhite ? 'text-red-600' : 'text-white'
+                  }`}>
                     ₹{plan.priceINR}
                   </span>
-                  <span className="text-xs text-slate-400 font-mono">
+                  <span className={`text-xs font-mono ${isRedWhite ? 'text-slate-500' : 'text-slate-400'}`}>
                     / {plan.id === 'hourly' ? 'hour' : plan.id === 'daily' ? '24 hours' : 'month'}
                   </span>
                 </div>
-                <div className="text-[11px] font-mono text-cyan-400/90 mt-1 flex items-center justify-between">
+                <div className={`text-[11px] font-mono mt-1 flex items-center justify-between ${
+                  isRedWhite ? 'text-slate-600' : 'text-cyan-400/90'
+                }`}>
                   <span>Base: ₹{plan.basePriceINR.toFixed(2)}</span>
                   <span>+18% GST: ₹{plan.gstINR.toFixed(2)}</span>
                 </div>
               </div>
 
-              <p className="text-xs text-slate-300 leading-relaxed mb-6">
+              <p className={`text-xs leading-relaxed mb-6 ${isRedWhite ? 'text-slate-600' : 'text-slate-300'}`}>
                 {plan.description}
               </p>
 
               {/* Feature Bullet List */}
               <div className="space-y-2.5 mb-8 flex-1">
                 {plan.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-start gap-2.5 text-xs text-slate-300">
-                    <div className="w-4 h-4 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center shrink-0 mt-0.5">
-                      <Check className="w-2.5 h-2.5 text-emerald-400 stroke-[3]" />
+                  <div key={idx} className={`flex items-start gap-2.5 text-xs ${isRedWhite ? 'text-slate-700' : 'text-slate-300'}`}>
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5 border ${
+                      isRedWhite
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-emerald-500/10 border-emerald-500/30'
+                    }`}>
+                      <Check className={`w-2.5 h-2.5 stroke-[3] ${isRedWhite ? 'text-red-600' : 'text-emerald-400'}`} />
                     </div>
                     <span className="leading-tight">{feature}</span>
                   </div>
@@ -414,14 +450,18 @@ export const PricingCards: React.FC<PricingCardsProps> = ({
                   handleCheckout(plan.id);
                 }}
                 disabled={loading}
-                className={`w-full py-3 rounded-lg text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                className={`w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   isSelected
-                    ? 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black shadow-lg shadow-cyan-500/25'
+                    ? isRedWhite
+                      ? 'bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/30'
+                      : 'bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black shadow-lg shadow-cyan-500/25'
+                    : isRedWhite
+                    ? 'bg-white hover:bg-red-50 text-red-600 border-2 border-red-200 hover:border-red-600'
                     : 'bg-[#060a14] hover:bg-cyan-500/10 text-cyan-400 border border-slate-800 hover:border-cyan-500/40'
                 }`}
               >
                 {loading && selectedPlan === plan.id ? (
-                  <span className="animate-spin w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full" />
+                  <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
                 ) : (
                   <>
                     <span>Pay ₹{plan.priceINR} via {gateway === 'paytm' ? 'Paytm' : 'Razorpay'}</span>

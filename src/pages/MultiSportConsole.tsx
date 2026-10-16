@@ -445,21 +445,31 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
       : [];
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-24 sm:pb-16 w-full overflow-x-hidden">
+    <div className={`min-h-screen pb-24 sm:pb-16 w-full overflow-x-hidden ${isRedWhite ? 'bg-white text-slate-900' : 'bg-[#070b14] text-slate-100'}`}>
       {/* Top Studio Header */}
-      <div className="bg-gradient-to-r from-[#0c1424] via-[#090f1f] to-[#0c1424] border-b border-slate-800/80 px-3 sm:px-6 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-2.5">
+      <div className={`border-b px-3 sm:px-6 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-2.5 ${
+        isRedWhite
+          ? 'bg-white border-red-200 shadow-sm'
+          : 'bg-gradient-to-r from-[#0c1424] via-[#090f1f] to-[#0c1424] border-slate-800/80'
+      }`}>
         <div className="flex items-center gap-2.5 sm:gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 transition-colors cursor-pointer shrink-0"
+            className={`p-2 rounded-xl border transition-colors cursor-pointer shrink-0 ${
+              isRedWhite
+                ? 'bg-white border-red-200 hover:bg-red-50 text-slate-700 hover:text-red-600'
+                : 'bg-[#060a14] border-slate-800 hover:border-cyan-500/40 text-slate-300'
+            }`}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div className="min-w-0">
-            <div className="text-[10px] sm:text-[11px] font-extrabold text-cyan-400 uppercase tracking-wider font-mono truncate">
-              {match.sport.replace('_', ' ').toUpperCase()} • MARKETINGLU CYAN-SKY DEFAULT
+            <div className={`text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider font-mono truncate ${
+              isRedWhite ? 'text-red-600' : 'text-cyan-400'
+            }`}>
+              {match.sport.replace('_', ' ').toUpperCase()} • {isRedWhite ? 'CRICKET BALL RED & WHITE' : 'MARKETINGLU CYAN-SKY'}
             </div>
-            <h1 className="text-base sm:text-lg font-black text-white font-['Space_Grotesk',sans-serif] truncate">{match.name}</h1>
+            <h1 className={`text-base sm:text-lg font-black font-['Space_Grotesk',sans-serif] truncate ${isRedWhite ? 'text-slate-900' : 'text-white'}`}>{match.name}</h1>
           </div>
         </div>
 
@@ -614,9 +624,13 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
 
       <div className="max-w-6xl mx-auto px-3 sm:px-6 mt-4 sm:mt-6 space-y-4 sm:space-y-6 w-full overflow-hidden">
         {/* Fast Sport Channel Category Capsule */}
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-[#090f1f]/80 border border-slate-800/80 rounded-2xl p-2.5">
+        <div className={`flex flex-wrap items-center justify-between gap-3 border-2 rounded-2xl p-2.5 ${
+          isRedWhite ? 'bg-white border-red-200 shadow-sm' : 'bg-[#090f1f]/80 border-slate-800/80'
+        }`}>
           <div className="overflow-x-auto no-scrollbar py-0.5">
-            <div className="inline-flex items-center gap-1 p-1 rounded-full bg-[#051122]/90 border border-cyan-500/30 shadow-inner backdrop-blur-md">
+            <div className={`inline-flex items-center gap-1.5 p-1 rounded-full border-2 backdrop-blur-md ${
+              isRedWhite ? 'bg-red-50/70 border-red-200' : 'bg-[#051122]/90 border-cyan-500/30 shadow-inner'
+            }`}>
               {allMatches.map((m) => {
                 const isActive = m.id === activeId;
                 return (
@@ -628,7 +642,11 @@ export const MultiSportConsole: React.FC<MultiSportConsoleProps> = ({
                     }}
                     className={`px-3.5 py-1.5 rounded-full text-xs transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                       isActive
-                        ? 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                        ? isRedWhite
+                          ? 'border-2 border-red-600 bg-red-600 text-white font-black shadow-sm'
+                          : 'border border-cyan-400 bg-cyan-950/70 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                        : isRedWhite
+                        ? 'text-slate-700 hover:text-red-600 hover:bg-white font-semibold'
                         : 'text-slate-300 hover:text-white hover:bg-slate-800/40 font-semibold'
                     }`}
                   >

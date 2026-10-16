@@ -25,8 +25,8 @@ customLogger.warn = (msg, options) => {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const vitePort = parseInt(env.VITE_PORT || '5173', 10);
-  const backendPort = parseInt(env.PORT || '8000', 10);
+  const vitePort = parseInt(env.VITE_PORT || '3000', 10);
+  const backendPort = parseInt(env.PORT || '3000', 10);
   const backendUrl = `http://localhost:${backendPort}`;
   const backendWsUrl = `ws://localhost:${backendPort}`;
 

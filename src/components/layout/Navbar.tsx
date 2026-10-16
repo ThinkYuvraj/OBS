@@ -42,6 +42,7 @@ interface NavbarProps {
   onOpenGuide?: () => void;
   onOpenSettings?: () => void;
   onOpenAuth?: (mode: 'login' | 'signup') => void;
+  onOpenPreloader?: () => void;
   isConnected?: boolean;
 }
 
@@ -53,6 +54,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenGuide,
   onOpenSettings,
   onOpenAuth,
+  onOpenPreloader,
   isConnected = true,
 }) => {
   const { theme, toggleTheme, isRedWhite } = useTheme();
@@ -111,9 +113,9 @@ export const Navbar: React.FC<NavbarProps> = ({
       <header
         className={`flex items-center justify-between gap-3 sm:gap-4 px-3 sm:px-6 py-2.5 sm:py-3 border-b ${
           isRedWhite
-            ? 'border-rose-950/90 bg-[#0c0407]/95 shadow-rose-950/30'
-            : 'border-slate-900/90 bg-[#040814]/95 shadow-black/50'
-        } backdrop-blur-md sticky top-0 z-40 text-slate-100 shadow-xl transition-colors duration-300`}
+            ? 'border-red-200 bg-white/95 text-slate-800 shadow-sm'
+            : 'border-slate-900/90 bg-[#040814]/95 text-slate-100 shadow-black/50'
+        } backdrop-blur-md sticky top-0 z-40 shadow-xl transition-colors duration-300`}
       >
         {/* 1. LEFT LOGO: White Rounded Badge with Black MG Emblem + "MARKETIN GLU" Wordmark */}
         <div
@@ -123,10 +125,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         >
           {/* White Rounded Card holding Black MG Emblem */}
           <div
-            className={`w-11 h-7.5 sm:w-13 sm:h-8.5 bg-white rounded-xl flex items-center justify-center px-1.5 py-1 shadow-sm transition-all shrink-0 ${
+            className={`w-11 h-7.5 sm:w-13 sm:h-8.5 bg-white rounded-xl flex items-center justify-center px-1.5 py-1 shadow-sm transition-all shrink-0 border ${
               isRedWhite
-                ? 'group-hover:shadow-[0_0_12px_rgba(225,29,72,0.4)]'
-                : 'group-hover:shadow-[0_0_12px_rgba(255,255,255,0.4)]'
+                ? 'border-red-200 group-hover:border-red-500 group-hover:shadow-[0_0_12px_rgba(220,38,38,0.25)]'
+                : 'border-white/10 group-hover:shadow-[0_0_12px_rgba(255,255,255,0.4)]'
             }`}
           >
             <img
@@ -142,7 +144,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             alt="MARKETINGLU"
             className={`h-4.5 sm:h-5.5 w-auto object-contain brightness-110 select-none ${
               isRedWhite
-                ? 'drop-shadow-[0_1px_6px_rgba(225,29,72,0.4)]'
+                ? 'contrast-125'
                 : 'drop-shadow-[0_1px_6px_rgba(6,182,212,0.35)]'
             }`}
           />
@@ -152,7 +154,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <nav
           className={`hidden xl:flex items-center gap-1 px-1.5 py-1 rounded-full border shadow-inner backdrop-blur-md overflow-x-auto no-scrollbar ${
             isRedWhite
-              ? 'bg-[#14060b]/90 border-rose-500/30 shadow-rose-950/40'
+              ? 'bg-red-50/70 border-red-200 shadow-sm'
               : 'bg-[#051122]/90 border-cyan-500/25 shadow-black/50'
           }`}
         >
@@ -168,8 +170,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className={`transition-all cursor-pointer whitespace-nowrap shrink-0 text-xs font-semibold px-3.5 py-1.5 rounded-full ${
                   isActive
                     ? isRedWhite
-                      ? 'border border-rose-500 bg-rose-600 text-white font-black shadow-[0_0_14px_rgba(225,29,72,0.45)]'
+                      ? 'border border-red-600 bg-red-600 text-white font-black shadow-[0_0_10px_rgba(220,38,38,0.35)]'
                       : 'border border-cyan-400 bg-cyan-950/60 text-white font-bold shadow-[0_0_12px_rgba(6,182,212,0.35)]'
+                    : isRedWhite
+                    ? 'text-slate-600 hover:text-red-600 hover:bg-white'
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
                 }`}
               >
@@ -185,7 +189,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div
             className={`hidden 2xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-mono font-bold select-none ${
               isRedWhite
-                ? 'bg-[#18080f] border-rose-950 text-slate-300'
+                ? 'bg-red-50 border-red-200 text-slate-700'
                 : 'bg-[#030712] border-slate-800/80 text-slate-300'
             }`}
             title={
@@ -197,12 +201,12 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span
               className={`w-2 h-2 rounded-full ${
                 isConnected
-                  ? 'bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse'
+                  ? 'bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse'
                   : 'bg-amber-400 animate-ping'
               }`}
             />
-            <span className="text-slate-400">ENGINE:</span>
-            <span className={isConnected ? 'text-emerald-300 font-extrabold' : 'text-amber-300'}>
+            <span className={isRedWhite ? 'text-slate-500' : 'text-slate-400'}>ENGINE:</span>
+            <span className={isConnected ? (isRedWhite ? 'text-emerald-700 font-extrabold' : 'text-emerald-300 font-extrabold') : 'text-amber-500'}>
               {isConnected ? '60 FPS' : 'STANDBY'}
             </span>
           </div>
@@ -212,7 +216,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={toggleFullscreen}
             className={`hidden sm:flex p-2 rounded-full border transition-all text-xs font-bold cursor-pointer ${
               isRedWhite
-                ? 'bg-rose-950/40 hover:bg-rose-900/60 border-rose-500/40 text-rose-300 hover:text-white'
+                ? 'bg-white hover:bg-red-50 border-red-200 text-slate-700 hover:text-red-600'
                 : 'bg-[#0d1527] hover:bg-[#111e38] border-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-white'
             }`}
             title={isFullscreen ? 'Exit Fullscreen Mode (Esc)' : 'Enter Fullscreen Studio (F11)'}
@@ -226,16 +230,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={toggleTheme}
             className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold font-mono transition-all border cursor-pointer ${
               isRedWhite
-                ? 'bg-rose-950/50 hover:bg-rose-900/60 text-rose-300 border-rose-500/40 shadow-[0_0_10px_rgba(225,29,72,0.25)]'
+                ? 'bg-red-50 hover:bg-red-100 text-red-700 border-red-200 shadow-sm'
                 : 'bg-cyan-950/50 hover:bg-cyan-900/60 text-cyan-300 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.25)]'
             }`}
             title={`Active Theme: ${isRedWhite ? 'Red & White (Default)' : 'MarketinGlu Cyan'}. Click to toggle theme.`}
           >
             {isRedWhite ? (
               <>
-                <Flame className="w-3.5 h-3.5 text-rose-400" />
+                <Flame className="w-3.5 h-3.5 text-red-600" />
                 <span className="hidden 2xl:inline">Theme:</span>
-                <span className="text-white font-black">Red &amp; White</span>
+                <span className="text-red-700 font-black">Red &amp; White</span>
               </>
             ) : (
               <>
@@ -246,13 +250,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
+          {/* New Preloader Screen Trigger */}
+          {onOpenPreloader && (
+            <button
+              onClick={onOpenPreloader}
+              className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all border cursor-pointer whitespace-nowrap shadow-sm ${
+                isRedWhite
+                  ? 'bg-red-600 hover:bg-red-700 text-white border border-red-600 shadow-sm'
+                  : 'bg-cyan-500/15 hover:bg-cyan-500/25 border-cyan-500/40 text-cyan-200 shadow-cyan-950/30'
+              }`}
+              title="Open the new Cricket Ball Red & White Preloader Screen"
+            >
+              <span className="text-xs">🏏</span>
+              <span className="font-bold">Preloader</span>
+            </button>
+          )}
+
           {/* Panel Guide Quick Access */}
           {onOpenGuide && (
             <button
               onClick={onOpenGuide}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-sm ${
                 isRedWhite
-                  ? 'bg-rose-500/15 hover:bg-rose-500/25 border-rose-500/40 text-rose-200 shadow-rose-950/30'
+                  ? 'bg-white hover:bg-red-50 border-red-200 text-slate-700 hover:text-red-600'
                   : 'bg-cyan-500/15 hover:bg-cyan-500/25 border-cyan-500/40 text-cyan-200 shadow-cyan-950/30'
               }`}
               title="Open Operator Panel Guide & Hotkey Manual (Shift+G or ?)"
@@ -268,7 +288,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={onOpenSettings}
               className={`p-2 rounded-full border transition-all text-xs font-bold cursor-pointer ${
                 isRedWhite
-                  ? 'bg-rose-950/40 hover:bg-rose-900/60 border-rose-500/40 text-rose-300 hover:text-white'
+                  ? 'bg-white hover:bg-red-50 border-red-200 text-slate-700 hover:text-red-600'
                   : 'bg-[#0d1527] hover:bg-[#111e38] border-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-white'
               }`}
               title="Studio Settings & Theme Customization & Hostinger DB"
@@ -283,7 +303,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => onNavigate('create')}
             className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full border font-bold text-xs transition-all whitespace-nowrap shrink-0 cursor-pointer ${
               isRedWhite
-                ? 'border-rose-500 text-rose-300 hover:text-white hover:bg-rose-600 shadow-[0_0_12px_rgba(225,29,72,0.3)]'
+                ? 'border-red-600 text-white bg-red-600 hover:bg-red-700 shadow-sm shadow-red-600/30'
                 : 'border-cyan-400 text-cyan-300 hover:text-slate-950 hover:bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
             }`}
             title="Create a New Live Match Overlay Channel"
@@ -297,8 +317,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setShowPricingModal(true)}
             className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold font-mono transition-all border cursor-pointer ${
               licenseStatus?.isActive
-                ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
-                : 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse'
+                ? (isRedWhite ? 'bg-emerald-50 text-emerald-800 border-emerald-300' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/40')
+                : (isRedWhite ? 'bg-amber-50 text-amber-800 border-amber-300 animate-pulse' : 'bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:bg-amber-500/20 text-amber-300 border-amber-500/40 animate-pulse')
             }`}
             title="Manage Broadcast License Passes (₹499/hr • ₹1,699/day)"
           >
@@ -313,10 +333,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Operator Switcher / Login Trigger (Desktop/Tablet) */}
           <button
             onClick={() => setShowUserModal(true)}
-            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-semibold text-slate-200 transition-colors cursor-pointer ${
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-xs font-semibold transition-colors cursor-pointer ${
               isRedWhite
-                ? 'bg-[#18080e] hover:bg-[#220c14] border-rose-900/60 hover:border-rose-500/40'
-                : 'bg-[#0d1527] hover:bg-[#111e38] border-slate-800 hover:border-cyan-500/40'
+                ? 'bg-white hover:bg-red-50 border-red-200 text-slate-800 hover:text-red-600'
+                : 'bg-[#0d1527] hover:bg-[#111e38] border-slate-800 hover:border-cyan-500/40 text-slate-200'
             }`}
             title="Switch Operator Setup Profile"
           >
@@ -332,7 +352,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onClick={() => onOpenAuth('signup')}
               className={`hidden md:flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-bold transition-all cursor-pointer ${
                 isRedWhite
-                  ? 'bg-rose-950/30 hover:bg-rose-600 hover:text-white border-rose-500/40 text-rose-300'
+                  ? 'bg-white hover:bg-red-600 hover:text-white border border-red-600 text-red-600'
                   : 'bg-cyan-950/30 hover:bg-cyan-400 hover:text-slate-950 border-cyan-500/40 text-cyan-300'
               }`}
               title="Create Broadcaster Account or Log In (Hostinger DB)"

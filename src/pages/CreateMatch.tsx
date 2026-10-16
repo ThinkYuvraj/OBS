@@ -549,7 +549,7 @@ export const CreateMatch: React.FC<CreateMatchProps> = ({ onMatchCreated, onCanc
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert('Logo file size exceeds 2MB limit. Please choose a smaller image.');
+      showToast('Logo file size exceeds 2MB limit. Please choose a smaller image.', 'warning');
       return;
     }
 

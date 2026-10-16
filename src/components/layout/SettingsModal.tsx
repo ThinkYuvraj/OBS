@@ -22,6 +22,7 @@ import {
   LogIn,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useToast } from '../../contexts/ToastContext';
 import {
   fetchHostingerDbStatus,
   syncHostingerDatabase,
@@ -47,6 +48,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenAuth,
   onUserLoggedOut,
 }) => {
+  const { error: toastError } = useToast();
   const { theme, setTheme, isRedWhite } = useTheme();
   const [activeTab, setActiveTab] = useState<'theme' | 'hostinger' | 'account'>('theme');
 
@@ -148,7 +150,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       const res = await fetchHostingerSqlExport();
       setSqlExport(res.sql);
     } catch (err: any) {
-      alert(`Failed to generate SQL export: ${err?.message}`);
+      toastError(`Failed to generate SQL export: ${err?.message}`);
     }
   };
 

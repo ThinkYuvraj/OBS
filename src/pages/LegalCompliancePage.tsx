@@ -28,6 +28,7 @@ import {
   submitTakedownNotice,
 } from '../services/api';
 import { GrievanceRedressalTicket, DpdpDataRequest } from '../types/sports';
+import { useToast } from '../contexts/ToastContext';
 import emblemDarkImg from '../assets/images/marketinglu-emblem-dark.png';
 
 interface LegalCompliancePageProps {
@@ -41,6 +42,7 @@ export const LegalCompliancePage: React.FC<LegalCompliancePageProps> = ({
   onBack,
   onNavigate,
 }) => {
+  const { error: toastError, warning: toastWarning } = useToast();
   const [activeTab, setActiveTab] = useState<TabType>('entity');
   const [companyInfo, setCompanyInfo] = useState<any>(null);
 
@@ -170,14 +172,14 @@ export const LegalCompliancePage: React.FC<LegalCompliancePageProps> = ({
       });
       setDpdpSubmitted(res.request);
     } catch (err: any) {
-      alert(err.message);
+      toastError(err?.message || 'Failed to submit request');
     }
   };
 
   const handleTakedownSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!takedownDeclaration) {
-      alert('Please accept the statutory good faith declaration before submitting.');
+      toastWarning('Please accept the statutory good faith declaration before submitting.');
       return;
     }
     try {
@@ -191,7 +193,7 @@ export const LegalCompliancePage: React.FC<LegalCompliancePageProps> = ({
       });
       setTakedownSuccess(res.notice);
     } catch (err: any) {
-      alert(err.message);
+      toastError(err?.message || 'Failed to submit notice');
     }
   };
 

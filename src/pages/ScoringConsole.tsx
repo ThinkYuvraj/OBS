@@ -254,23 +254,33 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
   const currentBalls = currentOverSummary?.balls || [];
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 pb-24 sm:pb-16 font-sans w-full overflow-x-hidden">
+    <div className={`min-h-screen pb-24 sm:pb-16 font-sans w-full overflow-x-hidden ${isRedWhite ? 'bg-white text-slate-900' : 'bg-[#070b14] text-slate-100'}`}>
       {/* Top Header */}
-      <div className="bg-gradient-to-r from-[#0c1424] via-[#090f1f] to-[#0c1424] border-b border-slate-800/80 px-3 sm:px-6 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-2.5 sticky top-0 z-30">
+      <div className={`border-b px-3 sm:px-6 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-2.5 sticky top-0 z-30 ${
+        isRedWhite
+          ? 'bg-white border-red-200 shadow-sm'
+          : 'bg-gradient-to-r from-[#0c1424] via-[#090f1f] to-[#0c1424] border-slate-800/80'
+      }`}>
         <div className="flex items-center gap-2.5 sm:gap-3">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl bg-[#060a14] border border-slate-800 hover:border-cyan-500/40 text-slate-300 transition-colors cursor-pointer shrink-0"
+            className={`p-2 rounded-xl border transition-colors cursor-pointer shrink-0 ${
+              isRedWhite
+                ? 'bg-white border-red-200 hover:bg-red-50 text-slate-700 hover:text-red-600'
+                : 'bg-[#060a14] border-slate-800 hover:border-cyan-500/40 text-slate-300'
+            }`}
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-cyan-400 uppercase tracking-wider font-mono">
+            <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-wider font-mono ${
+              isRedWhite ? 'text-red-600' : 'text-cyan-400'
+            }`}>
               <span>{match.tournament}</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-slate-400">{match.venue}</span>
+              <span className={isRedWhite ? 'text-red-300' : 'text-slate-600'}>•</span>
+              <span className={isRedWhite ? 'text-slate-500' : 'text-slate-400'}>{match.venue}</span>
             </div>
-            <h1 className="text-lg font-black text-white tracking-tight font-['Space_Grotesk',sans-serif]">{match.name}</h1>
+            <h1 className={`text-lg font-black tracking-tight font-['Space_Grotesk',sans-serif] ${isRedWhite ? 'text-slate-900' : 'text-white'}`}>{match.name}</h1>
           </div>
         </div>
 
@@ -367,25 +377,35 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 mt-4 sm:mt-6 space-y-4 sm:space-y-6 w-full">
         {/* Main Situation Board */}
-        <div className="bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border border-slate-800/80 rounded-2xl p-4 sm:p-6 shadow-xl overflow-hidden">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6 pb-4 sm:pb-6 border-b border-slate-800">
+        <div className={`border-2 rounded-2xl p-4 sm:p-6 shadow-sm overflow-hidden ${
+          isRedWhite
+            ? 'bg-white border-red-200 shadow-sm'
+            : 'bg-gradient-to-br from-[#0c1424]/95 via-[#0a1120]/95 to-[#060a14]/95 border-slate-800/80'
+        }`}>
+          <div className={`flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 sm:gap-6 pb-4 sm:pb-6 border-b ${
+            isRedWhite ? 'border-red-100' : 'border-slate-800'
+          }`}>
             {/* Score & Batting Team */}
             <div className="flex items-center gap-3 sm:gap-5">
               <div
-                className="w-2.5 sm:w-3 h-14 sm:h-16 rounded-md shrink-0"
-                style={{ backgroundColor: battingTeam.color || '#06b6d4' }}
+                className="w-2.5 sm:w-3 h-14 sm:h-16 rounded-md shrink-0 shadow-md"
+                style={{ backgroundColor: battingTeam.color || '#dc2626' }}
               />
               <div>
-                <div className="text-[11px] sm:text-xs font-extrabold uppercase tracking-widest text-cyan-400 font-mono">
+                <div className={`text-[11px] sm:text-xs font-black uppercase tracking-widest font-mono ${
+                  isRedWhite ? 'text-red-600' : 'text-cyan-400'
+                }`}>
                   {battingTeam.name} Batting • {innings.inningsNumber === 1 ? '1st Innings' : '2nd Innings'}
                 </div>
                 <div className="flex items-baseline gap-2.5 sm:gap-3 mt-0.5">
-                  <span className="text-4xl sm:text-5xl font-black font-mono tracking-tight text-white tabular-nums">
+                  <span className={`text-4xl sm:text-5xl font-black font-mono tracking-tight tabular-nums ${
+                    isRedWhite ? 'text-red-600' : 'text-white'
+                  }`}>
                     {innings.runs}/{innings.wickets}
                   </span>
-                  <span className="text-lg sm:text-xl font-bold font-mono text-slate-300">
+                  <span className={`text-lg sm:text-xl font-bold font-mono ${isRedWhite ? 'text-slate-600' : 'text-slate-300'}`}>
                     {innings.oversFormatted}{' '}
-                    <span className="text-xs text-slate-500 font-sans uppercase">
+                    <span className={`text-xs font-sans uppercase ${isRedWhite ? 'text-slate-400' : 'text-rose-300/70'}`}>
                       / {match.cricketState.maxOvers} ov
                     </span>
                   </span>
@@ -394,10 +414,12 @@ export const ScoringConsole: React.FC<ScoringConsoleProps> = ({ matchId, onBack 
             </div>
 
             {/* Run Rates & Target (Responsive wrap on mobile) */}
-            <div className="flex flex-wrap items-center gap-3 sm:gap-6 bg-[#060a14] p-3 sm:p-4 rounded-xl border border-slate-800/80">
+            <div className={`flex flex-wrap items-center gap-3 sm:gap-6 p-3 sm:p-4 rounded-xl border-2 ${
+              isRedWhite ? 'bg-red-50/60 border-red-200' : 'bg-[#060a14] border-slate-800/80'
+            }`}>
               <div>
-                <div className="text-[10px] sm:text-[11px] font-mono text-slate-400 uppercase">Current Run Rate</div>
-                <div className="text-xl sm:text-2xl font-black font-mono text-cyan-400 tabular-nums">
+                <div className={`text-[10px] sm:text-[11px] font-mono uppercase ${isRedWhite ? 'text-slate-600' : 'text-slate-400'}`}>Current Run Rate</div>
+                <div className={`text-xl sm:text-2xl font-black font-mono tabular-nums ${isRedWhite ? 'text-red-600' : 'text-cyan-400'}`}>
                   {innings.currentRunRate.toFixed(2)}
                 </div>
               </div>

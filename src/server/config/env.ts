@@ -22,7 +22,7 @@ export interface ServerConfig {
 export const config: ServerConfig = {
   env: (process.env.NODE_ENV as any) || 'development',
   isProd: process.env.NODE_ENV === 'production',
-  port: parseInt(process.env.PORT || '8000', 10),
+  port: parseInt(process.env.PORT || '3000', 10),
   host: process.env.HOST || '0.0.0.0',
   corsOrigin: process.env.CORS_ORIGIN || '*',
   razorpayKeyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_marketinGlu_subsecond',

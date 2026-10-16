@@ -23,6 +23,8 @@ import { ToastProvider, useToast } from './contexts/ToastContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { fetchActiveUser } from './services/api';
 import { UserProfile } from './types/sports';
+import { MarketingluLoadingScreen } from './components/common/MarketingluLoadingScreen';
+import { CricketBallPreloader } from './components/common/CricketBallPreloader';
 
 const TAB_PAGE_TITLES: Record<string, string> = {
   dashboard: 'MarketinGlu | Live Broadcast Dashboard',
@@ -138,11 +140,34 @@ function AppContent() {
     return () => window.removeEventListener('keydown', handleGlobalShortcuts);
   }, []);
 
+  const [isInitialBoot, setIsInitialBoot] = useState<boolean>(true);
+  const [showPreloaderPreview, setShowPreloaderPreview] = useState<boolean>(false);
+
   // Check if current browser path is an overlay route (e.g. /overlay/:token)
   const pathname = window.location.pathname;
   if (pathname.startsWith('/overlay/')) {
     const token = pathname.replace('/overlay/', '').split('/')[0];
     return <OverlayView token={token} />;
+  }
+
+  // Brand New Cricket Ball Red & Proper White Preloader Screen
+  if (showPreloaderPreview) {
+    return (
+      <CricketBallPreloader
+        onClose={() => setShowPreloaderPreview(false)}
+        showDismiss={true}
+      />
+    );
+  }
+
+  if (isInitialBoot) {
+    return (
+      <CricketBallPreloader
+        onClose={() => setIsInitialBoot(false)}
+        onComplete={() => setIsInitialBoot(false)}
+        showDismiss={false}
+      />
+    );
   }
 
   const handleNavigate = (tab: string, matchId?: string) => {
@@ -192,13 +217,18 @@ function AppContent() {
         onOpenGuide={() => setShowGuideModal(true)}
         onOpenSettings={() => setShowSettings(true)}
         onOpenAuth={handleOpenAuth}
+        onOpenPreloader={() => setShowPreloaderPreview(true)}
         isConnected={isConnected}
       />
 
       {/* Main View Router with Safe Bottom Padding for Mobile Bottom Bar */}
       <main className="flex-1 pb-20 xl:pb-0 w-full overflow-x-hidden">
         {currentTab === 'dashboard' && (
-          <Dashboard onNavigate={handleNavigate} onOpenGuide={() => setShowGuideModal(true)} />
+          <Dashboard
+            onNavigate={handleNavigate}
+            onOpenGuide={() => setShowGuideModal(true)}
+            onOpenPreloader={() => setShowPreloaderPreview(true)}
+          />
         )}
 
         {currentTab === 'create' && (

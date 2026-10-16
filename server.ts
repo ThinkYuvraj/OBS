@@ -44,6 +44,22 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
+
+    // Development SPA Fallback for client-side routing
+    app.use('*', async (req: Request, res: Response, next) => {
+      if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/health')) {
+        return next();
+      }
+      try {
+        const fs = await import('fs/promises');
+        const indexPath = path.resolve(__dirname, 'index.html');
+        let template = await fs.readFile(indexPath, 'utf-8');
+        template = await vite.transformIndexHtml(req.originalUrl, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
+      } catch (e) {
+        next(e);
+      }
+    });
   } else {
     // Production Environment: High-Speed Static Asset Serving with Caching
     console.log('[ENV] Starting MarketinGlu broadcast engine in PRODUCTION mode...');
